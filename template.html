@@ -563,6 +563,7 @@ function renderDash(){
 const gapSel=new Set();
 function carOf(id){ const s=st(id); return (s&&s.car)||null; }
 function today(){ return new Date().toISOString().slice(0,10); }
+function uName(){ return (typeof fbUser!=='undefined'&&fbUser)?(fbUser.displayName||fbUser.email||''):(meta.auditor||''); }
 function nextCarNo(){
   let mx=0;
   ALL.forEach(it=>{const c=carOf(it.id); if(c&&c.no){const m=c.no.match(/(\d+)$/); if(m) mx=Math.max(mx,+m[1]);}});
@@ -582,8 +583,8 @@ function assignSelected(sendMail){
     const s=(state[id]=state[id]||{});
     const c=(s.car=s.car||{});
     if(!c.no) c.no=nextCarNo();
-    c.as=name; c.ae=email; c.due=due; c.cast='A';
-    logCar(c,`มอบหมายให้ ${name}${due?` กำหนดเสร็จ ${due}`:''}`);
+    c.as=name; c.ae=email; c.due=due; c.cast='A'; c.iby=uName()||meta.auditor||'';
+    logCar(c,`มอบหมายให้ ${name}${due?` กำหนดเสร็จ ${due}`:''}${c.iby?` · โดย ${c.iby}`:''}`);
     assigned.push(id);
   });
   assigned.forEach(mark);
@@ -653,22 +654,24 @@ function carRejectGo(id){
 }
 function carRejToggle(id){ const b=document.getElementById('rj_'+id); if(b) b.classList.toggle('hide'); }
 // ---- Signature pad (3 parties per D-0507-CAR-001) ----
-let SIGCTX=null;
+let SIGCTX=null, SIGQ=null;
 const SIG_ROLES={resp:'Responsible Person / ผู้รับผิดชอบ', aud:'Auditor / ผู้ตรวจ', cmm:'Compliance Monitoring Manager'};
-function openSig(id, role){
-  const c=carOf(id); if(!c) return;
-  const names={resp:c.as||'', aud:meta.auditor||'', cmm:''};
+function openSig(idOrIds, role, cb){
+  const ids=Array.isArray(idOrIds)?idOrIds:[idOrIds];
+  const c=carOf(ids[0]); if(!c) return;
+  SIGQ={ids, role, cb:cb||null};
+  const names={resp:c.as||'', aud:uName()||meta.auditor||'', cmm:''};
   const prev=(c.sg&&c.sg[role])||null;
   const w=document.createElement('div'); w.className='sigwrap'; w.id='sigwrap';
   w.innerHTML=`<div class="sigbox">
-    <b style="color:var(--navy)">✍ ลงชื่อ — ${SIG_ROLES[role]}</b>
+    <b style="color:var(--navy)">✍ ลงชื่อ — ${SIG_ROLES[role]}</b>${ids.length>1?`<span class="carpill A" style="margin-left:8px">ใช้กับ ${ids.length} CAR ที่เลือก</span>`:''}
     <div style="margin:8px 0">ชื่อ-นามสกุล: <input id="sig_n" class="ca-sm" style="width:62%" value="${esc((prev&&prev.n)||names[role]||'')}" placeholder="ชื่อผู้ลงนาม"></div>
     <canvas id="sig_c" width="540" height="180"></canvas>
     <div style="color:#7a8798;font-size:11px;margin-top:3px">เซ็นในกรอบด้วยนิ้ว / Apple Pencil / เมาส์</div>
     <div style="margin-top:10px;text-align:right">
       <button class="carbtn" onclick="sigClear()">ล้าง</button>
       <button class="carbtn" onclick="document.getElementById('sigwrap').remove()">ยกเลิก</button>
-      <button class="carbtn v" onclick="sigSave('${id}','${role}')">✔ บันทึกลายเซ็น</button>
+      <button class="carbtn v" onclick="sigSave()">✔ บันทึกลายเซ็น</button>
     </div></div>`;
   document.body.appendChild(w);
   const cv=document.getElementById('sig_c'); const ctx=cv.getContext('2d');
@@ -681,15 +684,71 @@ function openSig(id, role){
   SIGCTX={cv,ctx,hasInk:()=>drew,resetInk:()=>{drew=false;}};
 }
 function sigClear(){ if(SIGCTX){ SIGCTX.ctx.clearRect(0,0,SIGCTX.cv.width,SIGCTX.cv.height); SIGCTX.resetInk(); } }
-function sigSave(id, role){
+function sigSave(){
+  if(!SIGQ) return;
   const n=(document.getElementById('sig_n').value||'').trim();
   if(!n){ alert('กรอกชื่อผู้ลงนาม'); return; }
   if(!SIGCTX||!SIGCTX.hasInk()){ alert('ยังไม่ได้เซ็นในกรอบ'); return; }
-  const s=(state[id]=state[id]||{}); const c=(s.car=s.car||{});
-  c.sg=c.sg||{}; c.sg[role]={d:SIGCTX.cv.toDataURL('image/png'), n:n, dt:today()};
-  logCar(c,`ลงชื่อ${role==='resp'?'ผู้รับผิดชอบ':role==='aud'?'ผู้ตรวจ':' CMM'}: ${n}`);
+  const png=SIGCTX.cv.toDataURL('image/png');
+  const {ids, role, cb}=SIGQ;
+  ids.forEach(id=>{
+    const s=(state[id]=state[id]||{}); const c=(s.car=s.car||{});
+    c.sg=c.sg||{}; c.sg[role]={d:png, n:n, dt:today()};
+    logCar(c,`ลงชื่อ${role==='resp'?'ผู้รับผิดชอบ':role==='aud'?'ผู้ตรวจ':' CMM'}: ${n}`);
+    mark(id);
+  });
   const w=document.getElementById('sigwrap'); if(w) w.remove();
-  mark(id); render();
+  SIGQ=null;
+  if(cb) cb(); else render();
+}
+// ---- Bulk actions (เลือกหลาย CAR ทำครั้งเดียว) ----
+const carSel=new Set();
+function carSelTgl(id,on){ if(on) carSel.add(id); else carSel.delete(id);
+  const n=document.getElementById('carselcnt'); if(n) n.textContent=carSel.size; }
+function bulkSign(role){
+  const ids=[...carSel]; if(!ids.length){ alert('ติ๊กเลือก CAR ในตารางก่อน'); return; }
+  openSig(ids, role);
+}
+function bulkReport(){
+  const ids=[...carSel].filter(id=>{const c=carOf(id); return c&&(c.cast==='A'||c.cast==='X');});
+  if(!ids.length){ alert('ติ๊กเลือก CAR สถานะ "รอแก้ไข/ตีกลับ" ก่อน'); return; }
+  const bad=ids.filter(id=>{const c=carOf(id); return !(c.rc||'').trim()||!(c.ca||'').trim()||!c.cadone;});
+  if(bad.length){ alert('CAR ต่อไปนี้ยังกรอก Part 3–4 ไม่ครบ (Root cause / Corrective action / วันที่แล้วเสร็จ):\n'+bad.map(id=>(carOf(id).no||id)).join(', ')+'\n\nกรอกรายใบให้ครบก่อน แล้วกดส่งรวมอีกครั้ง'); return; }
+  const fin=()=>{
+    ids.forEach(id=>{ const c=carOf(id); c.cast='R'; c.cadate=today();
+      logCar(c,'ผู้รับผิดชอบส่งตอบกลับ Part 3–5 (ส่งรวม) — รอตรวจรับ (Part 6)'); mark(id); });
+    carSel.clear(); render(); alert('ส่งตอบกลับแล้ว '+ids.length+' CAR — รอตรวจรับ');
+  };
+  const need=ids.filter(id=>{const c=carOf(id); return !(c.sg&&c.sg.resp);});
+  if(need.length) openSig(ids,'resp',fin); else fin();
+}
+function bulkAccept(){
+  const ids=[...carSel].filter(id=>{const c=carOf(id); return c&&c.cast==='R';});
+  if(!ids.length){ alert('ติ๊กเลือก CAR สถานะ "รอตรวจรับ" ก่อน'); return; }
+  const w=document.createElement('div'); w.className='sigwrap'; w.id='bawrap';
+  w.innerHTML=`<div class="sigbox">
+    <b style="color:var(--navy)">✔ ตรวจรับและปิด CAR รวม (${ids.length} ใบ)</b>
+    <div class="ca-lb">Verification evidence — หลักฐานทวนสอบ (ใช้กับใบที่ยังไม่ได้กรอก · ใบที่กรอกรายใบไว้แล้วคงของเดิม)</div>
+    <textarea class="ca-in" id="ba_ev" placeholder="เช่น ตรวจคู่มือฉบับแก้ไข rev ใหม่ครบทุกรายการแล้ว"></textarea>
+    <div style="margin-top:10px;text-align:right">
+      <button class="carbtn" onclick="document.getElementById('bawrap').remove()">ยกเลิก</button>
+      <button class="carbtn v" onclick="bulkAcceptGo('${ids.join(',')}')">ต่อไป → ลงชื่อ Auditor (ครั้งเดียว)</button>
+    </div></div>`;
+  document.body.appendChild(w);
+}
+function bulkAcceptGo(idstr){
+  const ids=idstr.split(',');
+  const ev=(document.getElementById('ba_ev').value||'').trim();
+  const missing=ids.filter(id=>{const c=carOf(id); return !((c.vev||'').trim()||ev);});
+  if(missing.length){ alert('กรอก Verification evidence ในช่องด้านบน (หรือกรอกรายใบ) ก่อนปิด CAR: '+missing.map(id=>(carOf(id).no||id)).join(', ')); return; }
+  document.getElementById('bawrap').remove();
+  openSig(ids,'aud',()=>{
+    ids.forEach(id=>{ const c=carOf(id);
+      if(!(c.vev||'').trim()) c.vev=ev;
+      c.cast='V'; c.vdate=today(); c.vby=(c.sg&&c.sg.aud&&c.sg.aud.n)||uName()||'';
+      logCar(c,'Accepted (ตรวจรับรวม) — ปิด CAR โดย '+(c.vby||'ผู้ตรวจ')); mark(id); });
+    carSel.clear(); render(); alert('ตรวจรับผ่าน — ปิดแล้ว '+ids.length+' CAR');
+  });
 }
 function sigSlot(it, role, canSign){
   const c=carOf(it.id)||{}; const g=c.sg&&c.sg[role];
@@ -805,7 +864,7 @@ function downloadCarForms(){
         <tr><td class="l">Audit ref.</td><td>D-0507-IAC-001 / Item ID: ${esc(id)}</td><td class="l">Source</td><td>Internal Audit – GAP Analysis (TCAR-ORA)</td></tr>
         <tr><td class="l">Regulatory ref.</td><td>TCAR PEL Part ORA: ${esc(it.rr||'-')}</td><td class="l">Finding level</td><td>${ck(c.lvl==='1')} Level 1 &nbsp;&nbsp; ${ck(c.lvl!=='1')} Level 2</td></tr>
         <tr><td class="l">Assigned to</td><td>${esc(c.as||'')}</td><td class="l">Position</td><td>${esc(c.pos||'')}</td></tr>
-        <tr><td class="l">Issued by (Auditor)</td><td>${esc(meta.auditor||'')}</td><td class="l">Due date</td><td>${esc(c.due||'')}</td></tr>
+        <tr><td class="l">Issued by (Auditor)</td><td>${esc(c.iby||meta.auditor||'')}</td><td class="l">Due date</td><td>${esc(c.due||'')}</td></tr>
       </table>
       <table><tr><td class="l">Classification</td><td>${ck(dGap&&!iGap)} Doc GAP (ไม่มี/ไม่ครบในคู่มือ) &nbsp;&nbsp;&nbsp; ${ck(iGap&&!dGap)} Implementation GAP (เขียนไว้แต่ไม่ได้ปฏิบัติ) &nbsp;&nbsp;&nbsp; ${ck(dGap&&iGap)} ทั้งสองกรณี</td></tr></table>
 
@@ -880,14 +939,21 @@ function renderCar(){
     <div class="dcard"><h3>ปิดแล้ว</h3><div class="dnum" style="color:var(--green)">${by.V||0}</div></div>
     <div class="dcard"><h3>เกินกำหนด</h3><div class="dnum" style="color:var(--red)">${od}</div></div>
   </div>
-  <table class="cartab"><tr><th>CAR No.</th><th>Finding</th><th>ผู้รับผิดชอบ</th><th>กำหนดเสร็จ</th><th>สถานะ</th></tr>`;
+  <div class="note" style="margin-bottom:8px"><b>ทำหลายใบพร้อมกัน</b> — ติ๊กเลือกในตาราง (เลือกแล้ว <b id="carselcnt">${carSel.size}</b> ใบ) แล้วกด:
+    <button class="carbtn" onclick="bulkReport()">📤 ส่งตอบกลับที่เลือก — เซ็นผู้รับผิดชอบครั้งเดียว</button>
+    <button class="carbtn v" onclick="bulkAccept()">✔ ตรวจรับที่เลือก — เซ็น Auditor ครั้งเดียว</button>
+    <button class="carbtn" onclick="bulkSign('cmm')">✍ CMM เซ็นที่เลือก</button></div>
+  <table class="cartab"><tr><th style="width:34px"></th><th>CAR No.</th><th>Finding</th><th>ผู้รับผิดชอบ</th><th>กำหนดเสร็จ</th><th>สถานะ</th><th>ลายเซ็น</th></tr>`;
   cars.sort((a,b)=>(carOf(a.id).no||'').localeCompare(carOf(b.id).no||''));
   cars.forEach(it=>{const c=carOf(it.id);
-    h+=`<tr><td><b>${esc(c.no)}</b></td><td>[${it.id}] ${esc(it.d.slice(0,90))}${it.d.length>90?'…':''}</td>
+    const sgs=['resp','aud','cmm'].map(r=>c.sg&&c.sg[r]?'✔':'—').join(' / ');
+    h+=`<tr><td style="text-align:center"><input type="checkbox" style="width:20px;height:20px" onchange="carSelTgl('${it.id}',this.checked)" ${carSel.has(it.id)?'checked':''}></td>
+      <td><b>${esc(c.no)}</b></td><td>[${it.id}] ${esc(it.d.slice(0,90))}${it.d.length>90?'…':''}</td>
       <td>${esc(c.as||'-')}</td><td class="${isOverdue(c)?'overdue':''}">${esc(c.due||'-')}${isOverdue(c)?' ⚠':''}</td>
-      <td><span class="carpill ${c.cast||''}">${carStatusTxt(c)}</span></td></tr>`;
+      <td><span class="carpill ${c.cast||''}">${carStatusTxt(c)}</span></td>
+      <td style="white-space:nowrap;font-size:11px" title="ผู้รับผิดชอบ / Auditor / CMM">${sgs}</td></tr>`;
   });
-  h+='</table>';
+  h+='</table><div style="color:#7a8798;font-size:11px;margin-top:4px">คอลัมน์ลายเซ็น: ผู้รับผิดชอบ / Auditor / CMM</div>';
   if(!cars.length) h+='<p style="color:#889;margin-top:10px">ยังไม่มี CAR — ไปที่แท็บ GAP Report เลือก Finding แล้วกดมอบหมาย</p>';
   return h;
 }
