@@ -717,7 +717,7 @@ function bulkReport(){
   const fin=()=>{
     ids.forEach(id=>{ const c=carOf(id); c.cast='R'; c.cadate=today();
       logCar(c,'ผู้รับผิดชอบส่งตอบกลับ Part 3–5 (ส่งรวม) — รอตรวจรับ (Part 6)'); mark(id); });
-    carSel.clear(); render(); alert('ส่งตอบกลับแล้ว '+ids.length+' CAR — รอตรวจรับ');
+    carSel.clear(); render(); syncStatus('📤 ส่งตอบกลับแล้ว '+ids.length+' CAR — รอตรวจรับ','var(--green)');
   };
   const need=ids.filter(id=>{const c=carOf(id); return !(c.sg&&c.sg.resp);});
   if(need.length) openSig(ids,'resp',fin); else fin();
@@ -747,7 +747,7 @@ function bulkAcceptGo(idstr){
       if(!(c.vev||'').trim()) c.vev=ev;
       c.cast='V'; c.vdate=today(); c.vby=(c.sg&&c.sg.aud&&c.sg.aud.n)||uName()||'';
       logCar(c,'Accepted (ตรวจรับรวม) — ปิด CAR โดย '+(c.vby||'ผู้ตรวจ')); mark(id); });
-    carSel.clear(); render(); alert('ตรวจรับผ่าน — ปิดแล้ว '+ids.length+' CAR');
+    carSel.clear(); render(); syncStatus('✔ ตรวจรับผ่าน — ปิดแล้ว '+ids.length+' CAR','var(--green)');
   });
 }
 function sigSlot(it, role, canSign){
