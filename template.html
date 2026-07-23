@@ -79,6 +79,13 @@ details.how2 summary{color:var(--amber);}
 .carpill.X{background:var(--redbg); color:var(--red);}
 .overdue{color:var(--red); font-weight:bold;}
 .carbox .hist{color:#7a8798; font-size:11px; margin-top:5px; white-space:pre-line;}
+.castep{display:flex; gap:9px; margin-top:9px;}
+.castep .sn{flex:0 0 24px; height:24px; border-radius:50%; background:var(--blue); color:#fff; font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center;}
+.castep.done .sn{background:var(--green);}
+.castep.wait .sn{background:#aab6c6;}
+.castep .sb{flex:1; min-width:0;}
+.ca-lb{font-weight:bold; color:var(--navy); font-size:12px; margin-top:7px;}
+.ca-sm{min-height:34px; border:1px solid #c8d2e0; border-radius:6px; padding:3px 8px;}
 .carbtn{min-height:38px; border-radius:7px; border:1px solid var(--blue); background:#fff; color:var(--blue); font-size:12px; font-weight:bold; padding:5px 10px; cursor:pointer; margin:3px 4px 0 0;}
 .carbtn.v{border-color:var(--green); color:var(--green);}
 .carbtn.x{border-color:var(--red); color:var(--red);}
@@ -608,16 +615,31 @@ function copyMailSel(){
   navigator.clipboard.writeText(mailBody(ids,name,document.getElementById('as_due').value))
     .then(()=>alert('คัดลอกข้อความอีเมลแล้ว'));
 }
-function setCA(id,v){ const c=(state[id].car=state[id].car||{}); c.ca=v; mark(id); }
+function setCarF(id,f,v){ const s=(state[id]=state[id]||{}); const c=(s.car=s.car||{}); c[f]=v; mark(id); }
 function carReport(id){
   const c=carOf(id); if(!c) return;
-  if(!(c.ca||'').trim()){ alert('กรอก Corrective action ที่ดำเนินการแล้วก่อนบันทึก'); return; }
-  c.cast='R'; c.cadate=today(); logCar(c,'รายงานผลการแก้ไข (CA) — รอตรวจรับ'); mark(id); render();
+  const miss=[];
+  if(!(c.rc||'').trim()) miss.push('① Root Cause Analysis (Part 3)');
+  if(!(c.ca||'').trim()) miss.push('② Corrective Action (Part 4)');
+  if(!c.cadone) miss.push('② วันที่แล้วเสร็จ (Part 4)');
+  if(miss.length){ alert('ตอบกลับไม่ครบ — ต้องกรอกตามลำดับก่อนส่ง:\n• '+miss.join('\n• ')+'\n\n(③ Preventive Action แนะนำให้กรอกทุกครั้ง)'); return; }
+  if(!(c.pa||'').trim() && !confirm('ยังไม่ได้กรอก ③ Preventive Action (Part 5) — ส่งตอบกลับโดยไม่มีมาตรการป้องกันการเกิดซ้ำ?')) return;
+  c.cast='R'; c.cadate=today(); logCar(c,'ผู้รับผิดชอบส่งตอบกลับ Part 3–5 — รอตรวจรับ (Part 6)'); mark(id); render();
 }
 function carVerify(id, ok){
   const c=carOf(id); if(!c) return;
-  if(ok){ c.cast='V'; c.vdate=today(); c.vby=meta.auditor||''; logCar(c,`ตรวจรับผ่าน — ปิด CAR โดย ${meta.auditor||'ผู้ตรวจ'}`); }
-  else  { c.cast='X'; logCar(c,'ตีกลับ — ให้แก้ไขเพิ่มเติม'); }
+  if(ok){
+    const ev=prompt('Verification evidence — หลักฐานที่ใช้ทวนสอบว่าการแก้ไขได้ผลจริง:', c.vev||'');
+    if(ev===null) return;
+    c.vev=ev.trim(); c.cast='V'; c.vdate=today(); c.vby=meta.auditor||'';
+    logCar(c,`Accepted — ตรวจรับผ่าน ปิด CAR โดย ${meta.auditor||'ผู้ตรวจ'}`);
+  } else {
+    const rs=prompt('เหตุผลที่ Reject / สิ่งที่ต้องดำเนินการเพิ่มเติม:',''); if(rs===null) return;
+    const nd=prompt('กำหนดเสร็จใหม่ (YYYY-MM-DD):', c.due||'');
+    if(nd) c.due=nd;
+    c.rejn=(rs||'').trim(); c.cast='X';
+    logCar(c,`Rejected — ตีกลับ${rs?': '+rs:''}${nd?' · กำหนดเสร็จใหม่ '+nd:''}`);
+  }
   mark(id); render();
 }
 function carReassign(id){
@@ -642,17 +664,43 @@ function isOverdue(c){ return c&&c.due&&c.cast!=='V'&&c.due<today(); }
 function carBoxHTML(it){
   const c=carOf(it.id);
   if(!c||!c.no) return '';
+  const ed=(c.cast==='A'||c.cast==='X');
+  const respDone=(c.cast==='R'||c.cast==='V');
   return `<div class="carbox">
     <span class="cno">${esc(c.no)}</span><span class="carpill ${c.cast||''}">${carStatusTxt(c)}</span>
-    <div style="margin-top:4px">ผู้รับผิดชอบ: <b>${esc(c.as||'-')}</b>${c.ae?` (${esc(c.ae)})`:''}
+    <div style="margin-top:5px">ผู้รับผิดชอบ: <b>${esc(c.as||'-')}</b>${c.ae?` (${esc(c.ae)})`:''}
+      · ตำแหน่ง: <input class="ca-sm" style="width:140px" value="${esc(c.pos||'')}" placeholder="Position" onchange="setCarF('${it.id}','pos',this.value)" ${c.cast==='V'?'disabled':''}>
+      · Finding level: <select class="ca-sm" onchange="setCarF('${it.id}','lvl',this.value)" ${c.cast==='V'?'disabled':''}>
+        <option value="2"${c.lvl!=='1'?' selected':''}>Level 2</option><option value="1"${c.lvl==='1'?' selected':''}>Level 1</option></select>
       · กำหนดเสร็จ: <span class="${isOverdue(c)?'overdue':''}">${esc(c.due||'-')}${isOverdue(c)?' ⚠ เกินกำหนด':''}</span></div>
-    ${(c.cast==='A'||c.cast==='X')?`
-      <textarea class="ca-in" placeholder="Corrective action ที่ดำเนินการ + สาเหตุราก (ผู้รับผิดชอบกรอก)" onchange="setCA('${it.id}',this.value)">${esc(c.ca||'')}</textarea>
-      <button class="carbtn" onclick="carReport('${it.id}')">📤 บันทึก CA → ส่งตรวจรับ</button>`:''}
-    ${c.cast==='R'?`<div style="margin-top:4px"><b>CA:</b> ${esc(c.ca||'')} <span style="color:#7a8798">(${esc(c.cadate||'')})</span></div>
-      <button class="carbtn v" onclick="carVerify('${it.id}',true)">✔ ตรวจรับผ่าน – ปิด CAR</button>
-      <button class="carbtn x" onclick="carVerify('${it.id}',false)">↩ ตีกลับ</button>`:''}
-    ${c.cast==='V'?`<div style="margin-top:4px;color:var(--green)"><b>CA:</b> ${esc(c.ca||'')} · ปิดเมื่อ ${esc(c.vdate||'')} โดย ${esc(c.vby||'-')}</div>`:''}
+
+    <div class="castep done"><div class="sn">1</div><div class="sb">
+      <b>มอบหมาย CAR</b> (Part 1–2 · Auditor) — Classification: ${esc(gapType(it)||'-')}</div></div>
+
+    <div class="castep ${respDone?'done':''}"><div class="sn">2</div><div class="sb">
+      <b>การตอบกลับของผู้รับผิดชอบ</b> (Part 3–5)${c.cast==='X'&&c.rejn?`<div style="color:var(--red);font-size:12px">ถูกตีกลับ: ${esc(c.rejn)} — แก้ไขแล้วส่งใหม่</div>`:''}
+      ${ed?`
+        <div class="ca-lb">① Root Cause Analysis — สาเหตุราก (Part 3, 5-Why)</div>
+        <textarea class="ca-in" placeholder="ทำไมข้อบกพร่องนี้จึงเกิดขึ้น — วิเคราะห์จนถึงสาเหตุราก" onchange="setCarF('${it.id}','rc',this.value)">${esc(c.rc||'')}</textarea>
+        <div class="ca-lb">② Corrective Action — การแก้ไข + วันที่แล้วเสร็จ (Part 4)</div>
+        <textarea class="ca-in" placeholder="การดำเนินการแก้ไขข้อบกพร่องนี้" onchange="setCarF('${it.id}','ca',this.value)">${esc(c.ca||'')}</textarea>
+        <div style="margin-top:3px">วันที่แล้วเสร็จ: <input type="date" class="ca-sm" value="${esc(c.cadone||'')}" onchange="setCarF('${it.id}','cadone',this.value)"></div>
+        <div class="ca-lb">③ Preventive Action — การป้องกันการเกิดซ้ำ (Part 5)</div>
+        <textarea class="ca-in" placeholder="มาตรการป้องกันไม่ให้เกิดข้อบกพร่องซ้ำ" onchange="setCarF('${it.id}','pa',this.value)">${esc(c.pa||'')}</textarea>
+        <button class="carbtn" onclick="carReport('${it.id}')">📤 ส่งตอบกลับ (Part 3–5) → รอตรวจรับ</button>`
+      :respDone?`
+        <div style="margin-top:4px"><b>① Root cause:</b> ${esc(c.rc||'-')}</div>
+        <div><b>② Corrective action:</b> ${esc(c.ca||'-')} <span style="color:#7a8798">(แล้วเสร็จ ${esc(c.cadone||'-')} · ส่งเมื่อ ${esc(c.cadate||'')})</span></div>
+        <div><b>③ Preventive action:</b> ${esc(c.pa||'-')}</div>`:''}
+    </div></div>
+
+    <div class="castep ${c.cast==='V'?'done':(c.cast==='R'?'':'wait')}"><div class="sn">3</div><div class="sb">
+      <b>ตรวจรับและปิด CAR</b> (Part 6 · Auditor/CMM)
+      ${c.cast==='R'?`<div style="margin-top:4px">
+        <button class="carbtn v" onclick="carVerify('${it.id}',true)">✔ Accept — ปิด CAR</button>
+        <button class="carbtn x" onclick="carVerify('${it.id}',false)">↩ Reject — ตีกลับ + กำหนดเสร็จใหม่</button></div>`:''}
+      ${c.cast==='V'?`<div style="margin-top:4px;color:var(--green)"><b>Accepted — CAR closed</b> · ปิดเมื่อ ${esc(c.vdate||'')} โดย ${esc(c.vby||'-')}${c.vev?`<br>Verification evidence: ${esc(c.vev)}`:''}</div>`:''}
+    </div></div>
     ${c.cast!=='V'?`<button class="carbtn" onclick="carReassign('${it.id}')">↪ มอบหมายต่อ</button>
     <div id="re_${it.id}" class="hide" style="margin-top:6px">
       <input id="rn_${it.id}" placeholder="ชื่อผู้รับผิดชอบใหม่" style="min-height:38px;border:1px solid #c8d2e0;border-radius:7px;padding:6px 9px">
@@ -666,44 +714,78 @@ function carBoxHTML(it){
 function downloadCarForms(){
   const ids=[...gapSel].length?[...gapSel]:ALL.filter(it=>carOf(it.id)&&carOf(it.id).no).map(it=>it.id);
   if(!ids.length){ alert('ยังไม่มีรายการที่มอบหมาย CAR'); return; }
+  const ck=b=>b?'☑':'☐';
   const pages=ids.map(id=>{
     const it=ALL.find(x=>x.id===id); const s=st(id)||{}; const c=s.car||{};
+    const dGap=s.st==='U', iGap=!!(it.dual&&s.st2==='U');
     return `<div class="page">
-      <h1>D-0507 FLIGHT TRAINING CO., LTD.</h1><h2>CORRECTIVE ACTION REQUEST (CAR)</h2>
+      <table class="t0"><tr><td class="co">D-0507 FLIGHT TRAINING CO., LTD.</td></tr>
+        <tr><td class="ti">CORRECTIVE ACTION REQUEST (CAR)<span class="th"> | คำขอให้ดำเนินการแก้ไขข้อบกพร่อง</span></td></tr></table>
+      <table class="t1"><tr><td>Form: D-0507-CAR-001</td><td>ISSUE NO. 01/REVISION NO. 00</td>
+        <td>OMM Ref: Section 5 – Compliance Monitoring</td><td><b>CAR No.: ${esc(c.no||'CAR-______-______')}</b></td></tr></table>
+
+      <div class="ph1">PART 1&nbsp; CAR INFORMATION &nbsp; <span class="th">ข้อมูลทั่วไป</span></div>
       <table>
         <tr><td class="l">CAR No.</td><td><b>${esc(c.no||'')}</b></td><td class="l">Date issued</td><td>${esc(meta.date||today())}</td></tr>
-        <tr><td class="l">Finding ref.</td><td>[${id}] ${esc(it.rr||'')}</td><td class="l">Due date</td><td>${esc(c.due||'')}</td></tr>
-        <tr><td class="l">Assigned to</td><td>${esc(c.as||'')}</td><td class="l">Auditor</td><td>${esc(meta.auditor||'')}</td></tr>
+        <tr><td class="l">Audit ref.</td><td>D-0507-IAC-001 / Item ID: ${esc(id)}</td><td class="l">Source</td><td>Internal Audit – GAP Analysis (TCAR-ORA)</td></tr>
+        <tr><td class="l">Regulatory ref.</td><td>TCAR PEL Part ORA: ${esc(it.rr||'-')}</td><td class="l">Finding level</td><td>${ck(c.lvl==='1')} Level 1 &nbsp;&nbsp; ${ck(c.lvl!=='1')} Level 2</td></tr>
+        <tr><td class="l">Assigned to</td><td>${esc(c.as||'')}</td><td class="l">Position</td><td>${esc(c.pos||'')}</td></tr>
+        <tr><td class="l">Issued by (Auditor)</td><td>${esc(meta.auditor||'')}</td><td class="l">Due date</td><td>${esc(c.due||'')}</td></tr>
       </table>
-      <h3>1. Finding / ข้อบกพร่องที่พบ</h3>
-      <p>${esc(it.d)}${it.th?`<br><i>${esc(it.th)}</i>`:''}</p>
-      <p><b>ประเภท:</b> ${esc(gapType(it))}${s.rm?`<br><b>รายละเอียด:</b> ${esc(s.rm)}`:''}${effRef(it)?`<br><b>หลักฐาน/อ้างอิง:</b> ${esc(effRef(it))}`:''}</p>
-      ${(s.ph||[]).length?`<div class="ph">${s.ph.map(p=>`<img src="${p.d||p.u}">`).join('')}</div>`:''}
-      <h3>2. Root Cause Analysis / การวิเคราะห์สาเหตุราก <span class="fill">(ผู้รับผิดชอบกรอก)</span></h3><div class="box"></div>
-      <h3>3. Corrective Action / การแก้ไข</h3><div class="box">${esc(c.ca||'')}</div>
-      <h3>4. Preventive Action / การป้องกันการเกิดซ้ำ</h3><div class="box"></div>
+      <table><tr><td class="l">Classification</td><td>${ck(dGap&&!iGap)} Doc GAP (ไม่มี/ไม่ครบในคู่มือ) &nbsp;&nbsp;&nbsp; ${ck(iGap&&!dGap)} Implementation GAP (เขียนไว้แต่ไม่ได้ปฏิบัติ) &nbsp;&nbsp;&nbsp; ${ck(dGap&&iGap)} ทั้งสองกรณี</td></tr></table>
+
+      <div class="ph1">PART 2&nbsp; FINDING / NONCONFORMITY &nbsp; <span class="th">ข้อบกพร่องที่พบ</span> <span class="fill">(Auditor กรอก — ข้อเท็จจริง หลักฐาน ข้อกำหนดที่เกี่ยวข้อง)</span></div>
+      <div class="box">${esc(it.d)}${it.th?`\n${esc(it.th)}`:''}${s.rm?`\n\nObjective evidence / รายละเอียด: ${esc(s.rm)}`:''}${effRef(it)?`\nอ้างอิงคู่มือ: ${esc(effRef(it))}`:''}</div>
+      ${(s.ph||[]).length?`<div class="phx">${s.ph.map(p=>`<img src="${p.d||p.u}">`).join('')}</div>`:''}
+
+      <div class="ph1">PART 3&nbsp; ROOT CAUSE ANALYSIS &nbsp; <span class="th">การวิเคราะห์สาเหตุราก</span> <span class="fill">(ผู้รับผิดชอบกรอก — 5-Why หรือวิธีอื่น)</span></div>
+      <div class="box">${esc(c.rc||'')}</div>
+
+      <div class="ph1">PART 4&nbsp; CORRECTIVE ACTION &nbsp; <span class="th">การแก้ไข</span> <span class="fill">(ผู้รับผิดชอบกรอก — การดำเนินการ + วันที่แล้วเสร็จ)</span></div>
+      <div class="box">${esc(c.ca||'')}${c.cadone?`\n\nCompletion date / วันที่แล้วเสร็จ: ${esc(c.cadone)}`:''}</div>
+
+      <div class="ph1">PART 5&nbsp; PREVENTIVE ACTION &nbsp; <span class="th">การป้องกันการเกิดซ้ำ</span></div>
+      <div class="box">${esc(c.pa||'')}</div>
+
+      <div class="ph1">PART 6&nbsp; VERIFICATION &amp; CLOSURE &nbsp; <span class="th">การทวนสอบและปิด CAR</span> <span class="fill">(Auditor / CMM กรอก)</span></div>
+      <table>
+        <tr><td class="l">Closure decision</td><td>${ck(c.cast==='V')} Accepted — CAR closed &nbsp;&nbsp;&nbsp; ${ck(c.cast==='X')} Rejected — further action required (new due date: ${c.cast==='X'?esc(c.due||''):'....................'})</td></tr>
+        <tr><td class="l">Verification evidence</td><td>${esc(c.vev||'')}</td></tr>
+        <tr><td class="l">Close date</td><td>${esc(c.vdate||'')}</td></tr>
+      </table>
+
       <table class="sig"><tr>
-        <td>ผู้รับผิดชอบ<br><br>ลงชื่อ..................................<br>(${esc(c.as||'..................')})<br>วันที่..................</td>
-        <td>ผู้ตรวจรับ (Auditor/CMM)<br><br>ลงชื่อ..................................<br>(${esc(meta.auditor||'..................')})<br>วันที่..................</td>
-        <td>สถานะการปิด CAR<br><br>☐ ตรวจรับผ่าน / ปิด<br>☐ ตีกลับ – แก้ไขเพิ่มเติม<br>วันที่ปิด..................</td>
+        <td class="l2">Responsible Person / ผู้รับผิดชอบ</td><td class="l2">Auditor / ผู้ตรวจ</td><td class="l2">Compliance Monitoring Manager</td></tr>
+        <tr>
+        <td>ลงชื่อ ............................................<br>( ${esc(c.as||'............................................')} )<br>วันที่ ............ / ............ / ............</td>
+        <td>ลงชื่อ ............................................<br>( ${esc(meta.auditor||'............................................')} )<br>วันที่ ............ / ............ / ............</td>
+        <td>ลงชื่อ ............................................<br>( ............................................ )<br>วันที่ ............ / ............ / ............</td>
       </tr></table>
+      <div class="foot">หมายเหตุ: 1) ผู้รับผิดชอบต้องวิเคราะห์สาเหตุราก กำหนดการแก้ไข และส่งฟอร์มกลับภายในกำหนด &nbsp;2) แนบหลักฐานประกอบ (ภาพถ่าย/เอกสาร) ทุกครั้ง &nbsp;3) CAR ปิดได้เมื่อผู้ตรวจ/CMM ทวนสอบประสิทธิผลแล้วเท่านั้น &nbsp;4) บันทึกลงทะเบียน CAR Register และรายงานสถานะในการประชุมทบทวนฝ่ายบริหาร (OMM Section 5)</div>
     </div>`;
   }).join('');
-  const html=`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>D-0507 CAR Forms</title><style>
-  body{font-family:Arial,sans-serif;font-size:13px;color:#1a1a2a;margin:0}
-  .page{max-width:820px;margin:0 auto;padding:26px;page-break-after:always}
-  h1{background:#1F3864;color:#fff;padding:10px 14px;font-size:16px;margin:0}
-  h2{background:#2E75B6;color:#fff;padding:6px 14px;font-size:14px;margin:0 0 12px}
-  h3{color:#1F3864;font-size:13.5px;margin:14px 0 5px;border-bottom:1px solid #2E75B6;padding-bottom:3px}
-  table{width:100%;border-collapse:collapse;font-size:12.5px}
-  td{border:1px solid #c8d2e0;padding:6px 8px}
-  td.l{background:#D6E4F7;font-weight:bold;color:#1F3864;width:14%}
-  .box{border:1px solid #c8d2e0;border-radius:4px;min-height:84px;padding:8px;white-space:pre-line}
-  .fill{color:#9C6500;font-size:11px;font-weight:normal}
-  .ph{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
-  .ph img{max-width:250px;max-height:180px;border:1px solid #c8d2e0;border-radius:4px}
-  table.sig td{text-align:center;height:110px;vertical-align:bottom;padding-bottom:10px}
-  @media print{.page{padding:10px}}
+  const html=`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>D-0507 CAR Forms (D-0507-CAR-001)</title><style>
+  body{font-family:Arial,'TH Sarabun New',sans-serif;font-size:13px;color:#1a1a2a;margin:0}
+  .page{max-width:820px;margin:0 auto;padding:24px;page-break-after:always}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:0}
+  td{border:1px solid #8fa3bd;padding:5px 8px;vertical-align:top}
+  table.t0 td{border:1px solid #1F3864;text-align:center}
+  table.t0 .co{background:#1F3864;color:#fff;font-size:16px;font-weight:bold;padding:9px}
+  table.t0 .ti{background:#2E75B6;color:#fff;font-size:14px;font-weight:bold;padding:6px}
+  table.t1 td{font-size:11px;background:#EDF2F9;color:#1F3864}
+  .ph1{background:#1F3864;color:#fff;font-weight:bold;font-size:12.5px;padding:5px 9px;margin-top:9px}
+  .ph1 .th{font-weight:normal}
+  td.l{background:#D6E4F7;font-weight:bold;color:#1F3864;width:16%}
+  td.l2{background:#D6E4F7;font-weight:bold;color:#1F3864;text-align:center}
+  .box{border:1px solid #8fa3bd;border-top:none;min-height:64px;padding:7px 9px;white-space:pre-line}
+  .fill{color:#FFD966;font-size:10.5px;font-weight:normal}
+  .phx{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+  .phx img{max-width:240px;max-height:170px;border:1px solid #8fa3bd;border-radius:3px}
+  table.sig{margin-top:10px}
+  table.sig td{text-align:center;height:84px;vertical-align:bottom;padding-bottom:8px}
+  table.sig td.l2{height:auto;vertical-align:middle;padding:5px}
+  .foot{font-size:10.5px;color:#445;margin-top:8px;border-top:1px solid #8fa3bd;padding-top:5px}
+  @media print{.page{padding:6px}}
   </style></head><body>${pages}</body></html>`;
   dl(`D-0507_CAR_Forms_${stamp()}.html`, html, 'text/html;charset=utf-8');
 }
@@ -735,9 +817,9 @@ function renderCar(){
   return h;
 }
 function exportCarCSV(){
-  const rows=[["CAR No.","Item ID","Finding","GAP Type","Assignee","Email","Due","Status","Corrective Action","CA Date","Closed Date","Verified By","History"]];
+  const rows=[["CAR No.","Item ID","Finding","GAP Type","Finding Level","Assignee","Position","Email","Due","Status","Root Cause","Corrective Action","CA Completion","Preventive Action","Responded Date","Verification Evidence","Closed Date","Verified By","History"]];
   ALL.forEach(it=>{const c=carOf(it.id); if(c&&c.no)
-    rows.push([c.no,it.id,it.d,gapType(it),c.as||'',c.ae||'',c.due||'',carStatusTxt(c),c.ca||'',c.cadate||'',c.vdate||'',c.vby||'',(c.hist||'').replace(/\n/g,' | ')]);});
+    rows.push([c.no,it.id,it.d,gapType(it),c.lvl==='1'?'Level 1':'Level 2',c.as||'',c.pos||'',c.ae||'',c.due||'',carStatusTxt(c),c.rc||'',c.ca||'',c.cadone||'',c.pa||'',c.cadate||'',c.vev||'',c.vdate||'',c.vby||'',(c.hist||'').replace(/\n/g,' | ')]);});
   const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
   dl(`D-0507_CAR_Register_${stamp()}.csv`, csv, 'text/csv;charset=utf-8');
 }
