@@ -1263,6 +1263,17 @@ function startSync(){
   // flusher
   FB.timer && clearInterval(FB.timer);
   FB.timer=setInterval(flush, 2500);
+  setTimeout(pushSummary, 6000);   // อัปเดตสรุปให้ Portal หลังโหลดข้อมูลรอบแรก
+}
+function pushSummary(){
+  if(!fbReady||!fbUser) return;
+  try{
+    const gaps=ALL.filter(it=>{const s=st(it.id)||{};return s.st==='U'||(it.dual&&s.st2==='U');}).length;
+    const done=ALL.filter(it=>rollup(it)).length;
+    const cars=ALL.filter(it=>carOf(it.id)&&carOf(it.id).no);
+    const open=cars.filter(it=>carOf(it.id).cast!=='V').length;
+    FB.db.collection('audits').doc(AUDIT_ID).set({sum:{done:done,gap:gaps,total:ALL.length,car:cars.length,carOpen:open,at:new Date().toISOString()}},{merge:true}).catch(console.error);
+  }catch(e){ console.error(e); }
 }
 async function flush(){
   if(!fbReady||!fbUser) return;
@@ -1278,7 +1289,7 @@ async function flush(){
     batch.set(itemsCol().doc(id), {...cleanForWrite(state[id]),
       t:firebase.firestore.FieldValue.serverTimestamp(), u:fbUser.email||''}, {merge:false});
   });
-  try{ await batch.commit(); syncStatus('☁ บันทึกแล้ว '+new Date().toTimeString().slice(0,5)+' · '+(fbUser.email||''),'var(--green)'); }
+  try{ await batch.commit(); syncStatus('☁ บันทึกแล้ว '+new Date().toTimeString().slice(0,5)+' · '+(fbUser.email||''),'var(--green)'); pushSummary(); }
   catch(e){ ids.forEach(id=>pending.add(id)); syncStatus('⚠ บันทึกไม่สำเร็จ — จะลองใหม่','#C00000'); console.error(e); }
 }
 async function uploadPhoto(id, idx){

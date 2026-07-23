@@ -16,6 +16,11 @@ packs = []
 for pj in sorted(glob.glob(os.path.join(HERE, 'packs', '*', '*', 'pack.json'))):
     cfg = json.load(open(pj, encoding='utf-8'))
     cfg['_dir'] = os.path.dirname(pj)
+    # ถ้ามี checklist.xlsx และใหม่กว่า appdata.json -> แปลงอัตโนมัติ (เฟส 2)
+    xl = os.path.join(cfg['_dir'], 'checklist.xlsx')
+    aj = os.path.join(cfg['_dir'], 'appdata.json')
+    if os.path.exists(xl) and (not os.path.exists(aj) or os.path.getmtime(xl) > os.path.getmtime(aj)):
+        import xlsx2pack; xlsx2pack.convert(xl, aj)
     packs.append(cfg)
 if not packs:
     raise SystemExit('ไม่พบ pack ใด ๆ ใน packs/*/*/pack.json')
@@ -45,54 +50,267 @@ for proj, cfg in latest.items():
         print('copied:', rc)
     built.append(cfg)
 
-# ---------- Portal ----------
-e = html.escape
-cards = '\n'.join(f'''    <a class="pcard" href="{e(c['outdir'])}/">
-      <div class="pc-code">{e(c['doc_code'])} · {e(c['version'])}</div>
-      <h2>{e(c['name'])}</h2>
-      <p>{e(c['desc'])}</p>
-      <div class="pc-meta">รอบตรวจ: <b>{e(c['audit_id'])}</b> · เลข CAR: {e(c.get('car_prefix','CAR'))}-YYYY-xxx</div>
-      <div class="pc-go">เปิดงานตรวจ →</div>
-    </a>''' for c in built)
+# ---------- Portal (v2: login + live progress + Audit Plan + notification) ----------
+import re as _re
+_m = _re.search(r'const FIREBASE_CONFIG = (\{[\s\S]*?\});', tpl)
+FBCFG = _m.group(1) if _m else 'null'
 
-portal = f'''<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+def _count(d):
+    n = 0
+    for m in d['modules']:
+        for p in m['parts']:
+            for s2 in p['secs']:
+                for g in s2['groups']:
+                    n += len(g['items'])
+    return n
+
+plist = []
+for c in built:
+    d = json.load(open(os.path.join(c['_dir'], 'appdata.json'), encoding='utf-8'))
+    plist.append({'proj': c['project'], 'outdir': c['outdir'], 'name': c['name'],
+                  'desc': c['desc'], 'code': c['doc_code'], 'ver': c['version'],
+                  'aid': c['audit_id'], 'total': _count(d)})
+
+PORTAL = r'''<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>D-0507 Audit Portal</title>
 <style>
-:root{{--navy:#1F3864;--blue:#2E75B6;}}
-*{{box-sizing:border-box;margin:0;padding:0;}}
-body{{font-family:-apple-system,'Segoe UI','Noto Sans Thai',Arial,sans-serif;background:#eef2f7;color:#1a1a2a;min-height:100vh;}}
-header{{background:var(--navy);color:#fff;padding:22px 26px 18px;}}
-header h1{{font-size:22px;}}
-header .sub{{font-size:13px;opacity:.85;margin-top:4px;}}
-main{{max-width:1100px;margin:0 auto;padding:26px 18px 60px;}}
-.grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:14px;}}
-.pcard{{display:block;background:#fff;border:1px solid #d8dfe8;border-radius:12px;padding:18px;text-decoration:none;color:inherit;transition:box-shadow .15s,transform .15s;}}
-.pcard:hover{{box-shadow:0 6px 22px rgba(31,56,100,.18);transform:translateY(-2px);}}
-.pc-code{{font-size:11.5px;color:var(--blue);font-weight:bold;letter-spacing:.3px;}}
-.pcard h2{{font-size:17px;color:var(--navy);margin:6px 0 6px;}}
-.pcard p{{font-size:13px;color:#5a6675;}}
-.pc-meta{{font-size:12px;color:#7a8798;margin-top:10px;}}
-.pc-go{{margin-top:12px;font-weight:bold;color:var(--blue);font-size:14px;}}
-.note{{background:#fff;border-left:4px solid var(--blue);border-radius:8px;padding:12px 16px;font-size:13px;color:#445;margin-top:26px;}}
-h3.sec{{color:var(--navy);font-size:15px;margin-top:8px;}}
-footer{{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}}
+:root{--navy:#1F3864;--blue:#2E75B6;--green:#1E7B34;--amber:#9C6500;--red:#C00000;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,'Segoe UI','Noto Sans Thai',Arial,sans-serif;background:#eef2f7;color:#1a1a2a;min-height:100vh;}
+header{background:var(--navy);color:#fff;padding:18px 26px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+header h1{font-size:20px;}
+header .sub{font-size:12.5px;opacity:.85;margin-top:3px;}
+#authbox{font-size:13px;text-align:right;}
+#authbox button{min-height:38px;border-radius:8px;border:none;background:#fff;color:var(--navy);font-weight:bold;padding:6px 14px;cursor:pointer;margin-left:6px;}
+main{max-width:1150px;margin:0 auto;padding:22px 16px 60px;}
+h3.sec{color:var(--navy);font-size:16px;margin:18px 0 8px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;}
+.pcard{display:block;background:#fff;border:1px solid #d8dfe8;border-radius:12px;padding:16px;text-decoration:none;color:inherit;transition:box-shadow .15s;}
+.pcard:hover{box-shadow:0 6px 22px rgba(31,56,100,.18);}
+.pc-code{font-size:11.5px;color:var(--blue);font-weight:bold;}
+.pcard h2{font-size:16.5px;color:var(--navy);margin:5px 0 5px;}
+.pcard p{font-size:12.5px;color:#5a6675;}
+.bar{height:9px;background:#e4eaf2;border-radius:5px;margin-top:10px;overflow:hidden;}
+.bar i{display:block;height:100%;background:var(--blue);border-radius:5px;}
+.pc-stat{font-size:12px;color:#5a6675;margin-top:5px;}
+.pc-stat b.g{color:var(--red);} .pc-stat b.c{color:var(--amber);}
+.banner{border-radius:10px;padding:10px 14px;font-size:13.5px;margin-bottom:8px;border:1px solid;}
+.banner.warn{background:#FFF4E5;border-color:#F0C36D;color:#7a5200;}
+.banner.late{background:#FDECEC;border-color:#E4A6A6;color:#8f1414;}
+table.plan{width:100%;border-collapse:collapse;background:#fff;font-size:13px;}
+table.plan th{background:var(--navy);color:#fff;padding:8px;font-size:12px;text-align:left;}
+table.plan td{border:1px solid #dde4ee;padding:6px;vertical-align:middle;}
+table.plan input,table.plan select{width:100%;min-height:36px;border:1px solid #c8d2e0;border-radius:6px;padding:4px 7px;font-family:inherit;font-size:13px;}
+.pill{display:inline-block;border-radius:10px;padding:2px 10px;font-size:11.5px;font-weight:bold;white-space:nowrap;}
+.pill.plan{background:#e7ecf3;color:#456;} .pill.run{background:#dbe9ff;color:#1d5eb8;}
+.pill.soon{background:#FFF0D5;color:var(--amber);} .pill.late{background:#FBE0E0;color:var(--red);}
+.pill.done{background:#DFF2E3;color:var(--green);}
+.pbtn{min-height:36px;border-radius:7px;border:1px solid var(--blue);background:#fff;color:var(--blue);font-size:12px;font-weight:bold;padding:4px 9px;cursor:pointer;margin:2px 2px 2px 0;}
+.pbtn.x{border-color:var(--red);color:var(--red);}
+.pbtn.g{background:var(--blue);color:#fff;}
+.note{background:#fff;border-left:4px solid var(--blue);border-radius:8px;padding:11px 15px;font-size:12.5px;color:#445;margin-top:22px;}
+#loginui{background:#fff;border:1px solid #d8dfe8;border-radius:12px;padding:22px;max-width:420px;margin:30px auto;text-align:center;}
+#loginui input{width:100%;min-height:42px;border:1px solid #c8d2e0;border-radius:8px;padding:8px 10px;margin-top:8px;font-size:14px;}
+#loginui button{width:100%;min-height:44px;border-radius:8px;border:none;background:var(--navy);color:#fff;font-weight:bold;font-size:14px;margin-top:10px;cursor:pointer;}
+#loginui button.alt{background:#fff;color:var(--blue);border:1px solid var(--blue);}
+footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
+@media(max-width:700px){table.plan{font-size:12px;} main{padding:14px 8px 50px;}}
 </style></head><body>
 <header>
-  <h1>D-0507 FLIGHT TRAINING — AUDIT PORTAL</h1>
-  <div class="sub">ศูนย์กลางงานตรวจสอบ · Compliance Monitoring (OMM Section 5) · เลือกงานตรวจด้านล่าง</div>
+  <div><h1>D-0507 FLIGHT TRAINING — AUDIT PORTAL</h1>
+  <div class="sub">ศูนย์กลางงานตรวจสอบ · Compliance Monitoring (OMM Section 5)</div></div>
+  <div id="authbox"></div>
 </header>
 <main>
-  <h3 class="sec">งานตรวจสอบ / Audit Projects</h3>
-  <div class="grid">
-{cards}
+  <div id="banners"></div>
+  <div id="loginui" class="hide" style="display:none">
+    <b style="color:var(--navy);font-size:16px">เข้าสู่ระบบ Audit Portal</b>
+    <button onclick="loginGoogle()">🔵 เข้าสู่ระบบด้วย Google</button>
+    <input id="lp_em" type="email" placeholder="อีเมล">
+    <input id="lp_pw" type="password" placeholder="รหัสผ่าน">
+    <button class="alt" onclick="loginEmail()">เข้าสู่ระบบด้วยอีเมล</button>
+    <div style="font-size:11.5px;color:#98a4b4;margin-top:8px">อีเมลต้องอยู่ในรายชื่อทีมตรวจ (Security Rules)</div>
   </div>
-  <div class="note"><b>หมายเหตุ:</b> ทุกงานใช้บัญชีเข้าสู่ระบบเดียวกัน ข้อมูลแยกตามรอบตรวจ ·
-  เพิ่มงานตรวจใหม่/อัปเดต checklist เวอร์ชันใหม่: เพิ่มโฟลเดอร์ใน <code>packs/</code> แล้ว build ใหม่ ·
-  Audit Plan ประจำปีและการแจ้งการตรวจ (Audit Notification) จะเพิ่มในเฟสถัดไป</div>
+  <div id="content" style="display:none">
+    <h3 class="sec">งานตรวจสอบ / Audit Projects</h3>
+    <div class="grid" id="cards"></div>
+    <h3 class="sec">📅 Audit Plan ประจำปี
+      <select id="planyear" onchange="loadPlan()" style="min-height:36px;border-radius:7px;border:1px solid #c8d2e0;padding:3px 8px;font-size:14px"></select>
+      <span id="plansaved" style="font-size:12px;color:var(--green);font-weight:normal"></span>
+    </h3>
+    <table class="plan" id="plantab"></table>
+    <div style="margin-top:8px">
+      <button class="pbtn" onclick="addRow()">➕ เพิ่มรายการตรวจ</button>
+      <button class="pbtn g" onclick="savePlan()">💾 บันทึกแผน</button>
+    </div>
+    <div class="note"><b>การแจ้งการตรวจ (Audit Notification):</b> ปุ่ม 📄 ในแต่ละแถว = หนังสือแจ้งการตรวจอย่างเป็นทางการ (พิมพ์/บันทึก PDF) ·
+    ✉ = ร่างอีเมลแจ้งผู้รับการตรวจ · 📅 = ไฟล์ลงปฏิทิน (.ics) ·
+    สถานะคำนวณอัตโนมัติจากความคืบหน้าจริงของแต่ละงาน · แจ้งเตือนล่วงหน้า 14 วันที่แถบด้านบน</div>
+  </div>
 </main>
-<footer>D-0507 Flight Training Co., Ltd. · Internal Audit System · controlled via audit-app-src (GitHub)</footer>
-</body></html>'''
+<footer>D-0507 Flight Training Co., Ltd. · Internal Audit System · D-0507-ANF-001 (DRAFT)</footer>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+"use strict";
+const CFG=@@FBCFG@@;
+const PACKS=@@PACKS@@;
+firebase.initializeApp(CFG);
+const db=firebase.firestore();
+let USER=null, SUMS={}, PLAN=[], PLANYEAR=(new Date()).getFullYear(), planUnsub=null;
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=()=>new Date().toISOString().slice(0,10);
+function loginGoogle(){ firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert(e.message)); }
+function loginEmail(){ firebase.auth().signInWithEmailAndPassword(document.getElementById('lp_em').value.trim(),document.getElementById('lp_pw').value).catch(e=>alert(e.message)); }
+firebase.auth().onAuthStateChanged(u=>{
+  USER=u;
+  document.getElementById('loginui').style.display=u?'none':'block';
+  document.getElementById('content').style.display=u?'block':'none';
+  document.getElementById('authbox').innerHTML=u?`${esc(u.displayName||u.email)} <button onclick="firebase.auth().signOut()">ออก</button>`:'';
+  if(u){ watchSums(); initYears(); loadPlan(); }
+});
+function watchSums(){
+  PACKS.forEach(p=>{
+    db.collection('audits').doc(p.aid).onSnapshot(d=>{
+      SUMS[p.aid]=(d.exists&&d.data().sum)||null; renderCards(); renderPlan();
+    },e=>console.error(e));
+  });
+}
+function renderCards(){
+  document.getElementById('cards').innerHTML=PACKS.map(p=>{
+    const s=SUMS[p.aid];
+    const pct=s?Math.round(100*s.done/(s.total||p.total||1)):0;
+    return `<a class="pcard" href="${p.outdir}/">
+      <div class="pc-code">${esc(p.code)} · ${esc(p.ver)}</div>
+      <h2>${esc(p.name)}</h2><p>${esc(p.desc)}</p>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      <div class="pc-stat">ตรวจแล้ว <b>${s?s.done:0}/${s?(s.total||p.total):p.total}</b> (${pct}%)
+        · GAP <b class="g">${s?s.gap:0}</b> · CAR ค้าง <b class="c">${s?s.carOpen:0}</b>/${s?s.car:0}</div>
+      <div style="margin-top:8px;font-weight:bold;color:var(--blue);font-size:13px">เปิดงานตรวจ →</div></a>`;
+  }).join('');
+}
+function initYears(){
+  const sel=document.getElementById('planyear'); if(sel.options.length) return;
+  const y=(new Date()).getFullYear();
+  for(let i=y-1;i<=y+2;i++){ const o=document.createElement('option'); o.value=i; o.textContent=i; if(i===y)o.selected=true; sel.appendChild(o); }
+}
+function loadPlan(){
+  PLANYEAR=+document.getElementById('planyear').value||PLANYEAR;
+  if(planUnsub) planUnsub();
+  planUnsub=db.collection('plans').doc(String(PLANYEAR)).onSnapshot(d=>{
+    PLAN=(d.exists&&d.data().rows)||[]; renderPlan();
+  },e=>console.error(e));
+}
+function rowStatus(r){
+  if(r.done) return ['done','✅ เสร็จสิ้น'];
+  const p=PACKS.find(x=>x.proj===r.proj); const s=p&&SUMS[p.aid];
+  const pct=s?Math.round(100*s.done/(s.total||p.total||1)):0;
+  if(pct>0&&pct<100) return ['run','🔵 กำลังตรวจ '+pct+'%'];
+  if(r.end&&r.end<today()) return ['late','🔴 เลยกำหนด'];
+  if(r.start){ const d=(new Date(r.start)-new Date(today()))/86400000;
+    if(d<=14&&d>=0) return ['soon','🟠 ใกล้ถึงกำหนด ('+Math.ceil(d)+' วัน)']; }
+  return ['plan','⚪ วางแผนแล้ว'];
+}
+function renderPlan(){
+  const t=document.getElementById('plantab');
+  let h=`<tr><th style="width:16%">Project</th><th style="width:12%">รอบ/Label</th><th style="width:11%">เริ่ม</th><th style="width:11%">สิ้นสุด</th><th style="width:11%">Lead Auditor</th><th style="width:13%">ผู้รับการตรวจ</th><th>สถานะ</th><th style="width:15%">เอกสารแจ้ง</th><th style="width:4%"></th></tr>`;
+  PLAN.forEach((r,i)=>{
+    const [cls,txt]=rowStatus(r);
+    h+=`<tr>
+      <td><select onchange="PLAN[${i}].proj=this.value">${PACKS.map(p=>`<option value="${p.proj}"${r.proj===p.proj?' selected':''}>${esc(p.name)}</option>`).join('')}</select></td>
+      <td><input value="${esc(r.label||'')}" placeholder="เช่น Q4 รอบหลัก" onchange="PLAN[${i}].label=this.value"></td>
+      <td><input type="date" value="${esc(r.start||'')}" onchange="PLAN[${i}].start=this.value"></td>
+      <td><input type="date" value="${esc(r.end||'')}" onchange="PLAN[${i}].end=this.value"></td>
+      <td><input value="${esc(r.lead||'')}" onchange="PLAN[${i}].lead=this.value"></td>
+      <td><input value="${esc(r.auditee||'')}" placeholder="หน่วย/บริษัทที่รับการตรวจ" onchange="PLAN[${i}].auditee=this.value"></td>
+      <td><span class="pill ${cls}">${txt}</span><br><label style="font-size:11px;color:#667"><input type="checkbox" ${r.done?'checked':''} onchange="PLAN[${i}].done=this.checked;renderPlan()"> ปิดงานแล้ว</label></td>
+      <td><button class="pbtn" onclick="notiLetter(${i})">📄</button><button class="pbtn" onclick="notiMail(${i})">✉</button><button class="pbtn" onclick="notiIcs(${i})">📅</button></td>
+      <td><button class="pbtn x" onclick="if(confirm('ลบรายการนี้?')){PLAN.splice(${i},1);renderPlan();}">✕</button></td></tr>`;
+  });
+  if(!PLAN.length) h+=`<tr><td colspan="9" style="color:#889;text-align:center;padding:14px">ยังไม่มีแผนของปี ${PLANYEAR} — กด "เพิ่มรายการตรวจ"</td></tr>`;
+  t.innerHTML=h;
+  renderBanners();
+}
+function addRow(){ PLAN.push({proj:PACKS[0].proj,label:'',start:'',end:'',lead:'',auditee:'',done:false}); renderPlan(); }
+function savePlan(){
+  db.collection('plans').doc(String(PLANYEAR)).set({rows:PLAN,u:USER?USER.email:'',t:firebase.firestore.FieldValue.serverTimestamp()})
+    .then(()=>{ const el=document.getElementById('plansaved'); el.textContent='☁ บันทึกแล้ว '+new Date().toTimeString().slice(0,5); setTimeout(()=>el.textContent='',4000); })
+    .catch(e=>alert('บันทึกไม่สำเร็จ: '+e.message));
+}
+function renderBanners(){
+  const B=document.getElementById('banners'); let h='';
+  PLAN.forEach(r=>{
+    const [cls,txt]=rowStatus(r); const p=PACKS.find(x=>x.proj===r.proj);
+    if(cls==='soon') h+=`<div class="banner warn">🟠 <b>${esc(p?p.name:r.proj)}</b> ${esc(r.label||'')} — ${txt} (เริ่ม ${esc(r.start)}) · Lead: ${esc(r.lead||'-')}</div>`;
+    if(cls==='late') h+=`<div class="banner late">🔴 <b>${esc(p?p.name:r.proj)}</b> ${esc(r.label||'')} — เลยกำหนด (สิ้นสุด ${esc(r.end)}) ยังไม่ปิดงาน</div>`;
+  });
+  B.innerHTML=h;
+}
+function notiLetter(i){
+  const r=PLAN[i]; const p=PACKS.find(x=>x.proj===r.proj)||{};
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>Audit Notification — ${esc(p.name||'')}</title><style>
+  body{font-family:Arial,'Noto Sans Thai',sans-serif;font-size:13.3px;color:#1A1A2A;max-width:794px;margin:0 auto;padding:30px}
+  table{width:100%;border-collapse:collapse} td{border:0.8px solid #000;padding:5px 9px;vertical-align:top}
+  .t0 td{text-align:center;background:#1F3864;color:#fff;font-weight:bold} .t0 .co{font-size:16px;padding:8px}
+  .t1 td{background:#2E75B6;color:#fff;font-size:12.7px;font-weight:bold}
+  td.l{background:#F0F4F8;font-weight:bold;color:#1F3864;width:22%;font-size:12.7px}
+  .sig td{text-align:center;height:90px;vertical-align:bottom;padding-bottom:10px;line-height:1.9}
+  .sig td.h{background:#D6E4F7;font-weight:bold;color:#1F3864;height:auto;vertical-align:middle}
+  p.b{margin:12px 0;line-height:1.7} .np{margin-top:14px}
+  @media print{.np{display:none}}</style></head><body>
+  <table class="t0"><tr><td class="co">D-0507 FLIGHT TRAINING CO., LTD.</td></tr>
+  <tr><td>AUDIT NOTIFICATION<br><span style="font-size:12px;font-weight:normal">หนังสือแจ้งการตรวจติดตามภายใน</span></td></tr></table>
+  <table class="t1"><tr><td>Form: D-0507-ANF-001 (DRAFT)</td><td>ISSUE NO. 01/REVISION NO. 00</td><td>OMM Ref: Section 5 – Compliance Monitoring</td></tr></table>
+  <p class="b">เรียน&nbsp; <b>${esc(r.auditee||'.....................................................')}</b><br>
+  ตามแผนการตรวจติดตามภายในประจำปี ${PLANYEAR} ของ D-0507 Flight Training Co., Ltd.
+  ขอแจ้งกำหนดการตรวจสอบ ดังนี้</p>
+  <table>
+  <tr><td class="l">Audit</td><td>${esc(p.name||'')} (${esc(p.code||'')} · ${esc(p.ver||'')})</td></tr>
+  <tr><td class="l">รอบ / Scope</td><td>${esc(r.label||'-')} ${esc(r.scope||'')}</td></tr>
+  <tr><td class="l">วันที่ตรวจ</td><td>${esc(r.start||'..........')} ถึง ${esc(r.end||'..........')}</td></tr>
+  <tr><td class="l">Lead Auditor</td><td>${esc(r.lead||'-')}</td></tr>
+  <tr><td class="l">เกณฑ์การตรวจ</td><td>${esc(p.code||'')} · ข้อกำหนด/คู่มือที่เกี่ยวข้อง และสัญญา (ถ้ามี)</td></tr>
+  <tr><td class="l">การเตรียมการ</td><td>ขอให้จัดเตรียมเอกสาร บุคลากร และการเข้าถึงสถานที่/ระบบที่เกี่ยวข้องตามขอบเขตข้างต้น
+  ผลการตรวจที่เป็นข้อบกพร่องจะออกเป็น CAR (D-0507-CAR-001) ซึ่งต้องตอบกลับภายในกำหนด</td></tr></table>
+  <table class="sig"><tr><td class="h">Lead Auditor</td><td class="h">Compliance Monitoring Manager</td></tr>
+  <tr><td>ลงชื่อ ............................................<br>( ${esc(r.lead||'............................................')} )<br>วันที่ ............ / ............ / ............</td>
+  <td>ลงชื่อ ............................................<br>( ............................................ )<br>วันที่ ............ / ............ / ............</td></tr></table>
+  <p class="np"><button onclick="window.print()" style="min-height:40px;padding:6px 18px;font-weight:bold">🖨 พิมพ์ / บันทึก PDF</button></p>
+  </body></html>`);
+  w.document.close();
+}
+function notiMail(i){
+  const r=PLAN[i]; const p=PACKS.find(x=>x.proj===r.proj)||{};
+  const sub=`[D-0507] Audit Notification — ${p.name||r.proj} (${r.start||''})`;
+  const body=[`เรียน ${r.auditee||'ผู้เกี่ยวข้อง'}`,'',
+   `ขอแจ้งกำหนดการตรวจติดตามภายในตามแผนประจำปี ${PLANYEAR}:`,
+   `• งานตรวจ: ${p.name||r.proj} (${p.code||''})`,
+   `• รอบ: ${r.label||'-'}`,
+   `• วันที่: ${r.start||'-'} ถึง ${r.end||'-'}`,
+   `• Lead Auditor: ${r.lead||'-'}`,'',
+   'ขอให้จัดเตรียมเอกสารและบุคลากรที่เกี่ยวข้อง รายละเอียดตามหนังสือแจ้งการตรวจที่แนบ','',
+   'Compliance Monitoring, D-0507 Flight Training Co., Ltd.'].join('\n');
+  location.href=`mailto:?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
+}
+function notiIcs(i){
+  const r=PLAN[i]; const p=PACKS.find(x=>x.proj===r.proj)||{};
+  if(!r.start){ alert('กำหนดวันเริ่มก่อน'); return; }
+  const d1=r.start.replace(/-/g,''); 
+  const d2=new Date(new Date(r.end||r.start).getTime()+86400000).toISOString().slice(0,10).replace(/-/g,'');
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//D-0507//Audit//TH','BEGIN:VEVENT',
+   `UID:${r.proj}-${d1}@d0507-audit`,`DTSTART;VALUE=DATE:${d1}`,`DTEND;VALUE=DATE:${d2}`,
+   `SUMMARY:Audit: ${(p.name||r.proj)} ${(r.label||'')}`,
+   `DESCRIPTION:Lead: ${(r.lead||'-')} · ${(p.code||'')}`,'END:VEVENT','END:VCALENDAR'].join('\r\n');
+  const a=document.createElement('a');
+  a.href='data:text/calendar;charset=utf-8,'+encodeURIComponent(ics);
+  a.download=`Audit_${r.proj}_${r.start}.ics`; a.click();
+}
+</script></body></html>'''
+
+PORTAL = PORTAL.replace('@@FBCFG@@', FBCFG).replace('@@PACKS@@', json.dumps(plist, ensure_ascii=False))
 pp = os.path.join(HERE, 'index.html')
-open(pp, 'w', encoding='utf-8').write(portal)
+open(pp, 'w', encoding='utf-8').write(PORTAL)
 print('portal:', pp, os.path.getsize(pp), 'bytes')
