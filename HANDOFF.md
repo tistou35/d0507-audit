@@ -13,11 +13,19 @@
 | `make_car_form.js` | สคริปต์สร้างฟอร์ม D-0507-CAR-001.docx (ใช้ npm `docx`) |
 | `build.py` | สคริปต์ประกอบ: inject appdata.json → template.html → `D-0507_Internal_Audit_Checklist.html` |
 
-## Build
+## Build (multi-project ตั้งแต่ 24 JUL 2026)
 
 ```bash
-python3 audit-app-src/build.py    # ผลลัพธ์เขียนทับ D-0507_Internal_Audit_Checklist.html ที่ root ของโฟลเดอร์
+python3 audit-app-src/build.py
+# → audit-app-src/<outdir>/index.html   (แอปของแต่ละ project — เวอร์ชัน checklist ล่าสุด)
+# → audit-app-src/index.html            (Portal หน้ารวม)
+# → D-0507_Internal_Audit_Checklist.html ที่ root (สำเนา IAC สำหรับเปิด local/Drive)
 ```
+
+โครง pack: `packs/<project>/<version>/{appdata.json, pack.json}` —
+pack.json กำหนด ชื่อหน้า/doc code/AUDIT_ID/prefix เลข CAR/outdir ·
+**เพิ่มงานตรวจใหม่หรือ checklist เวอร์ชันใหม่ = เพิ่มโฟลเดอร์ pack แล้ว build + push** (engine ที่ template.html ใช้ร่วมกันทุกงาน) ·
+URL: Portal ที่ root, งาน IAC ที่ `/iac/` (AUDIT_ID เดิม `audit-2026` — ข้อมูล Firestore ไม่กระทบ)
 
 ## สถานะปัจจุบัน (Deploy เสร็จ 23 JUL 2026)
 
