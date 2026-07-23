@@ -161,7 +161,14 @@ footer .fbar{flex:1; margin:0 8px;}
 // ═══════════ SERVER SYNC CONFIG ═══════════
 // วางค่า firebaseConfig จาก Firebase Console ตรงบรรทัดล่างนี้ (แทน null) แล้วระบบ login + sync จะเปิดอัตโนมัติ
 // ถ้าเป็น null แอปทำงานแบบออฟไลน์ (บันทึก/เปิดไฟล์ JSON) เหมือนเดิมทุกอย่าง
-const FIREBASE_CONFIG = null;
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyB_O40YpkQJJQIpx8gWNdiC9XrZ1o9SlHs",
+  authDomain: "d0507-audit.firebaseapp.com",
+  projectId: "d0507-audit",
+  storageBucket: "d0507-audit.firebasestorage.app",
+  messagingSenderId: "880880454045",
+  appId: "1:880880454045:web:a8fe249ca18f1a7a20c774"
+};
 /* ตัวอย่าง:
 const FIREBASE_CONFIG = {
   apiKey: "AIza....", authDomain: "d0507-audit.firebaseapp.com", projectId: "d0507-audit",
