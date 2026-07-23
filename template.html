@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>D-0507 Internal Audit Checklist – GAP Analysis (TCAR-ORA)</title>
+<title>__PTITLE__</title>
 <style>
 :root{
   --navy:#1F3864; --blue:#2E75B6; --lblue:#D6E4F7; --grey:#F0F4F8;
@@ -158,8 +158,8 @@ footer .fbar{flex:1; margin:0 8px;}
 </head>
 <body>
 <header class="app">
-  <h1>D-0507 FLIGHT TRAINING – INTERNAL AUDIT CHECKLIST</h1>
-  <div class="sub">GAP Analysis: OMM · OMA · TM/PPL(A) + On-Site Implementation ↔ TCAR PEL Part ORA (Rev 00, 30 OCT 2024) &nbsp;|&nbsp; D-0507-IAC-001 &nbsp;|&nbsp; ตรวจเอกสาร + ตรวจสถานที่และการปฏิบัติจริง</div>
+  <h1>__HTITLE__</h1>
+  <div class="sub">__HSUB__</div>
   <nav class="tabs" id="tabs"></nav>
 </header>
 <main id="main"></main>
@@ -187,7 +187,8 @@ const FIREBASE_CONFIG = {
   apiKey: "AIza....", authDomain: "d0507-audit.firebaseapp.com", projectId: "d0507-audit",
   storageBucket: "d0507-audit.firebasestorage.app", messagingSenderId: "...", appId: "..."
 }; */
-const AUDIT_ID = 'audit-2026';   // เปลี่ยนเมื่อขึ้นรอบตรวจใหม่ เช่น 'audit-2027'
+const AUDIT_ID = '__AUDIT_ID__';   // ผูกกับรอบตรวจ — กำหนดโดย pack.json ตอน build
+const CAR_PREFIX = '__CARPFX__';
 // ═══════════════════════════════════════════
 const DATA = JSON.parse(document.getElementById('DATA').textContent);
 const MODS = DATA.modules, CATALOG = DATA.catalog;
@@ -567,7 +568,7 @@ function uName(){ return (typeof fbUser!=='undefined'&&fbUser)?(fbUser.displayNa
 function nextCarNo(){
   let mx=0;
   ALL.forEach(it=>{const c=carOf(it.id); if(c&&c.no){const m=c.no.match(/(\d+)$/); if(m) mx=Math.max(mx,+m[1]);}});
-  return `CAR-${(meta.date||today()).slice(0,4)}-${String(mx+1).padStart(3,'0')}`;
+  return `${CAR_PREFIX}-${(meta.date||today()).slice(0,4)}-${String(mx+1).padStart(3,'0')}`;
 }
 function logCar(c,msg){ c.hist=((c.hist||'')+`\n${today()} ${msg}`).trim(); }
 function toggleSel(id,on){ if(on) gapSel.add(id); else gapSel.delete(id);

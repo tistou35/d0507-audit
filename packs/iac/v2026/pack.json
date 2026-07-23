@@ -1,0 +1,14 @@
+{
+  "project": "iac",
+  "version": "v2026",
+  "outdir": "iac",
+  "name": "Internal Audit — GAP Analysis (TCAR-ORA)",
+  "desc": "OMM · OMA · TM/PPL(A) + On-Site Implementation · 2,081 รายการตรวจ",
+  "doc_code": "D-0507-IAC-001",
+  "ptitle": "D-0507 Internal Audit Checklist – GAP Analysis (TCAR-ORA)",
+  "htitle": "D-0507 FLIGHT TRAINING – INTERNAL AUDIT CHECKLIST",
+  "hsub": "GAP Analysis: OMM · OMA · TM/PPL(A) + On-Site Implementation ↔ TCAR PEL Part ORA (Rev 00, 30 OCT 2024) &nbsp;|&nbsp; D-0507-IAC-001 &nbsp;|&nbsp; ตรวจเอกสาร + ตรวจสถานที่และการปฏิบัติจริง",
+  "audit_id": "audit-2026",
+  "car_prefix": "CAR",
+  "root_copy": "D-0507_Internal_Audit_Checklist.html"
+}
