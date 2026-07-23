@@ -19,16 +19,24 @@
 python3 audit-app-src/build.py    # ผลลัพธ์เขียนทับ D-0507_Internal_Audit_Checklist.html ที่ root ของโฟลเดอร์
 ```
 
-## สถานะปัจจุบัน / งานค้าง
+## สถานะปัจจุบัน (Deploy เสร็จ 23 JUL 2026)
 
-1. **รอฝัง Firebase config** — ใน `template.html` มีบรรทัด `const FIREBASE_CONFIG = null;` (บนสุดของ <script>)
-   → เมื่อได้ค่าจาก Firebase Console แล้ว แทน null ด้วย object แล้ว build ใหม่
-   → `AUDIT_ID = 'audit-2026'` เปลี่ยนเมื่อขึ้นรอบตรวจใหม่
-2. **Deploy GitHub Pages** — ตามไฟล์ `คู่มือติดตั้ง_Server_Edition.md` (root โฟลเดอร์):
-   สร้าง repo Public → อัปโหลดไฟล์ build เป็น `index.html` → Settings→Pages → เพิ่ม `<user>.github.io` ใน Firebase Authorized domains
-   (Claude Code ทำได้เลยด้วย `gh repo create` + `git push` ถ้าติดตั้ง gh/git แล้ว)
-3. **Security Rules** email allowlist — โค้ดอยู่ในคู่มือติดตั้ง ต้องวางทั้ง Firestore และ Storage
-4. งานแนะนำถัดไป: แก้ reference 16 จุดใน PEL-TO-CK-061/062 ที่เลข section เลื่อน (แอปแสดง ⚠ ในกล่อง "คู่มือ:" ของข้อนั้น ๆ), รายงานตรวจฉบับ .docx ตามฟอร์แมต controlled doc
+- **URL แอป:** https://tistou35.github.io/d0507-audit/ (GitHub Pages)
+- **GitHub repo:** `tistou35/d0507-audit` (public, branch `main`, ไฟล์ build = `index.html`)
+  → git repo ต้นทางอยู่ที่โฟลเดอร์ `audit-app-src/` นี้ (`git push` เพื่อ deploy เวอร์ชันใหม่)
+- **Firebase project:** `d0507-audit` (บัญชี tistou35@gmail.com, แพลน **Blaze** + budget alert 100 THB)
+  - Authentication: Google + Email/Password เปิดแล้ว · Authorized domains มี `tistou35.github.io` แล้ว
+  - Firestore: asia-southeast1, production mode, Rules email-allowlist วางแล้ว
+  - Storage: `d0507-audit.firebasestorage.app` asia-southeast1, Rules email-allowlist วางแล้ว
+  - Web app `audit-app` — config **ฝังใน template.html แล้ว** (บรรทัด FIREBASE_CONFIG) และ build/push แล้ว
+  - เพิ่ม/ลบคนในทีม = แก้รายชื่ออีเมลใน Rules ทั้ง Firestore และ Storage (ตอนนี้มีแค่ tistou35@gmail.com)
+- `AUDIT_ID = 'audit-2026'` เปลี่ยนเมื่อขึ้นรอบตรวจใหม่ แล้ว build + push ใหม่
+
+## งานค้าง
+
+1. **ทดสอบ end-to-end**: login Google บนหน้าเว็บ → ติ๊กตรวจ 1 ข้อ → เช็คว่า document ขึ้นใน Firestore console (`audits/audit-2026/items/...`) — ค้างที่ขั้น popup Google ต้องกดเลือกบัญชีเอง
+2. แก้ reference 16 จุดใน PEL-TO-CK-061/062 ที่เลข section เลื่อน (แอปแสดง ⚠ ในกล่อง "คู่มือ:" ของข้อนั้น ๆ)
+3. รายงานตรวจฉบับ .docx ตามฟอร์แมต controlled doc
 
 ## สถาปัตยกรรมแอป (สรุปสั้น)
 
