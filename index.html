@@ -41,6 +41,20 @@ table.plan input,table.plan select{width:100%;min-height:36px;border:1px solid #
 #loginui input{width:100%;min-height:42px;border:1px solid #c8d2e0;border-radius:8px;padding:8px 10px;margin-top:8px;font-size:14px;}
 #loginui button{width:100%;min-height:44px;border-radius:8px;border:none;background:var(--navy);color:#fff;font-weight:bold;font-size:14px;margin-top:10px;cursor:pointer;}
 #loginui button.alt{background:#fff;color:var(--blue);border:1px solid var(--blue);}
+.gwrap{overflow-x:auto;background:#fff;border:1px solid #d8dfe8;border-radius:10px;margin-top:12px;-webkit-overflow-scrolling:touch;}
+.gantt{position:relative;min-width:100%;}
+.grow{display:flex;align-items:stretch;border-top:1px solid #eef2f7;}
+.glab{flex:0 0 190px;position:sticky;left:0;background:#fff;z-index:3;border-right:1px solid #d8dfe8;padding:7px 10px;font-size:12px;color:var(--navy);}
+.glab b{display:block;font-size:12.5px;}
+.gtl{position:relative;height:44px;flex:0 0 auto;}
+.gbar{position:absolute;top:9px;height:24px;border-radius:6px;font-size:10.5px;font-weight:bold;color:#fff;display:flex;align-items:center;padding:0 7px;white-space:nowrap;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.18);}
+.gbar.plan{background:#8fa3bd;} .gbar.run{background:var(--blue);}
+.gbar.soon{background:#E39B17;} .gbar.late{background:var(--red);} .gbar.done{background:var(--green);}
+.gmonth{position:absolute;top:0;bottom:0;border-left:1px solid #e4eaf2;}
+.gmlab{flex:0 0 auto;position:relative;height:26px;background:#F0F4F8;border-bottom:1px solid #d8dfe8;}
+.gmlab span{position:absolute;top:4px;font-size:11px;font-weight:bold;color:var(--navy);padding-left:6px;border-left:1px solid #c9d6e8;}
+.gtoday{position:absolute;top:0;bottom:0;width:2px;background:var(--red);z-index:2;}
+.gtoday i{position:absolute;top:2px;left:3px;font-size:9.5px;color:var(--red);font-style:normal;white-space:nowrap;}
 .sigwrap{position:fixed;inset:0;background:rgba(10,20,40,.55);display:flex;align-items:center;justify-content:center;z-index:99;}
 .sigbox{background:#fff;border-radius:12px;padding:16px;max-width:580px;width:94%;box-shadow:0 10px 40px rgba(0,0,0,.3);}
 .sigbox canvas{border:1.5px dashed #8fa3bd;border-radius:8px;touch-action:none;width:100%;height:170px;background:#fff;display:block;margin-top:6px;}
@@ -77,6 +91,8 @@ footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
       <button class="pbtn" onclick="addRow()">➕ เพิ่มรายการตรวจ</button>
       <button class="pbtn g" onclick="savePlan()">💾 บันทึกแผน</button>
     </div>
+    <h3 class="sec" style="margin-top:20px">🗓 ปฏิทินการตรวจ 12 เดือน (Gantt)</h3>
+    <div class="gwrap" id="gwrap"><div class="gantt" id="gantt"></div></div>
     <div class="note"><b>การแจ้งการตรวจ (Audit Notification):</b> ปุ่ม 📄 ในแต่ละแถว = หนังสือแจ้งการตรวจอย่างเป็นทางการ (พิมพ์/บันทึก PDF) ·
     ✉ = ร่างอีเมลแจ้งผู้รับการตรวจ · 📅 = ไฟล์ลงปฏิทิน (.ics) ·
     สถานะคำนวณอัตโนมัติจากความคืบหน้าจริงของแต่ละงาน · แจ้งเตือนล่วงหน้า 14 วันที่แถบด้านบน</div>
@@ -175,6 +191,47 @@ function renderPlan(){
   if(!PLAN.length) h+=`<tr><td colspan="9" style="color:#889;text-align:center;padding:14px">ยังไม่มีแผนของปี ${PLANYEAR} — กด "เพิ่มรายการตรวจ"</td></tr>`;
   t.innerHTML=h;
   renderBanners();
+  renderGantt();
+}
+function renderGantt(){
+  const G=document.getElementById('gantt'); if(!G) return;
+  const PX=3;                                     // 3px ต่อวัน ≈ สัปดาห์ละ 21px
+  const y=PLANYEAR;
+  const jan1=new Date(y,0,1);
+  const days=(new Date(y+1,0,1)-jan1)/86400000;
+  const W=Math.round(days*PX);
+  const doy=d=>Math.max(0,Math.min(days-1,Math.round((new Date(d)-jan1)/86400000)));
+  const MTH=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  let mo='';
+  for(let m=0;m<12;m++){
+    const x=Math.round((new Date(y,m,1)-jan1)/86400000)*PX;
+    mo+=`<span style="left:${x}px">${MTH[m]}</span>`;
+  }
+  let grid='';
+  for(let m=0;m<12;m++){
+    const x=Math.round((new Date(y,m,1)-jan1)/86400000)*PX;
+    grid+=`<div class="gmonth" style="left:${x}px"></div>`;
+  }
+  const tNow=new Date(today());
+  const todayLine=(tNow.getFullYear()===y)?`<div class="gtoday" style="left:${doy(today())*PX}px"><i>วันนี้</i></div>`:'';
+  let rowsH=`<div class="grow"><div class="glab" style="background:#F0F4F8"></div><div class="gmlab" style="width:${W}px">${mo}</div></div>`;
+  const withDates=PLAN.map((r,i)=>({r,i})).filter(x=>x.r.start);
+  withDates.forEach(({r,i})=>{
+    const p=PACKS.find(x=>x.proj===r.proj)||{};
+    const [cls,txt]=rowStatus(r);
+    const a=doy(r.start), b=doy(r.end||r.start);
+    const left=a*PX, wdt=Math.max((b-a+1)*PX, 26);
+    rowsH+=`<div class="grow"><div class="glab"><b>${esc(p.name||r.proj)}</b>${esc(r.label||'')}</div>
+      <div class="gtl" style="width:${W}px">${grid}${todayLine}
+        <div class="gbar ${cls}" style="left:${left}px;width:${wdt}px" title="${esc((p.name||r.proj)+' '+(r.label||''))} · ${esc(r.start)} → ${esc(r.end||r.start)} · ${txt} · Lead: ${esc(r.lead||'-')}">${esc(r.label||p.proj||'')}</div>
+      </div></div>`;
+  });
+  if(!withDates.length) rowsH+=`<div class="grow"><div style="padding:14px;color:#889;font-size:12.5px">ยังไม่มีรายการที่กำหนดวันเริ่ม — กำหนดวันในตารางด้านบนแล้วแท่งจะปรากฏที่นี่</div></div>`;
+  G.style.width=(190+W)+'px';
+  G.innerHTML=rowsH;
+  // เลื่อนให้เห็นช่วงปัจจุบันพอดี
+  const wrap=document.getElementById('gwrap');
+  if(wrap&&tNow.getFullYear()===y) wrap.scrollLeft=Math.max(0,doy(today())*PX-wrap.clientWidth/2+190);
 }
 function addRow(){ PLAN.push({proj:PACKS[0].proj,label:'',start:'',end:'',lead:'',auditee:'',done:false}); renderPlan(); }
 function savePlan(){
