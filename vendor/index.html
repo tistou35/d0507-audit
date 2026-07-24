@@ -406,7 +406,8 @@ function escAttr(s){return esc(s).replace(/"/g,'&quot;');}
 let curTab='dash';
 let filter={q:'', st:''};
 function renderTabs(){
-  const t=[['dash','Dashboard'],['OMM','OMM'],['OMA','OMA'],['TM','TM / PPL'],['SITE','On-Site'],['gap','GAP Report'],['car','CAR']];
+  const TABLBL={TM:'TM / PPL', SITE:'On-Site'};
+  const t=[['dash','Dashboard'], ...DATA.modules.map(m=>[m.c, TABLBL[m.c]||m.c]), ['gap','GAP Report'],['car','CAR']];
   document.getElementById('tabs').innerHTML = t.map(([k,l])=>
     `<button class="tab ${curTab===k?'active':''}" onclick="go('${k}')">${l}${(k!=='dash'&&k!=='gap')?` <span class="cnt" data-tabcnt="${k}"></span>`:''}</button>`).join('');
 }
