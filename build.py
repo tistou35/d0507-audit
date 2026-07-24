@@ -114,6 +114,12 @@ table.plan input,table.plan select{width:100%;min-height:36px;border:1px solid #
 #loginui input{width:100%;min-height:42px;border:1px solid #c8d2e0;border-radius:8px;padding:8px 10px;margin-top:8px;font-size:14px;}
 #loginui button{width:100%;min-height:44px;border-radius:8px;border:none;background:var(--navy);color:#fff;font-weight:bold;font-size:14px;margin-top:10px;cursor:pointer;}
 #loginui button.alt{background:#fff;color:var(--blue);border:1px solid var(--blue);}
+.sigwrap{position:fixed;inset:0;background:rgba(10,20,40,.55);display:flex;align-items:center;justify-content:center;z-index:99;}
+.sigbox{background:#fff;border-radius:12px;padding:16px;max-width:580px;width:94%;box-shadow:0 10px 40px rgba(0,0,0,.3);}
+.sigbox canvas{border:1.5px dashed #8fa3bd;border-radius:8px;touch-action:none;width:100%;height:170px;background:#fff;display:block;margin-top:6px;}
+.sigbox input{width:62%;min-height:36px;border:1px solid #c8d2e0;border-radius:7px;padding:5px 9px;}
+.sgb{min-height:32px;border-radius:6px;border:1px solid #c8d2e0;background:#fff;font-size:11px;padding:2px 7px;cursor:pointer;margin:3px 2px 0 0;}
+.sgb.ok{border-color:var(--green);color:var(--green);font-weight:bold;}
 footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
 @media(max-width:700px){table.plan{font-size:12px;} main{padding:14px 8px 50px;}}
 </style></head><body>
@@ -224,9 +230,12 @@ function renderPlan(){
       <td><input type="date" value="${esc(r.start||'')}" onchange="PLAN[${i}].start=this.value"></td>
       <td><input type="date" value="${esc(r.end||'')}" onchange="PLAN[${i}].end=this.value"></td>
       <td><input value="${esc(r.lead||'')}" onchange="PLAN[${i}].lead=this.value"></td>
-      <td><input value="${esc(r.auditee||'')}" placeholder="หน่วย/บริษัทที่รับการตรวจ" onchange="PLAN[${i}].auditee=this.value"></td>
+      <td><input value="${esc(r.auditee||'')}" placeholder="หน่วย/บริษัทที่รับการตรวจ" onchange="PLAN[${i}].auditee=this.value">
+        <input value="${esc(r.ackEmail||'')}" type="email" placeholder="อีเมลผู้รับการตรวจ (ใช้ลงนามรับทราบ)" style="margin-top:3px" onchange="PLAN[${i}].ackEmail=this.value"></td>
       <td><span class="pill ${cls}">${txt}</span><br><label style="font-size:11px;color:#667"><input type="checkbox" ${r.done?'checked':''} onchange="PLAN[${i}].done=this.checked;renderPlan()"> ปิดงานแล้ว</label></td>
-      <td><button class="pbtn" onclick="notiLetter(${i})">📄</button><button class="pbtn" onclick="notiMail(${i})">✉</button><button class="pbtn" onclick="notiIcs(${i})">📅</button></td>
+      <td><button class="pbtn" onclick="notiLetter(${i})">📄</button><button class="pbtn" onclick="notiMail(${i})">✉</button><button class="pbtn" onclick="notiIcs(${i})">📅</button><br>
+        ${['lead','cmm','ack'].map(ro=>{const g=r.sg&&r.sg[ro];
+          return `<button class="sgb${g?' ok':''}" onclick="openSigP(${i},'${ro}')">${g?'✔':'✍'} ${ro==='lead'?'Lead':ro==='cmm'?'CMM':'รับทราบ'}</button>`;}).join('')}</td>
       <td><button class="pbtn x" onclick="if(confirm('ลบรายการนี้?')){PLAN.splice(${i},1);renderPlan();}">✕</button></td></tr>`;
   });
   if(!PLAN.length) h+=`<tr><td colspan="9" style="color:#889;text-align:center;padding:14px">ยังไม่มีแผนของปี ${PLANYEAR} — กด "เพิ่มรายการตรวจ"</td></tr>`;
@@ -245,11 +254,57 @@ function renderBanners(){
     const [cls,txt]=rowStatus(r); const p=PACKS.find(x=>x.proj===r.proj);
     if(cls==='soon') h+=`<div class="banner warn">🟠 <b>${esc(p?p.name:r.proj)}</b> ${esc(r.label||'')} — ${txt} (เริ่ม ${esc(r.start)}) · Lead: ${esc(r.lead||'-')}</div>`;
     if(cls==='late') h+=`<div class="banner late">🔴 <b>${esc(p?p.name:r.proj)}</b> ${esc(r.label||'')} — เลยกำหนด (สิ้นสุด ${esc(r.end)}) ยังไม่ปิดงาน</div>`;
+    if(USER&&r.ackEmail&&USER.email===r.ackEmail&&!(r.sg&&r.sg.ack)&&!r.done)
+      h+=`<div class="banner warn">✍ <b>คุณมีหนังสือแจ้งการตรวจรอลงนามรับทราบ</b> — ${esc(p?p.name:r.proj)} ${esc(r.label||'')} (${esc(r.start||'')}) · กดปุ่ม "✍ รับทราบ" ในตารางแผน หรือเปิด 📄 เพื่อดูรายละเอียดก่อนลงนาม</div>`;
   });
   B.innerHTML=h;
 }
+let SIGP=null;
+const SIGP_ROLES={lead:'Lead Auditor',cmm:'Compliance Monitoring Manager',ack:'ผู้รับการตรวจ — ลงนามรับทราบ (Acknowledgement)'};
+function openSigP(i,role){
+  const r=PLAN[i]; const prev=r.sg&&r.sg[role];
+  const names={lead:r.lead||'',cmm:'',ack:r.auditee||''};
+  const w=document.createElement('div'); w.className='sigwrap'; w.id='sigpwrap';
+  w.innerHTML=`<div class="sigbox">
+    <b style="color:var(--navy)">✍ ลงนาม — ${SIGP_ROLES[role]}</b>
+    <div style="margin:8px 0">ชื่อ-นามสกุล: <input id="sgp_n" value="${esc((prev&&prev.n)||names[role]||(USER?(USER.displayName||USER.email):''))}"></div>
+    <canvas id="sgp_c" width="540" height="170"></canvas>
+    <div style="color:#7a8798;font-size:11px;margin-top:3px">เซ็นในกรอบด้วยนิ้ว / Apple Pencil / เมาส์</div>
+    <div style="margin-top:10px;text-align:right">
+      <button class="pbtn" onclick="sigPClear()">ล้าง</button>
+      <button class="pbtn" onclick="document.getElementById('sigpwrap').remove()">ยกเลิก</button>
+      <button class="pbtn g" onclick="sigPSave()">✔ บันทึกลายเซ็น</button>
+    </div></div>`;
+  document.body.appendChild(w);
+  const cv=document.getElementById('sgp_c'); const ctx=cv.getContext('2d');
+  ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#16305e';
+  let drawing=false, drew=false;
+  const pos=e=>{const b=cv.getBoundingClientRect(); return [(e.clientX-b.left)*cv.width/b.width,(e.clientY-b.top)*cv.height/b.height];};
+  cv.onpointerdown=e=>{drawing=true; drew=true; cv.setPointerCapture(e.pointerId); const p=pos(e); ctx.beginPath(); ctx.moveTo(p[0],p[1]); ctx.lineTo(p[0]+.1,p[1]+.1); ctx.stroke(); e.preventDefault();};
+  cv.onpointermove=e=>{if(!drawing)return; const p=pos(e); ctx.lineTo(p[0],p[1]); ctx.stroke(); e.preventDefault();};
+  cv.onpointerup=cv.onpointercancel=()=>{drawing=false;};
+  SIGP={i,role,cv,ctx,hasInk:()=>drew,reset:()=>{drew=false;}};
+}
+function sigPClear(){ if(SIGP){ SIGP.ctx.clearRect(0,0,SIGP.cv.width,SIGP.cv.height); SIGP.reset(); } }
+function sigPSave(){
+  if(!SIGP) return;
+  const n=(document.getElementById('sgp_n').value||'').trim();
+  if(!n){ alert('กรอกชื่อผู้ลงนาม'); return; }
+  if(!SIGP.hasInk()){ alert('ยังไม่ได้เซ็นในกรอบ'); return; }
+  const {i,role}=SIGP;
+  PLAN[i].sg=PLAN[i].sg||{};
+  PLAN[i].sg[role]={d:SIGP.cv.toDataURL('image/png'),n:n,dt:today(),by:USER?USER.email:''};
+  document.getElementById('sigpwrap').remove(); SIGP=null;
+  savePlan(); renderPlan();
+}
 function notiLetter(i){
   const r=PLAN[i]; const p=PACKS.find(x=>x.proj===r.proj)||{};
+  const sg=r.sg||{};
+  const full=!!(sg.lead&&sg.cmm&&sg.ack);
+  const dots='............................................';
+  const sigTd=(role,fallback)=>{const g=sg[role];
+    return g?`<td><img src="${g.d}" style="height:48px"><br>( ${esc(g.n)} )<br>วันที่ ${esc(g.dt)}</td>`
+            :`<td style="color:#98a4b4">ยังไม่ลงนาม — ลงนามใน Portal<br>( ${esc(fallback||dots)} )<br>วันที่ ...... / ...... / ......</td>`;};
   const w=window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>Audit Notification — ${esc(p.name||'')}</title><style>
   body{font-family:Arial,'Noto Sans Thai',sans-serif;font-size:13.3px;color:#1A1A2A;max-width:794px;margin:0 auto;padding:30px}
@@ -275,10 +330,12 @@ function notiLetter(i){
   <tr><td class="l">เกณฑ์การตรวจ</td><td>${esc(p.code||'')} · ข้อกำหนด/คู่มือที่เกี่ยวข้อง และสัญญา (ถ้ามี)</td></tr>
   <tr><td class="l">การเตรียมการ</td><td>ขอให้จัดเตรียมเอกสาร บุคลากร และการเข้าถึงสถานที่/ระบบที่เกี่ยวข้องตามขอบเขตข้างต้น
   ผลการตรวจที่เป็นข้อบกพร่องจะออกเป็น CAR (D-0507-CAR-001) ซึ่งต้องตอบกลับภายในกำหนด</td></tr></table>
-  <table class="sig"><tr><td class="h">Lead Auditor</td><td class="h">Compliance Monitoring Manager</td></tr>
-  <tr><td>ลงชื่อ ............................................<br>( ${esc(r.lead||'............................................')} )<br>วันที่ ............ / ............ / ............</td>
-  <td>ลงชื่อ ............................................<br>( ............................................ )<br>วันที่ ............ / ............ / ............</td></tr></table>
-  <p class="np"><button onclick="window.print()" style="min-height:40px;padding:6px 18px;font-weight:bold">🖨 พิมพ์ / บันทึก PDF</button></p>
+  ${full?'':`<div style="background:#FDECEC;border:1px solid #E4A6A6;color:#8f1414;padding:8px 12px;font-weight:bold;margin:10px 0">
+    DRAFT — ยังลงนามไม่ครบ (Lead ${sg.lead?'✔':'—'} · CMM ${sg.cmm?'✔':'—'} · รับทราบ ${sg.ack?'✔':'—'})
+    · ลงนามทั้งหมดในแอป Portal · พิมพ์ได้เมื่อเป็นฉบับสมบูรณ์เท่านั้น</div>`}
+  <table class="sig"><tr><td class="h">Lead Auditor</td><td class="h">Compliance Monitoring Manager</td><td class="h">ผู้รับการตรวจ (รับทราบ)</td></tr>
+  <tr>${sigTd('lead',r.lead)}${sigTd('cmm','')}${sigTd('ack',r.auditee)}</tr></table>
+  <p class="np">${full?'<button onclick="window.print()" style="min-height:40px;padding:6px 18px;font-weight:bold">🖨 พิมพ์ / บันทึก PDF (ฉบับสมบูรณ์)</button>':'<span style="color:#8f1414;font-size:12.5px">🔒 ปุ่มพิมพ์จะเปิดเมื่อลงนามครบ 3 ฝ่าย — ตามหลักการ ทำทุกขั้นตอนบนแอป พิมพ์เฉพาะฉบับสมบูรณ์</span>'}</p>
   </body></html>`);
   w.document.close();
 }
@@ -291,9 +348,11 @@ function notiMail(i){
    `• รอบ: ${r.label||'-'}`,
    `• วันที่: ${r.start||'-'} ถึง ${r.end||'-'}`,
    `• Lead Auditor: ${r.lead||'-'}`,'',
-   'ขอให้จัดเตรียมเอกสารและบุคลากรที่เกี่ยวข้อง รายละเอียดตามหนังสือแจ้งการตรวจที่แนบ','',
+   'ขอให้จัดเตรียมเอกสารและบุคลากรที่เกี่ยวข้องตามขอบเขตข้างต้น','',
+   'โปรดเข้าสู่ระบบ Audit Portal เพื่ออ่านหนังสือแจ้งการตรวจฉบับเต็ม และลงนามรับทราบในแอป (ไม่ต้องเซ็นเอกสารส่งกลับ):',
+   location.href.split('#')[0],'',
    'Compliance Monitoring, D-0507 Flight Training Co., Ltd.'].join('\n');
-  location.href=`mailto:?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
+  location.href=`mailto:${encodeURIComponent(r.ackEmail||'')}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
 }
 function notiIcs(i){
   const r=PLAN[i]; const p=PACKS.find(x=>x.proj===r.proj)||{};
