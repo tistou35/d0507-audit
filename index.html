@@ -96,7 +96,7 @@ const CFG={
   messagingSenderId: "880880454045",
   appId: "1:880880454045:web:a8fe249ca18f1a7a20c774"
 };
-const PACKS=[{"proj": "iac", "outdir": "iac", "name": "Internal Audit — GAP Analysis (TCAR-ORA)", "desc": "OMM · OMA · TM/PPL(A) + On-Site Implementation · 2,081 รายการตรวจ", "code": "D-0507-IAC-001", "ver": "v2026", "aid": "audit-2026", "total": 2081}, {"proj": "vendor", "outdir": "vendor", "name": "Vendor / Contracted Activities Audit", "desc": "ตรวจผู้ให้บริการภายนอกและกิจกรรมจ้างช่วง (ORA.GEN.205) · DRAFT รอ review", "code": "D-0507-IAC-002 (DRAFT)", "ver": "v2026", "aid": "vendor-2026", "total": 13}];
+const PACKS=[{"proj": "aerodrome", "outdir": "aerodrome", "name": "Aerodrome Certification Readiness", "desc": "ตรวจความพร้อมรับการรับรองสนามบิน · ICAO Annex 14 / Doc 9774 · DRAFT รอ review", "code": "D-0507-IAC-003 (DRAFT)", "ver": "v2026", "aid": "aerodrome-2026", "total": 81}, {"proj": "iac", "outdir": "iac", "name": "Internal Audit — GAP Analysis (TCAR-ORA)", "desc": "OMM · OMA · TM/PPL(A) + On-Site Implementation · 2,081 รายการตรวจ", "code": "D-0507-IAC-001", "ver": "v2026", "aid": "audit-2026", "total": 2081}, {"proj": "vendor", "outdir": "vendor", "name": "Vendor / Contracted Activities Audit", "desc": "ตรวจผู้ให้บริการภายนอกและกิจกรรมจ้างช่วง (ORA.GEN.205) · DRAFT รอ review", "code": "D-0507-IAC-002 (DRAFT)", "ver": "v2026", "aid": "vendor-2026", "total": 13}];
 firebase.initializeApp(CFG);
 const db=firebase.firestore();
 let USER=null, SUMS={}, PLAN=[], PLANYEAR=(new Date()).getFullYear(), planUnsub=null;

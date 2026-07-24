@@ -1,0 +1,13 @@
+{
+  "project": "aerodrome",
+  "version": "v2026",
+  "outdir": "aerodrome",
+  "name": "Aerodrome Certification Readiness",
+  "desc": "ตรวจความพร้อมรับการรับรองสนามบิน · ICAO Annex 14 / Doc 9774 · DRAFT รอ review",
+  "doc_code": "D-0507-IAC-003 (DRAFT)",
+  "ptitle": "D-0507 Aerodrome Certification Readiness Checklist (DRAFT)",
+  "htitle": "D-0507 FLIGHT TRAINING – AERODROME CERTIFICATION READINESS",
+  "hsub": "Aerodrome Certification / GAP ↔ ICAO Annex 14 Vol I · Doc 9774 · EASA ADR &nbsp;|&nbsp; D-0507-IAC-003 (DRAFT — รอ @reviewer/@legal) &nbsp;|&nbsp; v2026",
+  "audit_id": "aerodrome-2026",
+  "car_prefix": "CAR-ADR"
+}

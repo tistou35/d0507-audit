@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>D-0507 Aerodrome Certification Readiness Checklist (DRAFT)</title>
+<style>
+:root{
+  --navy:#1F3864; --blue:#2E75B6; --lblue:#D6E4F7; --grey:#F0F4F8;
+  --green:#1A6B1A; --greenbg:#D5EFCC; --red:#C00000; --redbg:#FFD9D9;
+  --amber:#9C6500; --amberbg:#FFF2CC; --ink:#1a1a2a;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+body{margin:0; font-family:Arial,"Helvetica Neue",sans-serif; background:var(--grey); color:var(--ink); font-size:15px;}
+header.app{background:var(--navy); color:#fff; padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 0 16px; position:sticky; top:0; z-index:50;}
+header.app h1{margin:0; font-size:17px; letter-spacing:.2px;}
+header.app .sub{font-size:12px; opacity:.85; margin:3px 0 8px;}
+.tabs{display:flex; gap:4px; overflow-x:auto; padding-bottom:0;}
+.tab{flex:0 0 auto; padding:10px 14px; border-radius:8px 8px 0 0; background:rgba(255,255,255,.13); color:#fff; font-weight:bold; font-size:13px; border:none; cursor:pointer; min-height:42px;}
+.tab.active{background:var(--grey); color:var(--navy);}
+.tab .cnt{font-weight:normal; font-size:11px; opacity:.8;}
+main{padding:12px; max-width:1080px; margin:0 auto; padding-bottom:80px;}
+.card{background:#fff; border:1px solid #d8dfe8; border-radius:10px; margin-bottom:12px; overflow:hidden;}
+.card > .hd{background:var(--blue); color:#fff; padding:12px 14px; font-weight:bold; font-size:15px; display:flex; justify-content:space-between; align-items:center; gap:8px; cursor:pointer; min-height:48px;}
+.card > .hd .th{display:block; font-weight:normal; font-size:12px; opacity:.9;}
+.card > .hd .prog{font-size:12px; font-weight:normal; text-align:right; white-space:nowrap;}
+.bar{height:6px; background:#e2e9f2;}
+.bar i{display:block; height:100%; background:var(--green); transition:width .3s;}
+.bar i.gap{background:var(--red);}
+.body{display:none; padding:6px 10px 12px;}
+.card.open .body{display:block;}
+.sec{margin:10px 0 4px; background:var(--lblue); color:var(--navy); font-weight:bold; padding:9px 12px; border-radius:7px; font-size:14px; display:flex; justify-content:space-between; align-items:center; gap:8px;}
+.sec .mini{font-size:11px; font-weight:normal;}
+.grp{border:1px solid #e2e8f0; border-radius:8px; margin:8px 0; overflow:hidden;}
+.grp .ghd{background:#f6f9fd; padding:8px 12px; font-size:13px; color:var(--navy); display:flex; gap:8px; align-items:baseline; justify-content:space-between; flex-wrap:wrap;}
+.grp .ghd b{font-size:13px;}
+.gno{background:var(--navy); color:#fff; border-radius:5px; padding:1px 7px; font-size:12px; flex:0 0 auto;}
+.bulk{border:1px solid var(--blue); background:#fff; color:var(--blue); border-radius:6px; font-size:11px; padding:4px 8px; cursor:pointer;}
+.item{padding:10px 12px; border-top:1px solid #eef2f7; display:block;}
+.item.hdRow{background:#fbfcff;}
+.item .d{margin:0 0 6px; line-height:1.45;}
+.item.hdRow .d{font-weight:bold; color:var(--navy);}
+.meta{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:6px;}
+.chip{font-size:11px; border-radius:5px; padding:2px 7px; background:var(--grey); color:#4a5a70; border:1px solid #dde4ee;}
+.chip.rr{background:#eef4fb; color:var(--blue); border-color:#c9dcf2;}
+.chip.prevY{background:var(--greenbg); color:var(--green); border:none;}
+.chip.prevN{background:var(--redbg); color:var(--red); border:none;}
+.chip.prevNA{background:#eee; color:#666; border:none;}
+.ctr{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+.stbtn{min-width:52px; min-height:40px; border-radius:8px; border:1.5px solid #c8d2e0; background:#fff; font-weight:bold; font-size:14px; cursor:pointer; color:#5a6a80;}
+.stbtn.S.on{background:var(--green); border-color:var(--green); color:#fff;}
+.stbtn.U.on{background:var(--red); border-color:var(--red); color:#fff;}
+.stbtn.NA.on{background:#667; border-color:#667; color:#fff;}
+.refin{flex:1 1 200px; min-height:38px; border:1px solid #c8d2e0; border-radius:7px; padding:6px 9px; font-size:13px; font-family:inherit; color:var(--navy); background:#fff;}
+.rmk{width:100%; margin-top:7px; border:1.5px solid var(--redbg); background:#fff8f8; border-radius:7px; padding:7px 9px; font-size:13px; font-family:inherit; min-height:44px; display:none;}
+.item.stU .rmk{display:block; border-color:var(--red);}
+.thd{margin:0 0 6px; color:#556; font-size:13px; line-height:1.45;}
+details.mref{margin:0 0 8px; border:1px solid #c9dcf2; border-radius:7px; background:#f4f8fd; font-size:12.5px;}
+details.mref summary{padding:7px 10px; color:var(--blue); font-weight:bold; cursor:pointer; min-height:36px; display:flex; align-items:center; gap:6px; list-style:none;}
+details.mref summary::-webkit-details-marker{display:none;}
+details.mref[open] summary{border-bottom:1px dashed #c9dcf2;}
+details.mref .mx{padding:8px 11px; color:#334; line-height:1.55; white-space:pre-line;}
+details.mref .mx b{color:var(--navy);}
+details.how2{background:#fffdf4; border-color:#e8d9a8;}
+details.how2 summary{color:var(--amber);}
+.assignbar{background:#fff; border:2px solid var(--blue); border-radius:10px; padding:12px; margin-bottom:14px;}
+.assignbar h4{margin:0 0 8px; color:var(--navy); font-size:14px;}
+.assignbar .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+.assignbar input{min-height:42px; border:1px solid #c8d2e0; border-radius:8px; padding:8px 10px; font-size:14px; font-family:inherit;}
+.gsel{width:24px; height:24px; accent-color:var(--red); flex:0 0 auto; margin-top:2px;}
+.gaphead{display:flex; gap:10px; align-items:flex-start;}
+.carbox{background:#f7f9fc; border:1px solid #c9d6e8; border-radius:8px; padding:9px 11px; margin-top:8px; font-size:12.5px;}
+.carbox .cno{font-weight:bold; color:var(--navy);}
+.carpill{display:inline-block; border-radius:10px; padding:2px 10px; font-size:11px; font-weight:bold; margin-left:6px;}
+.carpill.A{background:var(--amberbg); color:var(--amber);}
+.carpill.R{background:#dbe9ff; color:#1d5eb8;}
+.carpill.V{background:var(--greenbg); color:var(--green);}
+.carpill.X{background:var(--redbg); color:var(--red);}
+.overdue{color:var(--red); font-weight:bold;}
+.carbox .hist{color:#7a8798; font-size:11px; margin-top:5px; white-space:pre-line;}
+.castep{display:flex; gap:9px; margin-top:9px;}
+.castep .sn{flex:0 0 24px; height:24px; border-radius:50%; background:var(--blue); color:#fff; font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center;}
+.castep.done .sn{background:var(--green);}
+.castep.wait .sn{background:#aab6c6;}
+.castep .sb{flex:1; min-width:0;}
+.ca-lb{font-weight:bold; color:var(--navy); font-size:12px; margin-top:7px;}
+.ca-sm{min-height:34px; border:1px solid #c8d2e0; border-radius:6px; padding:3px 8px;}
+.sigwrap{position:fixed; inset:0; background:rgba(10,20,40,.55); display:flex; align-items:center; justify-content:center; z-index:99;}
+.sigbox{background:#fff; border-radius:12px; padding:16px; max-width:580px; width:94%; box-shadow:0 10px 40px rgba(0,0,0,.3);}
+.sigbox canvas{border:1.5px dashed #8fa3bd; border-radius:8px; touch-action:none; width:100%; height:180px; background:#fff; display:block; margin-top:6px;}
+.sigslot{border:1px solid #d8dfe8; border-radius:8px; background:#fff; padding:7px 10px; min-width:170px; font-size:11.5px; text-align:center;}
+.sigslot img{height:46px; display:block; margin:2px auto;}
+.sigslot .sr{font-weight:bold; color:var(--navy);}
+.carbtn{min-height:38px; border-radius:7px; border:1px solid var(--blue); background:#fff; color:var(--blue); font-size:12px; font-weight:bold; padding:5px 10px; cursor:pointer; margin:3px 4px 0 0;}
+.carbtn.v{border-color:var(--green); color:var(--green);}
+.carbtn.x{border-color:var(--red); color:var(--red);}
+.ca-in{width:100%; margin-top:6px; border:1px solid #c8d2e0; border-radius:7px; padding:7px 9px; font-size:13px; font-family:inherit; min-height:40px;}
+table.cartab{width:100%; border-collapse:collapse; font-size:12.5px; background:#fff;}
+table.cartab th{background:var(--navy); color:#fff; padding:7px; text-align:left; font-size:12px;}
+table.cartab td{border:1px solid #dde4ee; padding:6px 8px; vertical-align:top;}
+.chklist{border:1px dashed #b9c9de; border-radius:8px; padding:8px 10px 4px; margin-bottom:8px; background:#fcfdff;}
+.chklist .cht{font-size:11.5px; font-weight:bold; color:var(--navy); margin-bottom:4px;}
+.chk{display:flex; align-items:flex-start; gap:8px; padding:5px 0; font-size:13px; color:#334; cursor:pointer;}
+.chk input{width:20px; height:20px; margin:0; flex:0 0 auto; accent-color:var(--green);}
+.chk.ck{color:var(--green);}
+.photorow{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:7px;}
+.pbtn{min-height:40px; border-radius:8px; border:1.5px solid var(--blue); background:#fff; color:var(--blue); font-weight:bold; font-size:13px; padding:6px 12px; cursor:pointer;}
+.thumb{position:relative; width:64px; height:64px; border-radius:8px; overflow:hidden; border:1px solid #c8d2e0;}
+.thumb img{width:100%; height:100%; object-fit:cover; display:block; cursor:pointer;}
+.thumb .del{position:absolute; top:0; right:0; background:rgba(192,0,0,.85); color:#fff; border:none; width:20px; height:20px; font-size:12px; line-height:1; cursor:pointer; border-radius:0 0 0 7px;}
+#pview{position:fixed; inset:0; background:rgba(10,16,30,.92); z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:16px;}
+#pview img{max-width:96%; max-height:82vh; border-radius:8px;}
+#pview button{min-height:44px; border-radius:9px; border:none; background:#fff; color:var(--navy); font-weight:bold; padding:8px 20px; font-size:14px;}
+.how{background:#f6f9fd; border-left:3px solid var(--blue); border-radius:0 7px 7px 0; padding:7px 10px; font-size:12.5px; color:#3a4a60; line-height:1.5; margin-bottom:8px;}
+.chip.mt{background:var(--amberbg); color:var(--amber); border:none;}
+.dualrow{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:6px;}
+.dlab{flex:0 0 92px; font-size:11.5px; font-weight:bold; color:var(--navy); line-height:1.25;}
+.dhint{font-size:11px; color:#8a97a8;}
+.toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; align-items:center;}
+.toolbar input[type=search]{flex:1 1 220px; min-height:44px; border:1px solid #c8d2e0; border-radius:9px; padding:8px 12px; font-size:15px; font-family:inherit;}
+.fbtn{min-height:40px; border-radius:8px; border:1.5px solid var(--blue); background:#fff; color:var(--blue); font-weight:bold; padding:6px 12px; font-size:13px; cursor:pointer;}
+.fbtn.on{background:var(--blue); color:#fff;}
+.abtn{min-height:44px; border-radius:9px; border:none; background:var(--navy); color:#fff; font-weight:bold; padding:8px 16px; font-size:14px; cursor:pointer;}
+.abtn.sec2{background:var(--blue);}
+.abtn.warn{background:var(--red);}
+.dash{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; margin-bottom:14px;}
+.dcard{background:#fff; border:1px solid #d8dfe8; border-radius:10px; padding:14px;}
+.dcard h3{margin:0 0 2px; font-size:15px; color:var(--navy);}
+.dcard .th{font-size:12px; color:#667; margin-bottom:8px;}
+.dnum{font-size:26px; font-weight:bold; color:var(--navy);}
+.dnum small{font-size:13px; color:#667; font-weight:normal;}
+.drow{display:flex; gap:10px; margin-top:6px; font-size:12px;}
+.drow b.g{color:var(--green);} .drow b.u{color:var(--red);} .drow b.n{color:#666;} .drow b.p{color:var(--amber);}
+table.cl{width:100%; border-collapse:collapse; font-size:13px; background:#fff;}
+table.cl th{background:var(--navy); color:#fff; padding:8px; text-align:left; font-size:12px;}
+table.cl td{border:1px solid #dde4ee; padding:7px 8px; vertical-align:top;}
+table.cl tr.subhd td{background:var(--lblue); color:var(--navy); font-weight:bold;}
+.pill{display:inline-block; border-radius:10px; padding:1px 9px; font-size:11px; font-weight:bold;}
+.pill.ok{background:var(--greenbg); color:var(--green);}
+.pill.gap{background:var(--redbg); color:var(--red);}
+.pill.pend{background:var(--amberbg); color:var(--amber);}
+.pill.none{background:#eee; color:#888;}
+.audmeta{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:8px; margin-bottom:12px;}
+.audmeta label{font-size:11px; color:var(--navy); font-weight:bold; display:block; margin-bottom:2px;}
+.audmeta input{width:100%; min-height:42px; border:1px solid #c8d2e0; border-radius:8px; padding:8px 10px; font-size:14px; font-family:inherit;}
+.note{background:#fff; border-left:4px solid var(--blue); padding:10px 12px; font-size:12.5px; color:#445; border-radius:0 8px 8px 0; margin-bottom:12px; line-height:1.5;}
+.gapitem{background:#fff; border:1px solid var(--redbg); border-left:4px solid var(--red); border-radius:8px; padding:10px 12px; margin-bottom:8px; font-size:13.5px;}
+.gapitem .w{color:#667; font-size:12px; margin-top:3px;}
+footer.app{position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:2px solid var(--navy); padding:8px 14px calc(env(safe-area-inset-bottom,0px) + 8px); display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--navy); z-index:40; gap:8px;}
+footer .fbar{flex:1; margin:0 8px;}
+.hide{display:none!important;}
+@media print{
+ header.app,footer.app,.toolbar,.abtn,.fbtn,.bulk,.stbtn{display:none!important;}
+ body{background:#fff;} .body{display:block!important;} main{padding-bottom:0;}
+}
+</style>
+</head>
+<body>
+<header class="app">
+  <h1>D-0507 FLIGHT TRAINING – AERODROME CERTIFICATION READINESS</h1>
+  <div class="sub">Aerodrome Certification / GAP ↔ ICAO Annex 14 Vol I · Doc 9774 · EASA ADR &nbsp;|&nbsp; D-0507-IAC-003 (DRAFT — รอ @reviewer/@legal) &nbsp;|&nbsp; v2026</div>
+  <nav class="tabs" id="tabs"></nav>
+</header>
+<main id="main"></main>
+<footer class="app">
+  <span id="ftxt">0 / 0</span>
+  <div class="bar fbar"><i id="fbar" style="width:0%"></i></div>
+  <span id="fgap" style="color:var(--red); font-weight:bold;">GAP: 0</span>
+</footer>
+<script id="DATA" type="application/json">{"modules":[{"c":"ADR","t":"Aerodrome Certification Readiness","th":"ความพร้อมรับการรับรองสนามบิน","doc":"","man":"ICAO Annex 14 Vol I · Doc 9774 · EASA ADR","parts":[{"t":"Part 1 – Certification Process","th":"ขั้นตอนการรับรองสนามบิน (Doc 9774)","secs":[{"t":"","groups":[{"n":"1","subj":"ขั้นเตรียมการ & ยื่นคำขอ","items":[{"id":"ADR-0001","d":"แจ้งความประสงค์ (Expression of Interest) ต่อ กพท. พร้อมประเมินการปฏิบัติการบินเบื้องต้น","rr":"Doc 9774 §; ASC/กพท.","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0002","d":"ประเมิน flight operations: ระยะห่างสนามบิน/สนามบินทหารใกล้เคียง, สิ่งกีดขวาง/ภูมิประเทศ, ห้วงอากาศควบคุม, instrument procedure ที่มี","rr":"Annex 14; Doc 9774","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0003","d":"ยืนยันว่าที่ตั้งไม่กระทบความปลอดภัยการบิน จึงเดินหน้าคำขอต่อได้","rr":"Doc 9774 §3","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0004","d":"ยื่นคำขออย่างเป็นทางการ พร้อมเอกสารตามที่กำหนด + คู่มือสนามบิน (Aerodrome Manual)","rr":"Annex 14; TCAR/กพท.","rk":"","ref":"","prev":"","hd":0,"how":""}]},{"n":"2","subj":"ขั้นประเมินโดยผู้ตรวจ","items":[{"id":"ADR-0005","d":"ผู้ตรวจ (Aerodrome Inspector) ทบทวน flight operations assessment","rr":"Doc 9774","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0006","d":"จัดทำ/ทบทวน aeronautical study (ถ้ามีประเด็นเบี่ยงเบนจากมาตรฐาน)","rr":"Annex 14","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0007","d":"ประเมินคู่มือสนามบินที่ยื่น (ดูแท็บ 2)","rr":"Annex 14 App; Doc 9774","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0008","d":"การตรวจหน้างาน (Site Visit) — ตรวจสิ่งอำนวยความสะดวก/อุปกรณ์ (ดูแท็บ 3)","rr":"Doc 9774; Annex 14","rk":"","ref":"","prev":"","hd":0,"how":""}]},{"n":"3","subj":"ขั้นออกใบรับรอง & ประกาศ","items":[{"id":"ADR-0009","d":"กพท. ออกหรือปฏิเสธใบรับรอง / กำหนดเงื่อนไข-ข้อจำกัดการใช้งาน","rr":"Doc 9774 §","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0010","d":"ประกาศสถานะสนามบินและข้อมูลที่กำหนดใน AIP","rr":"Annex 15 / AIS","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0011","d":"จัดทำระบบแจ้งการเปลี่ยนแปลง (change process) ที่ต้อง/ไม่ต้องขออนุมัติก่อน","rr":"OTAR139/Annex14","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0012","d":"บันทึกรอบการตรวจติดตาม (continuing surveillance) หลังได้ใบรับรอง","rr":"Doc 9774","rk":"","ref":"","prev":"","hd":0,"how":""}]}]}]},{"t":"Part 2 – Aerodrome Manual","th":"เอกสารและคู่มือสนามบิน","secs":[{"t":"","groups":[{"n":"1","subj":"Part 1 — ทั่วไป (General)","items":[{"id":"ADR-0013","d":"วัตถุประสงค์และขอบเขตของคู่มือ; ระบบควบคุมฉบับ/การแก้ไข (version control)","rr":"Annex 14 App","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0014","d":"เงื่อนไขการใช้สนามบิน (conditions of use) — ประเภท/ขนาดอากาศยานที่อนุญาต, ส่วนบุคคลเท่านั้น","rr":"Annex 14 App","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0015","d":"ระบบการให้ข้อมูลข่าวสารการบิน (AIS) ที่มีอยู่","rr":"Annex 14 App","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0016","d":"ระบบบันทึกการเคลื่อนไหวอากาศยาน (aircraft movement records)","rr":"Annex 14 App","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0017","d":"หน้าที่ความรับผิดชอบของผู้ดำเนินการสนามบิน (obligations of operator)","rr":"Annex 14 App","rk":"","ref":"","prev":"","hd":0,"how":""}]},{"n":"2","subj":"Part 2 — ข้อมูลที่ตั้งสนามบิน (Site)","items":[{"id":"ADR-0018","d":"แผนผังแสดงขอบเขตสนามบิน (site plan / boundaries)","rr":"Annex 14 App","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0019","d":"ระยะห่างจากเมือง/ชุมชนที่ใกล้ที่สุด และสิ่งอำนวยความสะดวกหลัก","rr":"Annex 14 App","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0020","d":"หลักฐานกรรมสิทธิ์/สิทธิใช้ที่ดิน (title / ownership / สิทธิครอบครอง)","rr":"Annex 14 App","rk":"","ref":"","prev":"","hd":0,"how":""}]},{"n":"3","subj":"Part 3 — ข้อมูลที่ต้องรายงานต่อ AIS","items":[{"id":"ADR-0021","d":"ข้อมูลทั่วไป: ชื่อสนามบิน, ที่ตั้ง, ARP, elevation, reference temperature, datum","rr":"Annex 14 App / Annex 15","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0022","d":"มิติทางวิ่งและข้อมูล: runway, strip, RESA, taxiway, apron, declared distances (TORA/TODA/ASDA/LDA)","rr":"Annex 14 App","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0023","d":"Obstacle Limitation Surfaces (OLS) และสิ่งกีดขวางที่สำรวจได้","rr":"Annex 14 Ch.4","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0024","d":"เครื่องช่วยการเดินอากาศด้วยตา (visual aids), marking, lighting, signs","rr":"Annex 14 Ch.5","rk":"","ref":"","prev":"","hd":0,"how":""}]},{"n":"4","subj":"Part 4 — ขั้นตอนปฏิบัติการ & มาตรการความปลอดภัย","items":[{"id":"ADR-0025","d":"ขั้นตอนรายงานข้อมูลต่อ AIS / NOTAM","rr":"Doc 9981","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0026","d":"การควบคุมการเข้าออกเขตปฏิบัติการ (movement area access control)","rr":"Annex 14 App","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0027","d":"แผนฉุกเฉินสนามบิน (Aerodrome Emergency Plan)","rr":"Annex 14 Ch.9","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0028","d":"การดับเพลิงและกู้ภัย (RFF) — ระดับตามประเภทสนามบิน","rr":"Annex 14 Ch.9","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0029","d":"การตรวจสภาพเขตปฏิบัติการและ OLS เป็นประจำ (inspections)","rr":"Annex 14 App / Doc 9981","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0030","d":"การบำรุงรักษาเขตปฏิบัติการ, visual aids, ระบบไฟฟ้า","rr":"Annex 14 App","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0031","d":"การจัดการความปลอดภัยงานก่อสร้าง/บำรุงรักษาในเขตปฏิบัติการ (works safety)","rr":"Doc 9981","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0032","d":"การจัดการลานจอด (apron management) และความปลอดภัยลานจอด","rr":"Annex 14 App","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0033","d":"การควบคุมยานพาหนะในเขตปฏิบัติการ (vehicle control)","rr":"Annex 14 App","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0034","d":"การจัดการอันตรายจากสัตว์/นก (wildlife hazard management)","rr":"Annex 14 Ch.9","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0035","d":"การควบคุมสิ่งกีดขวาง (obstacle control) รอบสนามบิน","rr":"Annex 14 Ch.4","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0036","d":"การเคลื่อนย้ายอากาศยานที่ใช้การไม่ได้ (disabled aircraft removal)","rr":"Annex 14 App","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0037","d":"การจัดการวัตถุอันตราย / การเติมเชื้อเพลิง (fuel handling)","rr":"Annex 14 App","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0038","d":"ระบบการจัดการความปลอดภัย (Safety Management System - SMS)","rr":"Annex 19 / Annex 14 App","rk":"","ref":"","prev":"","hd":0,"how":""}]}]}]},{"t":"Part 3 – Site / Physical Inspection","th":"ตรวจกายภาพหน้างาน","secs":[{"t":"","groups":[{"n":"1","subj":"มิติและสภาพผิว (Dimensions & Surface)","items":[{"id":"ADR-0039","d":"ทางวิ่ง (Runway) — มิติ, สภาพผิว, ความลาด","rr":"Annex 14 Ch.3","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0040","d":"ไหล่ทางวิ่ง (Runway shoulders)","rr":"Annex 14 Ch.3","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0041","d":"พื้นที่ปลอดภัยข้างทางวิ่ง (Runway strip)","rr":"Annex 14 Ch.3","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0042","d":"พื้นที่ปลอดภัยปลายทางวิ่ง (RESA)","rr":"Annex 14 Ch.3","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0043","d":"Stopway / Clearway (ถ้ามี)","rr":"Annex 14 Ch.3","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0044","d":"ทางขับ (Taxiway) + ไหล่ + strip","rr":"Annex 14 Ch.3","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0045","d":"ลานจอด (Apron)","rr":"Annex 14 Ch.3","rk":"","ref":"","prev":"","hd":0,"how":""}]},{"n":"2","subj":"สิ่งกีดขวาง (Obstacles)","items":[{"id":"ADR-0046","d":"การมีสิ่งกีดขวางภายใน Obstacle Limitation Surfaces (OLS)","rr":"Annex 14 Ch.4","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0047","d":"ไฟที่อาจรบกวน/เป็นอันตรายต่อความปลอดภัยการบิน","rr":"Annex 14 Ch.5","rk":"","ref":"","prev":"","hd":0,"how":""}]},{"n":"3","subj":"ไฟสนามบิน (Aeronautical Ground Lighting) + บันทึก flight check","items":[{"id":"ADR-0048","d":"ไฟทางวิ่งและทางขับ (runway & taxiway lighting)","rr":"Annex 14 Ch.5","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0049","d":"ไฟนำร่อน (approach lights) ถ้ามี","rr":"Annex 14 Ch.5","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0050","d":"PAPI / APAPI","rr":"Annex 14 Ch.5","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0051","d":"ไฟส่องลานจอด (apron floodlighting)","rr":"Annex 14 Ch.5","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0052","d":"ไฟสิ่งกีดขวาง (obstacle lighting)","rr":"Annex 14 Ch.6","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0053","d":"ไฟที่นักบินเปิดเอง (pilot-activated lighting) ถ้ามี","rr":"Annex 14 Ch.5","rk":"","ref":"","prev":"","hd":0,"how":""}]},{"n":"4","subj":"ระบบสนับสนุน (Support Systems)","items":[{"id":"ADR-0054","d":"ไฟฟ้าสำรอง (standby power)","rr":"Annex 14 Ch.8","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0055","d":"ตัวชี้ทิศทางลม (wind direction indicator) และไฟส่อง","rr":"Annex 14 Ch.5","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0056","d":"เครื่องหมายและ marker ในเขตปฏิบัติการ (markings & markers)","rr":"Annex 14 Ch.5","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0057","d":"ป้ายในเขตปฏิบัติการ (signs)","rr":"Annex 14 Ch.5","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0058","d":"จุดยึดอากาศยาน (tie-down) และจุดต่อสายดิน (earthing) ถ้ามี","rr":"Annex 14 Ch.3","rk":"","ref":"","prev":"","hd":0,"how":""}]},{"n":"5","subj":"อุปกรณ์ปฏิบัติการ & ความปลอดภัย","items":[{"id":"ADR-0059","d":"อุปกรณ์และการติดตั้งดับเพลิง-กู้ภัย (RFF equipment & installations)","rr":"Annex 14 Ch.9","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0060","d":"อุปกรณ์บำรุงรักษาเขตปฏิบัติการ (รวม friction measurement ถ้ามี)","rr":"Annex 14 Ch.10","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0061","d":"อุปกรณ์เคลื่อนย้ายอากาศยานที่ใช้การไม่ได้ (disabled aircraft removal)","rr":"Annex 14 Ch.9","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0062","d":"ขั้นตอน + อุปกรณ์จัดการสัตว์อันตราย (wildlife management)","rr":"Annex 14 Ch.9","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0063","d":"วิทยุสื่อสารสองทางในรถของผู้ดำเนินการสนามบินในเขตปฏิบัติการ","rr":"Annex 14 Ch.9","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0064","d":"สิ่งอำนวยความสะดวกด้านเชื้อเพลิง (fuelling facilities) และความปลอดภัย","rr":"Annex 14 App","rk":"","ref":"","prev":"","hd":0,"how":""}]}]}]},{"t":"Part 4 – Organisation, Personnel & SMS","th":"องค์กร บุคลากร และ SMS","secs":[{"t":"","groups":[{"n":"1","subj":"โครงสร้างองค์กรและผู้รับผิดชอบ (Accountability)","items":[{"id":"ADR-0065","d":"Accountable Manager — เป็นบุคคลของ SPI ชัดเจน มีอำนาจและงบประมาณ","rr":"Annex 19; EASA ADR.OR.D.015","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0066","d":"ผังองค์กรขั้นต่ำ: Airside/Ops, SMS, การบำรุงรักษาสิ่งอำนวยความสะดวก","rr":"Doc 9774; EASA ADR.OR.D","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0067","d":"Post-holder ที่ D-0507 เข้าไปเสริม มีนิติสัมพันธ์กับผู้ถือใบอนุญาต (จ้าง/secondment/แต่งตั้งเป็นลายลักษณ์อักษร)","rr":"Doc 9774","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0068","d":"สัญญา/MOU ระหว่าง SPI–D-0507 ระบุขอบเขตบริการสนับสนุนชัดเจน","rr":"—","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0069","d":"ความรับผิดชอบตามใบอนุญาตอยู่ที่ SPI (ไม่ทำให้เข้าใจว่า D-0507 เป็นผู้ดำเนินการ)","rr":"Doc 9774","rk":"","ref":"","prev":"","hd":0,"how":""}]},{"n":"2","subj":"คุณสมบัติและการฝึกอบรมบุคลากร","items":[{"id":"ADR-0070","d":"บุคลากรที่ปฏิบัติงานในเขตปฏิบัติการมีคุณสมบัติ/ผ่านการฝึก (competency & training records)","rr":"Annex 14 App; EASA ADR.OR.D.017","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0071","d":"โปรแกรมฝึกอบรมและบันทึกการฝึก (training programme & records)","rr":"EASA ADR.OR.D.017","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0072","d":"การควบคุมผู้รับเหมา/ผู้ให้บริการภายนอก (contracted activities oversight)","rr":"EASA ADR.OR.D.010","rk":"","ref":"","prev":"","hd":0,"how":""}]},{"n":"3","subj":"ระบบการจัดการความปลอดภัย (SMS)","items":[{"id":"ADR-0073","d":"นโยบายและวัตถุประสงค์ด้านความปลอดภัย (safety policy & objectives)","rr":"Annex 19","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0074","d":"การชี้บ่งอันตรายและการประเมิน-จัดการความเสี่ยง (hazard ID & risk management)","rr":"Annex 19","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0075","d":"การประกันความปลอดภัย (safety assurance) — รายงานเหตุ, ตรวจสอบภายใน","rr":"Annex 19","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0076","d":"การส่งเสริมความปลอดภัย (safety promotion & training)","rr":"Annex 19","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0077","d":"แผนฉุกเฉินสนามบินและการซ้อม (emergency plan & exercises)","rr":"Annex 14 Ch.9","rk":"","ref":"","prev":"","hd":0,"how":""}]},{"n":"4","subj":"ความพร้อมวันตรวจ (Inspection-day readiness)","items":[{"id":"ADR-0078","d":"มอบหมายบทบาททีมรับตรวจ: Lead/SPOC, Doc Controller, Airside, Ops/Safety, Escort, Scribe","rr":"แนวปฏิบัติ","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0079","d":"ซ้อมตรวจภายใน (mock inspection) + เดินเส้นทางตรวจ","rr":"แนวปฏิบัติ","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0080","d":"ปิด corrective action ที่ค้างทั้งหมดก่อนวันตรวจ","rr":"แนวปฏิบัติ","rk":"","ref":"","prev":"","hd":0,"how":""},{"id":"ADR-0081","d":"เตรียม entry/exit meeting + เอกสาร index ค้นได้เร็ว","rr":"แนวปฏิบัติ","rk":"","ref":"","prev":"","hd":0,"how":""}]}]}]}]}],"catalog":[]}</script>
+<script>
+"use strict";
+// ═══════════ SERVER SYNC CONFIG ═══════════
+// วางค่า firebaseConfig จาก Firebase Console ตรงบรรทัดล่างนี้ (แทน null) แล้วระบบ login + sync จะเปิดอัตโนมัติ
+// ถ้าเป็น null แอปทำงานแบบออฟไลน์ (บันทึก/เปิดไฟล์ JSON) เหมือนเดิมทุกอย่าง
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyB_O40YpkQJJQIpx8gWNdiC9XrZ1o9SlHs",
+  authDomain: "d0507-audit.firebaseapp.com",
+  projectId: "d0507-audit",
+  storageBucket: "d0507-audit.firebasestorage.app",
+  messagingSenderId: "880880454045",
+  appId: "1:880880454045:web:a8fe249ca18f1a7a20c774"
+};
+/* ตัวอย่าง:
+const FIREBASE_CONFIG = {
+  apiKey: "AIza....", authDomain: "d0507-audit.firebaseapp.com", projectId: "d0507-audit",
+  storageBucket: "d0507-audit.firebasestorage.app", messagingSenderId: "...", appId: "..."
+}; */
+const AUDIT_ID = 'aerodrome-2026';   // ผูกกับรอบตรวจ — กำหนดโดย pack.json ตอน build
+const CAR_PREFIX = 'CAR-ADR';
+// ═══════════════════════════════════════════
+const DATA = JSON.parse(document.getElementById('DATA').textContent);
+const MODS = DATA.modules, CATALOG = DATA.catalog;
+const ALL = []; // flat items
+MODS.forEach(m=>m.parts.forEach((p,pi)=>p.secs.forEach(s=>s.groups.forEach(g=>g.items.forEach(it=>{
+  it._m=m.c; it._p=p.t; it._pi=pi; it._s=s.t; it._g=g; ALL.push(it);
+})))));
+const state = {};   // id -> {st:'S'|'U'|'NA', rm:'', ref:''}
+let dirty=false;
+const meta = {auditor:'', date: new Date().toISOString().slice(0,10), scope:'', note:''};
+// ---- sync bookkeeping (no-op when FIREBASE_CONFIG is null) ----
+const pending=new Set(); let pendingMeta=false, fbReady=false, fbUser=null;
+function mark(id){ dirty=true; if(fbReady) pending.add(id); }
+function markMeta(){ dirty=true; pendingMeta=true; }
+
+function st(id){ return state[id] || null; }
+function setSt(id, v, dim){
+  dim = dim || 'st';
+  const cur = state[id] || (state[id]={});
+  cur[dim] = (cur[dim]===v) ? '' : v;
+  mark(id);
+  refreshItem(id); refreshCounts();
+}
+// per-item rolled-up status: dual items combine Doc(st) + Impl(st2)
+function rollup(it){
+  const s=st(it.id);
+  if(!it.dual){ return (s&&s.st)?s.st:''; }
+  const a=s&&s.st||'', b=s&&s.st2||'';
+  if(a==='U'||b==='U') return 'U';      // any U = GAP, even if other dimension pending
+  if(!a||!b) return '';                 // not fully checked
+  if(a==='NA'&&b==='NA') return 'NA';
+  return 'S';
+}
+function setRm(id,v){ (state[id]||(state[id]={})).rm=v; mark(id); }
+function setRef(id,v){ (state[id]||(state[id]={})).ref=v; mark(id); }
+function setSc(id,i,val){
+  const s=(state[id]=state[id]||{}); s.sc=s.sc||{}; s.sc[i]=!!val; mark(id);
+  const el=document.querySelector(`#it_${id} .chk[data-i="${i}"]`);
+  if(el) el.classList.toggle('ck',!!val);
+  const it=ALL.find(x=>x.id===id);
+  const cht=document.querySelector(`#it_${id} .cht`);
+  if(it&&it.chk&&cht) cht.textContent=`☑ รายการตรวจย่อย — ติ๊กเมื่อพบ/มีจริง (${Object.values(s.sc).filter(Boolean).length}/${it.chk.length})`;
+  refreshCounts();
+}
+// ---------- photo evidence ----------
+function addPhoto(id, inp){
+  const files=[...inp.files]; inp.value='';
+  files.forEach(f=>{
+    const img=new Image();
+    const rd=new FileReader();
+    rd.onload=()=>{ img.onload=()=>{
+        const MAX=1280;
+        const sc=Math.min(1, MAX/Math.max(img.width,img.height));
+        const cv=document.createElement('canvas');
+        cv.width=Math.round(img.width*sc); cv.height=Math.round(img.height*sc);
+        cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+        const data=cv.toDataURL('image/jpeg',0.72);
+        const s=(state[id]=state[id]||{}); s.ph=s.ph||[];
+        s.ph.push({d:data, t:new Date().toISOString().slice(0,16).replace('T',' ')});
+        mark(id); if(fbReady) uploadPhoto(id, s.ph.length-1);
+        refreshItem(id); refreshCounts();
+      }; img.src=rd.result; };
+    rd.readAsDataURL(f);
+  });
+}
+function delPhoto(id,i){
+  const s=st(id); if(!s||!s.ph) return;
+  s.ph.splice(i,1); mark(id); refreshItem(id);
+}
+function viewPhoto(id,i){
+  const s=st(id); if(!s||!s.ph||!s.ph[i]) return;
+  const ov=document.createElement('div'); ov.id='pview';
+  ov.innerHTML=`<img src="${s.ph[i].d||s.ph[i].u}"><div style="color:#cdd8ea;font-size:12px">${id} · ${s.ph[i].t||''}</div><button onclick="document.getElementById('pview').remove()">ปิด</button>`;
+  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov);
+}
+function photoRowHTML(it){
+  const s=st(it.id)||{}; const ph=s.ph||[];
+  return `<div class="photorow">
+    <button class="pbtn" onclick="document.getElementById('pf_${it.id}').click()">📷 ถ่ายรูป/แนบหลักฐาน${ph.length?` (${ph.length})`:''}</button>
+    <input type="file" id="pf_${it.id}" accept="image/*" capture="environment" multiple class="hide" onchange="addPhoto('${it.id}',this)">
+    ${ph.map((p,i)=>`<span class="thumb"><img src="${p.d||p.u}" onclick="viewPhoto('${it.id}',${i})"><button class="del" onclick="delPhoto('${it.id}',${i})">✕</button></span>`).join('')}
+  </div>`;
+}
+function chkHTML(it){
+  if(!it.chk) return '';
+  const s=st(it.id)||{}; const sc=s.sc||{};
+  return `<div class="chklist"><div class="cht">☑ รายการตรวจย่อย — ติ๊กเมื่อพบ/มีจริง (${Object.values(sc).filter(Boolean).length}/${it.chk.length})</div>
+    ${it.chk.map((c,i)=>`<label class="chk ${sc[i]?'ck':''}" data-i="${i}">
+      <input type="checkbox" ${sc[i]?'checked':''} onchange="setSc('${it.id}',${i},this.checked)"><span>${esc(c)}</span></label>`).join('')}
+  </div>`;
+}
+function mxHTML(it){
+  if(!it.mx || !it.mx.length) return '';
+  return it.mx.map(m=>`<details class="mref"><summary>📖 คู่มือ: ${esc(m.t)}</summary>
+    <div class="mx"><b>${esc(m.t)}</b><br>${esc(m.x||'— ดูรายละเอียดในคู่มือ —')}</div></details>`).join('');
+}
+function effRef(it){ const s=st(it.id);
+  if(it.dual) return (s&&s.ref)||'';
+  return (s&&s.ref!==undefined&&s.ref!==null&&s.ref!=='')?s.ref:it.ref; }
+
+// ---------- counts ----------
+function countOf(items){
+  let c={S:0,U:0,NA:0,done:0,tot:items.length};
+  items.forEach(it=>{const r=rollup(it); if(r){c[r]++; c.done++;}});
+  return c;
+}
+function modItems(mc){ return ALL.filter(it=>it._m===mc); }
+function refreshCounts(){
+  const c=countOf(ALL);
+  document.getElementById('ftxt').textContent = `ตรวจแล้ว ${c.done} / ${c.tot}`;
+  document.getElementById('fbar').style.width = (100*c.done/c.tot)+'%';
+  document.getElementById('fgap').textContent = 'GAP: '+c.U;
+  document.querySelectorAll('[data-partcnt]').forEach(el=>{
+    const [mc,pi]=el.dataset.partcnt.split('|');
+    const items=ALL.filter(it=>it._m===mc&&it._pi==pi);
+    const c=countOf(items);
+    el.textContent=`${c.done}/${c.tot}` + (c.U?` · GAP ${c.U}`:'');
+    const bar=document.querySelector(`[data-partbar="${el.dataset.partcnt}"]`);
+    if(bar){bar.querySelector('i:not(.gap)').style.width=(100*c.S/c.tot)+'%';
+            bar.querySelector('i.gap').style.width=(100*c.U/c.tot)+'%';}
+  });
+  document.querySelectorAll('[data-tabcnt]').forEach(el=>{
+    const c=countOf(modItems(el.dataset.tabcnt));
+    el.textContent=`${c.done}/${c.tot}`;
+  });
+}
+
+// ---------- item rendering ----------
+function chipPrev(p){
+  if(p==='Y') return '<span class="chip prevY">ATO เดิม: Yes</span>';
+  if(p==='N') return '<span class="chip prevN">ATO เดิม: No</span>';
+  if(p==='NA') return '<span class="chip prevNA">ATO เดิม: N/A</span>';
+  return '';
+}
+const MT_LABEL={OBS:'👁 สังเกตการณ์ Observe', DOC:'📄 ตรวจบันทึก Records', INT:'💬 สัมภาษณ์ Interview', XCK:'🔀 ตรวจไขว้ Cross-check', DEMO:'🎬 ให้สาธิต Demonstrate'};
+function btnRow(it,dim,s){
+  const v=s[dim]||'';
+  return `<button class="stbtn S ${v==='S'?'on':''}" onclick="setSt('${it.id}','S','${dim}')">S ✓</button>
+    <button class="stbtn U ${v==='U'?'on':''}" onclick="setSt('${it.id}','U','${dim}')">U ✗</button>
+    <button class="stbtn NA ${v==='NA'?'on':''}" onclick="setSt('${it.id}','NA','${dim}')">N/A</button>`;
+}
+function itemHTML(it){
+  const s=st(it.id)||{};
+  const isU = it.dual ? (s.st==='U'||s.st2==='U') : s.st==='U';
+  if(it.dual){
+    return `<div class="item ${isU?'stU':''}" id="it_${it.id}" data-id="${it.id}">
+      <p class="d" ${it.mx&&it.mx.length?`title="${escAttr(it.mx[0].t+' — '+(it.mx[0].x||'').slice(0,300))}"`:''}>${esc(it.d)}</p>
+      ${it.th?`<p class="thd">${esc(it.th)}</p>`:''}
+      <div class="meta">
+        ${it.rr?`<span class="chip rr">${esc(it.rr)}</span>`:''}
+        ${(it.mt||[]).map(m=>`<span class="chip mt">${MT_LABEL[m]||m}</span>`).join('')}
+        <span class="chip">${it.id}</span>
+      </div>
+      ${it.how?`<div class="how"><b>วิธีตรวจ / How to verify:</b> ${esc(it.how)}</div>`:''}
+      ${mxHTML(it)}
+      ${chkHTML(it)}
+      <div class="dualrow"><span class="dlab">📖 คู่มือ<br>Documented</span>${btnRow(it,'st',s)}
+        <span class="dhint">เขียนไว้ในคู่มือครบถ้วน?</span></div>
+      <div class="dualrow"><span class="dlab">⚙️ ปฏิบัติจริง<br>Implemented</span>${btnRow(it,'st2',s)}
+        <span class="dhint">ทำจริง มีหลักฐาน?</span></div>
+      <div class="ctr">
+        <input class="refin" placeholder="Evidence / หลักฐานที่พบ + อ้างอิงคู่มือ (${escAttr(it.ref||'')})" value="${escAttr(effRef(it)===it.ref?'':effRef(it))}"
+          onchange="setRef('${it.id}',this.value)">
+      </div>
+      ${photoRowHTML(it)}
+      <textarea class="rmk" placeholder="Finding — ระบุ GAP: ไม่มีในคู่มือ / เขียนไว้แต่ไม่ได้ปฏิบัติ / ปฏิบัติต่างจากคู่มือ + รายละเอียด"
+        onchange="setRm('${it.id}',this.value)">${esc(s.rm||'')}</textarea>
+    </div>`;
+  }
+  return `<div class="item ${it.hd?'hdRow':''} ${isU?'stU':''}" id="it_${it.id}" data-id="${it.id}">
+    <p class="d" ${it.mx&&it.mx.length?`title="${escAttr(it.mx[0].t+' — '+(it.mx[0].x||'').slice(0,300))}"`:''}>${esc(it.d)}</p>
+    <div class="meta">
+      ${it.rr?`<span class="chip rr">${esc(it.rr)}</span>`:''}
+      ${chipPrev(it.prev)}
+      <span class="chip">${it.id}</span>
+    </div>
+    ${it.how?`<details class="mref how2"><summary>🔎 วิธีตรวจ / How to verify</summary><div class="mx">${esc(it.how)}</div></details>`:''}
+    ${mxHTML(it)}
+    ${chkHTML(it)}
+    <div class="ctr">
+      ${btnRow(it,'st',s)}
+      <input class="refin" placeholder="Reference (Section/Page/Topic)" value="${escAttr(effRef(it))}"
+        onchange="setRef('${it.id}',this.value)">
+    </div>
+    ${photoRowHTML(it)}
+    <textarea class="rmk" placeholder="Remark / Finding — ระบุรายละเอียดช่องว่างที่พบ และเอกสาร/หัวข้อที่ต้องแก้ไข"
+      onchange="setRm('${it.id}',this.value)">${esc(s.rm||'')}</textarea>
+  </div>`;
+}
+function refreshItem(id){
+  const el=document.getElementById('it_'+id);
+  if(!el) return;
+  const it=ALL.find(x=>x.id===id);
+  const ae=document.activeElement;
+  const typing=ae && el.contains(ae) && (ae.tagName==='TEXTAREA' ||
+    (ae.tagName==='INPUT' && ['text','search','date',''].includes(ae.type||'')));
+  if(typing){ // preserve focus while typing — update classes only
+    const s=st(id)||{};
+    el.classList.toggle('stU', it.dual ? (s.st==='U'||s.st2==='U') : s.st==='U');
+    const s2=st(id)||{};
+    const applyRow=(row,dim)=>{ row.querySelectorAll('.stbtn').forEach(b=>{
+      b.classList.toggle('on', ['S','U','NA'].some(v=>b.classList.contains(v)&&s2[dim]===v)); }); };
+    if(it.dual){ const rows=el.querySelectorAll('.dualrow');
+      if(rows[0]) applyRow(rows[0],'st'); if(rows[1]) applyRow(rows[1],'st2');
+    } else { const c=el.querySelector('.ctr'); if(c) applyRow(c,'st'); }
+    return;
+  }
+  el.outerHTML=itemHTML(it);
+}
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escAttr(s){return esc(s).replace(/"/g,'&quot;');}
+
+// ---------- module view ----------
+let curTab='dash';
+let filter={q:'', st:''};
+function renderTabs(){
+  const t=[['dash','Dashboard'],['OMM','OMM'],['OMA','OMA'],['TM','TM / PPL'],['SITE','On-Site'],['gap','GAP Report'],['car','CAR']];
+  document.getElementById('tabs').innerHTML = t.map(([k,l])=>
+    `<button class="tab ${curTab===k?'active':''}" onclick="go('${k}')">${l}${(k!=='dash'&&k!=='gap')?` <span class="cnt" data-tabcnt="${k}"></span>`:''}</button>`).join('');
+}
+function go(k){ curTab=k; render(); window.scrollTo(0,0); }
+
+function matches(it){
+  if(filter.st){
+    const r=rollup(it);
+    if(filter.st==='pend' && r) return false;
+    if(filter.st!=='pend' && r!==filter.st) return false;
+  }
+  if(filter.q){
+    const q=filter.q.toLowerCase();
+    if(!(it.d.toLowerCase().includes(q) || (it.th||'').toLowerCase().includes(q) ||
+         (it.how||'').toLowerCase().includes(q) || (it.rr||'').toLowerCase().includes(q) ||
+         (it._g.subj||'').toLowerCase().includes(q) || effRef(it).toLowerCase().includes(q))) return false;
+  }
+  return true;
+}
+
+function renderModule(mc){
+  const m=MODS.find(x=>x.c===mc);
+  let h=`<div class="note"><b>${esc(m.t)}</b> — ${esc(m.th)}<br>
+    เทียบกับคู่มือฉบับปัจจุบัน: <b>${esc(m.man)}</b> · ${esc(m.doc)} · แตะหัวข้อ Part เพื่อเปิดรายการตรวจ
+    · <b>S</b>=Satisfactory (มี/สอดคล้อง) · <b>U</b>=Unsatisfactory (GAP – ต้องแก้ไข) · <b>N/A</b>=ไม่เกี่ยวข้อง`
+    + (m.c==='SITE'?`<br><b>โมดูลนี้ตรวจ 2 มิติต่อข้อ:</b> <b>📖 Documented</b> = เขียนไว้ในคู่มือครบถ้วนหรือไม่ · <b>⚙️ Implemented</b> = มีการปฏิบัติจริง/มีหลักฐานหรือไม่
+    — ข้อที่ "เขียนไว้แต่ไม่ได้ทำ" ให้กด Doc=S, Impl=U แล้วระบุรายละเอียดใน Finding · แต่ละข้อมีชิปวิธีตรวจ (สังเกตการณ์/ตรวจบันทึก/สัมภาษณ์/ตรวจไขว้/ให้สาธิต) และคำแนะนำ "วิธีตรวจ" พร้อมแนวการสุ่มตัวอย่าง`:'')
+    +`</div>`;
+  h+=`<div class="toolbar">
+    <input type="search" placeholder="ค้นหา / Search…" value="${escAttr(filter.q)}" onchange="filter.q=this.value;render()">
+    ${[['','ทั้งหมด'],['pend','ยังไม่ตรวจ'],['U','GAP'],['S','S'],['NA','N/A']].map(([k,l])=>
+      `<button class="fbtn ${filter.st===k?'on':''}" onclick="filter.st='${k}';render()">${l}</button>`).join('')}
+  </div>`;
+  m.parts.forEach((p,pi)=>{
+    const key=`${mc}|${pi}`;
+    const open = openParts.has(key);
+    h+=`<div class="card ${open?'open':''}" id="part_${mc}_${pi}">
+      <div class="hd" onclick="togglePart('${key}')">
+        <span>${esc(p.t)}<span class="th">${esc(p.th)}</span></span>
+        <span class="prog" data-partcnt="${key}"></span>
+      </div>
+      <div class="bar" data-partbar="${key}"><i style="width:0%"></i><i class="gap" style="width:0%"></i></div>
+      <div class="body">${open?partBody(m,p,pi):''}</div>
+    </div>`;
+  });
+  return h;
+}
+const openParts=new Set();
+function togglePart(key){
+  const [mc,pi]=key.split('|');
+  if(openParts.has(key)) openParts.delete(key); else openParts.add(key);
+  const card=document.getElementById(`part_${mc}_${pi}`);
+  if(!card) return;
+  card.classList.toggle('open');
+  const body=card.querySelector('.body');
+  if(card.classList.contains('open') && !body.dataset.done){
+    const m=MODS.find(x=>x.c===mc);
+    body.innerHTML=partBody(m,m.parts[pi],+pi);
+    body.dataset.done=1;
+  }
+  refreshCounts();
+}
+function partBody(m,p,pi){
+  let h='';
+  p.secs.forEach((s,si)=>{
+    const secItems=[]; s.groups.forEach(g=>g.items.forEach(it=>{if(matches(it))secItems.push(it);}));
+    if(!secItems.length && (filter.q||filter.st)) return;
+    if(s.t) h+=`<div class="sec"><span>${esc(s.t)}</span>
+       <button class="bulk" onclick="bulkSec('${m.c}',${pi},${si})">S ✓ ทั้งหมดในหมวดนี้</button></div>`;
+    s.groups.forEach((g,gi)=>{
+      const its=g.items.filter(matches);
+      if(!its.length) return;
+      h+=`<div class="grp"><div class="ghd">
+        <span>${g.n?`<span class="gno">${esc(g.n)}</span>`:''} <b>${esc(g.subj)}</b></span>
+        <button class="bulk" onclick="bulkGrp('${m.c}',${pi},${si},${gi})">S ✓ ทั้งกลุ่ม</button>
+      </div>
+      ${g.how?`<details class="mref how2" style="margin:6px 8px"><summary>🔎 วิธีตรวจกลุ่มนี้ / How to verify</summary><div class="mx">${esc(g.how)}</div></details>`:''}`;
+      its.forEach(it=>h+=itemHTML(it));
+      h+=`</div>`;
+    });
+  });
+  return h || '<p style="color:#889;padding:8px">— ไม่มีรายการตรงเงื่อนไข —</p>';
+}
+function bulkOne(it){
+  const s=(state[it.id]=state[it.id]||{});
+  if(!s.st) s.st='S';
+  if(it.dual && !s.st2) s.st2='S';
+  mark(it.id);
+}
+function bulkGrp(mc,pi,si,gi){
+  MODS.find(x=>x.c===mc).parts[pi].secs[si].groups[gi].items.forEach(bulkOne);
+  dirty=true; rerenderOpen(mc,pi); refreshCounts();
+}
+function bulkSec(mc,pi,si){
+  MODS.find(x=>x.c===mc).parts[pi].secs[si].groups.forEach(g=>g.items.forEach(bulkOne));
+  dirty=true; rerenderOpen(mc,pi); refreshCounts();
+}
+function rerenderOpen(mc,pi){
+  const card=document.getElementById(`part_${mc}_${pi}`);
+  if(card&&card.classList.contains('open')){
+    const m=MODS.find(x=>x.c===mc);
+    card.querySelector('.body').innerHTML=partBody(m,m.parts[pi],pi);
+  }
+}
+
+// ---------- dashboard ----------
+function renderDash(){
+  let h=`<div class="audmeta">
+    <div><label>Auditor / ผู้ตรวจ</label><input value="${escAttr(meta.auditor)}" onchange="meta.auditor=this.value;markMeta()"></div>
+    <div><label>Audit Date / วันที่ตรวจ</label><input type="date" value="${escAttr(meta.date)}" onchange="meta.date=this.value;markMeta()"></div>
+    <div><label>Scope / ขอบเขตรอบนี้</label><input placeholder="เช่น Full GAP ก่อนยื่น กพท." value="${escAttr(meta.scope)}" onchange="meta.scope=this.value;markMeta()"></div>
+  </div>`;
+  h+='<div class="dash">';
+  MODS.forEach(m=>{
+    const c=countOf(modItems(m.c));
+    h+=`<div class="dcard" onclick="go('${m.c}')" style="cursor:pointer">
+      <h3>${esc(m.c)} <span style="font-weight:normal;font-size:12px;color:#667">${esc(m.man)}</span></h3>
+      <div class="th">${esc(m.th)}</div>
+      <div class="dnum">${Math.round(100*c.done/c.tot)}% <small>ตรวจแล้ว ${c.done}/${c.tot}</small></div>
+      <div class="bar" style="margin-top:6px"><i style="width:${100*c.S/c.tot}%"></i></div>
+      <div class="drow"><b class="g">S ${c.S}</b><b class="u">GAP ${c.U}</b><b class="n">N/A ${c.NA}</b><b class="p">ค้าง ${c.tot-c.done}</b></div>
+    </div>`;
+  });
+  const c=countOf(ALL);
+  h+=`<div class="dcard" style="background:var(--navy);color:#fff">
+    <h3 style="color:#fff">TOTAL</h3><div class="th" style="color:#cdd8ea">ทุกคู่มือรวมกัน</div>
+    <div class="dnum" style="color:#fff">${Math.round(100*c.done/c.tot)}% <small style="color:#cdd8ea">${c.done}/${c.tot}</small></div>
+    <div class="bar" style="margin-top:6px;background:rgba(255,255,255,.25)"><i style="width:${100*c.S/c.tot}%"></i></div>
+    <div class="drow"><b class="g" style="color:#9fdf9f">S ${c.S}</b><b style="color:#ff9f9f">GAP ${c.U}</b><b style="color:#ccd">N/A ${c.NA}</b><b style="color:#ffd98a">ค้าง ${c.tot-c.done}</b></div>
+  </div></div>`;
+  // clause coverage
+  h+=`<div class="note"><b>Coverage by TCAR-ORA / Part FCL clause</b> — ความครอบคลุมรายข้อกำหนด: จำนวนรายการตรวจที่ผูกกับแต่ละ clause และสถานะ
+   · clause ที่ <span class="pill none">0 รายการ</span> ให้ประเมินความเกี่ยวข้องเองอีกครั้ง</div>`;
+  h+='<table class="cl"><tr><th style="width:120px">Clause</th><th>Requirement</th><th style="width:90px">รายการ</th><th style="width:150px">สถานะ</th></tr>';
+  CATALOG.forEach(([sub,subth,rows])=>{
+    h+=`<tr class="subhd"><td colspan="4">${esc(sub)} — ${esc(subth)}</td></tr>`;
+    rows.forEach(([code,ti,th])=>{
+      const its=ALL.filter(it=>it.rk===code);
+      const c=countOf(its);
+      let pill;
+      if(!its.length) pill='<span class="pill none">0 รายการ</span>';
+      else if(c.U) pill=`<span class="pill gap">GAP ${c.U}</span>`;
+      else if(c.done===c.tot) pill='<span class="pill ok">ครบ ✓</span>';
+      else pill=`<span class="pill pend">ค้าง ${c.tot-c.done}</span>`;
+      h+=`<tr><td><b>${esc(code)}</b></td><td>${esc(ti)}${th?`<br><span style="color:#667;font-size:11.5px">${esc(th)}</span>`:''}</td>
+        <td>${its.length?c.done+'/'+its.length:'—'}</td><td>${pill}</td></tr>`;
+    });
+  });
+  h+='</table>';
+  return h;
+}
+
+// ---------- GAP report ----------
+// ================= CAR (Corrective Action Request) =================
+const gapSel=new Set();
+function carOf(id){ const s=st(id); return (s&&s.car)||null; }
+function today(){ return new Date().toISOString().slice(0,10); }
+function uName(){ return (typeof fbUser!=='undefined'&&fbUser)?(fbUser.displayName||fbUser.email||''):(meta.auditor||''); }
+function nextCarNo(){
+  let mx=0;
+  ALL.forEach(it=>{const c=carOf(it.id); if(c&&c.no){const m=c.no.match(/(\d+)$/); if(m) mx=Math.max(mx,+m[1]);}});
+  return `${CAR_PREFIX}-${(meta.date||today()).slice(0,4)}-${String(mx+1).padStart(3,'0')}`;
+}
+function logCar(c,msg){ c.hist=((c.hist||'')+`\n${today()} ${msg}`).trim(); }
+function toggleSel(id,on){ if(on) gapSel.add(id); else gapSel.delete(id);
+  const n=document.getElementById('selcnt'); if(n) n.textContent=gapSel.size; }
+function assignSelected(sendMail){
+  const name=document.getElementById('as_name').value.trim();
+  const email=document.getElementById('as_email').value.trim();
+  const due=document.getElementById('as_due').value;
+  if(!gapSel.size){ alert('ยังไม่ได้เลือกรายการ — ติ๊กช่องหน้า Finding ที่ต้องการมอบหมายก่อน'); return; }
+  if(!name){ alert('กรุณากรอกชื่อผู้รับผิดชอบ'); return; }
+  const assigned=[];
+  gapSel.forEach(id=>{
+    const s=(state[id]=state[id]||{});
+    const c=(s.car=s.car||{});
+    if(!c.no) c.no=nextCarNo();
+    c.as=name; c.ae=email; c.due=due; c.cast='A'; c.iby=uName()||meta.auditor||'';
+    logCar(c,`มอบหมายให้ ${name}${due?` กำหนดเสร็จ ${due}`:''}${c.iby?` · โดย ${c.iby}`:''}`);
+    assigned.push(id);
+  });
+  assigned.forEach(mark);
+  if(sendMail) openMail(assigned, name, email, due);
+  gapSel.clear(); render();
+}
+function mailBody(ids, name, due){
+  const L=[`เรียน ${name||'ผู้รับผิดชอบ'}`,'',
+   `ตามผลการตรวจติดตามภายใน (Internal Audit – GAP Analysis, TCAR-ORA) วันที่ ${meta.date||today()}`,
+   `ขอมอบหมายให้ดำเนินการแก้ไขข้อบกพร่อง (CAR) จำนวน ${ids.length} รายการ ดังนี้`,''];
+  ids.forEach(id=>{
+    const it=ALL.find(x=>x.id===id); const c=carOf(id)||{};
+    L.push(`• ${c.no||''} [${id}] ${it.d.slice(0,140)}`);
+    L.push(`  ประเภท: ${gapType(it)}${(st(id)||{}).rm?` | รายละเอียด: ${(st(id)||{}).rm.slice(0,120)}`:''}`);
+    L.push(`  กำหนดเสร็จ: ${c.due||due||'-'}`);
+    L.push('');
+  });
+  L.push('ขอให้วิเคราะห์สาเหตุราก (root cause) กำหนด corrective action และรายงานผลกลับตามแบบฟอร์ม CAR ที่แนบ ภายในกำหนด','');
+  L.push(`ผู้ตรวจ: ${meta.auditor||'-'}`,'D-0507 Flight Training Co., Ltd. | D-0507-IAC-001');
+  return L.join('\n');
+}
+function openMail(ids, name, email, due){
+  const sub=`[D-0507] CAR Assignment — Internal Audit ${meta.date||today()} (${ids.length} รายการ)`;
+  const body=mailBody(ids, name, due);
+  const url=`mailto:${encodeURIComponent(email||'')}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
+  if(url.length>7500){
+    navigator.clipboard&&navigator.clipboard.writeText(`เรื่อง: ${sub}\n\n${body}`);
+    alert('รายการเยอะเกินกว่าจะเปิดในอีเมลโดยตรง — คัดลอกข้อความลงคลิปบอร์ดแล้ว วางในอีเมลได้เลย และอย่าลืมแนบไฟล์ CAR Form');
+  } else location.href=url;
+}
+function copyMailSel(){
+  const ids=[...gapSel];
+  if(!ids.length){ alert('เลือกรายการก่อน'); return; }
+  const name=document.getElementById('as_name').value.trim();
+  navigator.clipboard.writeText(mailBody(ids,name,document.getElementById('as_due').value))
+    .then(()=>alert('คัดลอกข้อความอีเมลแล้ว'));
+}
+function setCarF(id,f,v){ const s=(state[id]=state[id]||{}); const c=(s.car=s.car||{}); c[f]=v; mark(id); }
+function carReport(id){
+  const c=carOf(id); if(!c) return;
+  const miss=[];
+  if(!(c.rc||'').trim()) miss.push('① Root Cause Analysis (Part 3)');
+  if(!(c.ca||'').trim()) miss.push('② Corrective Action (Part 4)');
+  if(!c.cadone) miss.push('② วันที่แล้วเสร็จ (Part 4)');
+  if(!(c.sg&&c.sg.resp)) miss.push('✍ ลายเซ็นผู้รับผิดชอบ (ช่องลายเซ็นด้านล่าง)');
+  if(miss.length){ alert('ตอบกลับไม่ครบ — ต้องกรอกตามลำดับก่อนส่ง:\n• '+miss.join('\n• ')+'\n\n(③ Preventive Action แนะนำให้กรอกทุกครั้ง)'); return; }
+  if(!(c.pa||'').trim() && !confirm('ยังไม่ได้กรอก ③ Preventive Action (Part 5) — ส่งตอบกลับโดยไม่มีมาตรการป้องกันการเกิดซ้ำ?')) return;
+  c.cast='R'; c.cadate=today(); logCar(c,'ผู้รับผิดชอบส่งตอบกลับ Part 3–5 — รอตรวจรับ (Part 6)'); mark(id); render();
+}
+function carAccept(id){
+  const c=carOf(id); if(!c) return;
+  if(!(c.vev||'').trim()){ alert('Part 6 — กรอก Verification evidence (หลักฐานที่ใช้ทวนสอบว่าแก้ไขได้ผลจริง) ก่อนปิด CAR'); return; }
+  if(!(c.sg&&c.sg.aud)){ alert('Part 6 — Auditor ต้องลงชื่อก่อนปิด CAR (กดปุ่ม ✍ ลงชื่อ ช่อง Auditor)'); return; }
+  c.cast='V'; c.vdate=today(); c.vby=(c.sg.aud.n)||meta.auditor||'';
+  logCar(c,`Accepted — ตรวจรับผ่าน ปิด CAR โดย ${c.vby||'ผู้ตรวจ'}`);
+  mark(id); render();
+}
+function carRejectGo(id){
+  const c=carOf(id); if(!c) return;
+  const rs=(document.getElementById('rjr_'+id).value||'').trim();
+  const nd=document.getElementById('rjd_'+id).value;
+  if(!rs){ alert('กรอกเหตุผลที่ Reject / สิ่งที่ต้องดำเนินการเพิ่มเติม'); return; }
+  if(!nd){ alert('กำหนดวันเสร็จใหม่ (new due date) ตามฟอร์ม Part 6'); return; }
+  c.rejn=rs; c.due=nd; c.cast='X';
+  logCar(c,`Rejected — ตีกลับ: ${rs} · กำหนดเสร็จใหม่ ${nd}`);
+  mark(id); render();
+}
+function carRejToggle(id){ const b=document.getElementById('rj_'+id); if(b) b.classList.toggle('hide'); }
+// ---- Signature pad (3 parties per D-0507-CAR-001) ----
+let SIGCTX=null, SIGQ=null;
+const SIG_ROLES={resp:'Responsible Person / ผู้รับผิดชอบ', aud:'Auditor / ผู้ตรวจ', cmm:'Compliance Monitoring Manager'};
+function openSig(idOrIds, role, cb){
+  const ids=Array.isArray(idOrIds)?idOrIds:[idOrIds];
+  const c=carOf(ids[0]); if(!c) return;
+  SIGQ={ids, role, cb:cb||null};
+  const names={resp:c.as||'', aud:uName()||meta.auditor||'', cmm:''};
+  const prev=(c.sg&&c.sg[role])||null;
+  const w=document.createElement('div'); w.className='sigwrap'; w.id='sigwrap';
+  w.innerHTML=`<div class="sigbox">
+    <b style="color:var(--navy)">✍ ลงชื่อ — ${SIG_ROLES[role]}</b>${ids.length>1?`<span class="carpill A" style="margin-left:8px">ใช้กับ ${ids.length} CAR ที่เลือก</span>`:''}
+    <div style="margin:8px 0">ชื่อ-นามสกุล: <input id="sig_n" class="ca-sm" style="width:62%" value="${esc((prev&&prev.n)||names[role]||'')}" placeholder="ชื่อผู้ลงนาม"></div>
+    <canvas id="sig_c" width="540" height="180"></canvas>
+    <div style="color:#7a8798;font-size:11px;margin-top:3px">เซ็นในกรอบด้วยนิ้ว / Apple Pencil / เมาส์</div>
+    <div style="margin-top:10px;text-align:right">
+      <button class="carbtn" onclick="sigClear()">ล้าง</button>
+      <button class="carbtn" onclick="document.getElementById('sigwrap').remove()">ยกเลิก</button>
+      <button class="carbtn v" onclick="sigSave()">✔ บันทึกลายเซ็น</button>
+    </div></div>`;
+  document.body.appendChild(w);
+  const cv=document.getElementById('sig_c'); const ctx=cv.getContext('2d');
+  ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#16305e';
+  let drawing=false, drew=false;
+  const pos=e=>{const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height];};
+  cv.onpointerdown=e=>{drawing=true; drew=true; cv.setPointerCapture(e.pointerId); const p=pos(e); ctx.beginPath(); ctx.moveTo(p[0],p[1]); ctx.lineTo(p[0]+.1,p[1]+.1); ctx.stroke(); e.preventDefault();};
+  cv.onpointermove=e=>{if(!drawing)return; const p=pos(e); ctx.lineTo(p[0],p[1]); ctx.stroke(); e.preventDefault();};
+  cv.onpointerup=cv.onpointercancel=()=>{drawing=false;};
+  SIGCTX={cv,ctx,hasInk:()=>drew,resetInk:()=>{drew=false;}};
+}
+function sigClear(){ if(SIGCTX){ SIGCTX.ctx.clearRect(0,0,SIGCTX.cv.width,SIGCTX.cv.height); SIGCTX.resetInk(); } }
+function sigSave(){
+  if(!SIGQ) return;
+  const n=(document.getElementById('sig_n').value||'').trim();
+  if(!n){ alert('กรอกชื่อผู้ลงนาม'); return; }
+  if(!SIGCTX||!SIGCTX.hasInk()){ alert('ยังไม่ได้เซ็นในกรอบ'); return; }
+  const png=SIGCTX.cv.toDataURL('image/png');
+  const {ids, role, cb}=SIGQ;
+  ids.forEach(id=>{
+    const s=(state[id]=state[id]||{}); const c=(s.car=s.car||{});
+    c.sg=c.sg||{}; c.sg[role]={d:png, n:n, dt:today()};
+    logCar(c,`ลงชื่อ${role==='resp'?'ผู้รับผิดชอบ':role==='aud'?'ผู้ตรวจ':' CMM'}: ${n}`);
+    mark(id);
+  });
+  const w=document.getElementById('sigwrap'); if(w) w.remove();
+  SIGQ=null;
+  if(cb) cb(); else render();
+}
+// ---- Bulk actions (เลือกหลาย CAR ทำครั้งเดียว) ----
+const carSel=new Set();
+function carSelTgl(id,on){ if(on) carSel.add(id); else carSel.delete(id);
+  const n=document.getElementById('carselcnt'); if(n) n.textContent=carSel.size; }
+function bulkSign(role){
+  const ids=[...carSel]; if(!ids.length){ alert('ติ๊กเลือก CAR ในตารางก่อน'); return; }
+  openSig(ids, role);
+}
+function bulkReport(){
+  const ids=[...carSel].filter(id=>{const c=carOf(id); return c&&(c.cast==='A'||c.cast==='X');});
+  if(!ids.length){ alert('ติ๊กเลือก CAR สถานะ "รอแก้ไข/ตีกลับ" ก่อน'); return; }
+  const bad=ids.filter(id=>{const c=carOf(id); return !(c.rc||'').trim()||!(c.ca||'').trim()||!c.cadone;});
+  if(bad.length){ alert('CAR ต่อไปนี้ยังกรอก Part 3–4 ไม่ครบ (Root cause / Corrective action / วันที่แล้วเสร็จ):\n'+bad.map(id=>(carOf(id).no||id)).join(', ')+'\n\nกรอกรายใบให้ครบก่อน แล้วกดส่งรวมอีกครั้ง'); return; }
+  const fin=()=>{
+    ids.forEach(id=>{ const c=carOf(id); c.cast='R'; c.cadate=today();
+      logCar(c,'ผู้รับผิดชอบส่งตอบกลับ Part 3–5 (ส่งรวม) — รอตรวจรับ (Part 6)'); mark(id); });
+    carSel.clear(); render(); syncStatus('📤 ส่งตอบกลับแล้ว '+ids.length+' CAR — รอตรวจรับ','var(--green)');
+  };
+  const need=ids.filter(id=>{const c=carOf(id); return !(c.sg&&c.sg.resp);});
+  if(need.length) openSig(ids,'resp',fin); else fin();
+}
+function bulkAccept(){
+  const ids=[...carSel].filter(id=>{const c=carOf(id); return c&&c.cast==='R';});
+  if(!ids.length){ alert('ติ๊กเลือก CAR สถานะ "รอตรวจรับ" ก่อน'); return; }
+  const w=document.createElement('div'); w.className='sigwrap'; w.id='bawrap';
+  w.innerHTML=`<div class="sigbox">
+    <b style="color:var(--navy)">✔ ตรวจรับและปิด CAR รวม (${ids.length} ใบ)</b>
+    <div class="ca-lb">Verification evidence — หลักฐานทวนสอบ (ใช้กับใบที่ยังไม่ได้กรอก · ใบที่กรอกรายใบไว้แล้วคงของเดิม)</div>
+    <textarea class="ca-in" id="ba_ev" placeholder="เช่น ตรวจคู่มือฉบับแก้ไข rev ใหม่ครบทุกรายการแล้ว"></textarea>
+    <div style="margin-top:10px;text-align:right">
+      <button class="carbtn" onclick="document.getElementById('bawrap').remove()">ยกเลิก</button>
+      <button class="carbtn v" onclick="bulkAcceptGo('${ids.join(',')}')">ต่อไป → ลงชื่อ Auditor (ครั้งเดียว)</button>
+    </div></div>`;
+  document.body.appendChild(w);
+}
+function bulkAcceptGo(idstr){
+  const ids=idstr.split(',');
+  const ev=(document.getElementById('ba_ev').value||'').trim();
+  const missing=ids.filter(id=>{const c=carOf(id); return !((c.vev||'').trim()||ev);});
+  if(missing.length){ alert('กรอก Verification evidence ในช่องด้านบน (หรือกรอกรายใบ) ก่อนปิด CAR: '+missing.map(id=>(carOf(id).no||id)).join(', ')); return; }
+  document.getElementById('bawrap').remove();
+  openSig(ids,'aud',()=>{
+    ids.forEach(id=>{ const c=carOf(id);
+      if(!(c.vev||'').trim()) c.vev=ev;
+      c.cast='V'; c.vdate=today(); c.vby=(c.sg&&c.sg.aud&&c.sg.aud.n)||uName()||'';
+      logCar(c,'Accepted (ตรวจรับรวม) — ปิด CAR โดย '+(c.vby||'ผู้ตรวจ')); mark(id); });
+    carSel.clear(); render(); syncStatus('✔ ตรวจรับผ่าน — ปิดแล้ว '+ids.length+' CAR','var(--green)');
+  });
+}
+function sigSlot(it, role, canSign){
+  const c=carOf(it.id)||{}; const g=c.sg&&c.sg[role];
+  return `<div class="sigslot"><div class="sr">${SIG_ROLES[role].split(' / ')[1]||SIG_ROLES[role]}</div>
+    ${g?`<img src="${g.d}"><div>( ${esc(g.n)} )<br>${esc(g.dt)}</div>`:`<div style="color:#98a4b4;padding:8px 0">ยังไม่ลงชื่อ</div>`}
+    ${canSign?`<button class="carbtn" style="margin-top:3px" onclick="openSig('${it.id}','${role}')">✍ ${g?'ลงชื่อใหม่':'ลงชื่อ'}</button>`:''}</div>`;
+}
+function carReassign(id){
+  const box=document.getElementById('re_'+id); if(box) box.classList.toggle('hide');
+}
+function carReassignGo(id){
+  const name=document.getElementById('rn_'+id).value.trim();
+  const email=document.getElementById('re2_'+id).value.trim();
+  const due=document.getElementById('rd_'+id).value;
+  if(!name){ alert('กรอกชื่อผู้รับผิดชอบใหม่'); return; }
+  const c=carOf(id); if(!c) return;
+  logCar(c,`มอบหมายต่อ: ${c.as||'-'} → ${name}${due?` กำหนดใหม่ ${due}`:''}`);
+  c.as=name; if(email) c.ae=email; if(due) c.due=due; c.cast='A';
+  mark(id);
+  if(email) openMail([id], name, email, due);
+  render();
+}
+function carStatusTxt(c){
+  return {A:'มอบหมายแล้ว – รอแก้ไข', R:'แก้ไขแล้ว – รอตรวจรับ', V:'ตรวจรับผ่าน – ปิดแล้ว', X:'ตีกลับ – แก้ไขเพิ่มเติม'}[c.cast]||'ยังไม่มอบหมาย';
+}
+function isOverdue(c){ return c&&c.due&&c.cast!=='V'&&c.due<today(); }
+function carBoxHTML(it){
+  const c=carOf(it.id);
+  if(!c||!c.no) return '';
+  const ed=(c.cast==='A'||c.cast==='X');
+  const respDone=(c.cast==='R'||c.cast==='V');
+  return `<div class="carbox">
+    <span class="cno">${esc(c.no)}</span><span class="carpill ${c.cast||''}">${carStatusTxt(c)}</span>
+    <div style="margin-top:5px">ผู้รับผิดชอบ: <b>${esc(c.as||'-')}</b>${c.ae?` (${esc(c.ae)})`:''}
+      · ตำแหน่ง: <input class="ca-sm" style="width:140px" value="${esc(c.pos||'')}" placeholder="Position" onchange="setCarF('${it.id}','pos',this.value)" ${c.cast==='V'?'disabled':''}>
+      · Finding level: <select class="ca-sm" onchange="setCarF('${it.id}','lvl',this.value)" ${c.cast==='V'?'disabled':''}>
+        <option value="2"${c.lvl!=='1'?' selected':''}>Level 2</option><option value="1"${c.lvl==='1'?' selected':''}>Level 1</option></select>
+      · กำหนดเสร็จ: <span class="${isOverdue(c)?'overdue':''}">${esc(c.due||'-')}${isOverdue(c)?' ⚠ เกินกำหนด':''}</span></div>
+
+    <div class="castep done"><div class="sn">1</div><div class="sb">
+      <b>มอบหมาย CAR</b> (Part 1–2 · Auditor) — Classification: ${esc(gapType(it)||'-')}</div></div>
+
+    <div class="castep ${respDone?'done':''}"><div class="sn">2</div><div class="sb">
+      <b>การตอบกลับของผู้รับผิดชอบ</b> (Part 3–5)${c.cast==='X'&&c.rejn?`<div style="color:var(--red);font-size:12px">ถูกตีกลับ: ${esc(c.rejn)} — แก้ไขแล้วส่งใหม่</div>`:''}
+      ${ed?`
+        <div class="ca-lb">① Root Cause Analysis — สาเหตุราก (Part 3, 5-Why)</div>
+        <textarea class="ca-in" placeholder="ทำไมข้อบกพร่องนี้จึงเกิดขึ้น — วิเคราะห์จนถึงสาเหตุราก" onchange="setCarF('${it.id}','rc',this.value)">${esc(c.rc||'')}</textarea>
+        <div class="ca-lb">② Corrective Action — การแก้ไข + วันที่แล้วเสร็จ (Part 4)</div>
+        <textarea class="ca-in" placeholder="การดำเนินการแก้ไขข้อบกพร่องนี้" onchange="setCarF('${it.id}','ca',this.value)">${esc(c.ca||'')}</textarea>
+        <div style="margin-top:3px">วันที่แล้วเสร็จ: <input type="date" class="ca-sm" value="${esc(c.cadone||'')}" onchange="setCarF('${it.id}','cadone',this.value)"></div>
+        <div class="ca-lb">③ Preventive Action — การป้องกันการเกิดซ้ำ (Part 5)</div>
+        <textarea class="ca-in" placeholder="มาตรการป้องกันไม่ให้เกิดข้อบกพร่องซ้ำ" onchange="setCarF('${it.id}','pa',this.value)">${esc(c.pa||'')}</textarea>
+        <button class="carbtn" onclick="carReport('${it.id}')">📤 ส่งตอบกลับ (Part 3–5) → รอตรวจรับ</button>`
+      :respDone?`
+        <div style="margin-top:4px"><b>① Root cause:</b> ${esc(c.rc||'-')}</div>
+        <div><b>② Corrective action:</b> ${esc(c.ca||'-')} <span style="color:#7a8798">(แล้วเสร็จ ${esc(c.cadone||'-')} · ส่งเมื่อ ${esc(c.cadate||'')})</span></div>
+        <div><b>③ Preventive action:</b> ${esc(c.pa||'-')}</div>`:''}
+    </div></div>
+
+    <div class="castep ${c.cast==='V'?'done':(c.cast==='R'?'':'wait')}"><div class="sn">3</div><div class="sb">
+      <b>VERIFICATION &amp; CLOSURE — ตรวจรับและปิด CAR</b> (Part 6 · Auditor/CMM)
+      ${c.cast==='R'?`
+        <div class="ca-lb">Verification evidence — หลักฐานที่ใช้ทวนสอบว่าการแก้ไขได้ผลจริง</div>
+        <textarea class="ca-in" placeholder="เช่น ตรวจคู่มือฉบับแก้ไขแล้ว / เข้าสังเกตการปฏิบัติจริง / เอกสารหมายเลข..." onchange="setCarF('${it.id}','vev',this.value)">${esc(c.vev||'')}</textarea>
+        <div style="margin-top:5px">
+          <button class="carbtn v" onclick="carAccept('${it.id}')">✔ Accepted — CAR closed</button>
+          <button class="carbtn x" onclick="carRejToggle('${it.id}')">↩ Rejected — further action required</button></div>
+        <div id="rj_${it.id}" class="hide" style="margin-top:6px;border:1px solid var(--red);border-radius:8px;padding:8px">
+          <div class="ca-lb" style="color:var(--red)">เหตุผลที่ตีกลับ / สิ่งที่ต้องดำเนินการเพิ่มเติม</div>
+          <textarea class="ca-in" id="rjr_${it.id}"></textarea>
+          <div style="margin-top:4px">New due date — กำหนดเสร็จใหม่: <input type="date" class="ca-sm" id="rjd_${it.id}" value="${esc(c.due||'')}"></div>
+          <button class="carbtn x" style="margin-top:5px" onclick="carRejectGo('${it.id}')">ยืนยันตีกลับ → ผู้รับผิดชอบแก้ไขใหม่</button>
+        </div>`:''}
+      ${c.cast==='V'?`<div style="margin-top:4px;color:var(--green)"><b>☑ Accepted — CAR closed</b> · Close date: ${esc(c.vdate||'')} · โดย ${esc(c.vby||'-')}${c.vev?`<br>Verification evidence: ${esc(c.vev)}`:''}</div>`:''}
+      ${(c.cast==='A'||c.cast==='X')?`<div style="color:#98a4b4;font-size:12px;margin-top:3px">จะเปิดให้กรอกเมื่อผู้รับผิดชอบส่งตอบกลับ (Part 3–5) แล้ว</div>`:''}
+    </div></div>
+
+    <div class="ca-lb">ลายเซ็น (ตามฟอร์ม D-0507-CAR-001)</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+      ${sigSlot(it,'resp',c.cast!=='V')}
+      ${sigSlot(it,'aud',c.cast!=='V')}
+      ${sigSlot(it,'cmm',true)}
+    </div>
+    ${c.cast!=='V'?`<button class="carbtn" onclick="carReassign('${it.id}')">↪ มอบหมายต่อ</button>
+    <div id="re_${it.id}" class="hide" style="margin-top:6px">
+      <input id="rn_${it.id}" placeholder="ชื่อผู้รับผิดชอบใหม่" style="min-height:38px;border:1px solid #c8d2e0;border-radius:7px;padding:6px 9px">
+      <input id="re2_${it.id}" placeholder="อีเมล (จะเปิดร่างอีเมลให้)" style="min-height:38px;border:1px solid #c8d2e0;border-radius:7px;padding:6px 9px">
+      <input id="rd_${it.id}" type="date" style="min-height:38px;border:1px solid #c8d2e0;border-radius:7px;padding:6px 9px">
+      <button class="carbtn" onclick="carReassignGo('${it.id}')">ยืนยันมอบหมายต่อ</button>
+    </div>`:''}
+    ${c.hist?`<div class="hist">${esc(c.hist)}</div>`:''}
+  </div>`;
+}
+function downloadCarForms(all){
+  let ids;
+  if(all) ids=ALL.filter(it=>carOf(it.id)&&carOf(it.id).no).map(it=>it.id);
+  else {
+    const sel=carSel.size?[...carSel]:(gapSel.size?[...gapSel]:[]);
+    ids=sel.length?sel.filter(id=>carOf(id)&&carOf(id).no)
+                  :ALL.filter(it=>carOf(it.id)&&carOf(it.id).no).map(it=>it.id);
+  }
+  if(!ids.length){ alert('ยังไม่มีรายการที่มอบหมาย CAR'+(all?'':' — หรือรายการที่เลือกยังไม่มี CAR')); return; }
+  const ck=b=>b?'☑':'☐';
+  const dots='............................................';
+  const sigCell=(c,role,fallback)=>{const g=c.sg&&c.sg[role];
+    return g?`<td><img src="${g.d}" style="height:50px"><br>( ${esc(g.n)} )<br>วันที่ ${esc(g.dt)}</td>`
+            :`<td>ลงชื่อ ${dots}<br>( ${esc(fallback||dots)} )<br>วันที่ ............ / ............ / ............</td>`;};
+  const pages=ids.map(id=>{
+    const it=ALL.find(x=>x.id===id); const s=st(id)||{}; const c=s.car||{};
+    const dGap=s.st==='U', iGap=!!(it.dual&&s.st2==='U');
+    return `<div class="page">
+      <table class="t0"><tr><td class="co">D-0507 FLIGHT TRAINING CO., LTD.</td></tr>
+        <tr><td class="ti">CORRECTIVE ACTION REQUEST (CAR)<br><span class="th">คำขอให้ดำเนินการแก้ไขข้อบกพร่อง</span></td></tr></table>
+      <table class="t1"><tr><td>Form: D-0507-CAR-001</td><td>ISSUE NO. 01/REVISION NO. 00</td>
+        <td>OMM Ref: Section 5 – Compliance Monitoring</td><td>CAR No.: ${esc(c.no||'CAR-______-______')}</td></tr></table>
+
+      <div class="ph1">PART 1&nbsp; CAR INFORMATION<span class="th">&nbsp;&nbsp; ข้อมูลทั่วไป</span></div>
+      <table>
+        <tr><td class="l">CAR No.</td><td><b>${esc(c.no||'')}</b></td><td class="l">Date issued</td><td>${esc(meta.date||today())}</td></tr>
+        <tr><td class="l">Audit ref.</td><td>D-0507-IAC-001 / Item ID: ${esc(id)}</td><td class="l">Source</td><td>Internal Audit – GAP Analysis (TCAR-ORA)</td></tr>
+        <tr><td class="l">Regulatory ref.</td><td>TCAR PEL Part ORA: ${esc(it.rr||'-')}</td><td class="l">Finding level</td><td>${ck(c.lvl==='1')} Level 1 &nbsp;&nbsp; ${ck(c.lvl!=='1')} Level 2</td></tr>
+        <tr><td class="l">Assigned to</td><td>${esc(c.as||'')}</td><td class="l">Position</td><td>${esc(c.pos||'')}</td></tr>
+        <tr><td class="l">Issued by (Auditor)</td><td>${esc(c.iby||meta.auditor||'')}</td><td class="l">Due date</td><td>${esc(c.due||'')}</td></tr>
+      </table>
+      <table><tr><td class="l">Classification</td><td>${ck(dGap&&!iGap)} Doc GAP (ไม่มี/ไม่ครบในคู่มือ) &nbsp;&nbsp;&nbsp; ${ck(iGap&&!dGap)} Implementation GAP (เขียนไว้แต่ไม่ได้ปฏิบัติ) &nbsp;&nbsp;&nbsp; ${ck(dGap&&iGap)} ทั้งสองกรณี</td></tr></table>
+
+      <div class="ph1">PART 2&nbsp; FINDING / NONCONFORMITY<span class="th">&nbsp;&nbsp; ข้อบกพร่องที่พบ</span> <span class="fill">(Auditor กรอก — ระบุข้อเท็จจริง หลักฐาน และข้อกำหนดที่เกี่ยวข้อง)</span></div>
+      <div class="box">${esc(it.d)}${it.th?`\n${esc(it.th)}`:''}${s.rm?`\n\nObjective evidence / รายละเอียด: ${esc(s.rm)}`:''}${effRef(it)?`\nอ้างอิงคู่มือ: ${esc(effRef(it))}`:''}</div>
+      ${(s.ph||[]).length?`<div class="phx">${s.ph.map(p=>`<img src="${p.d||p.u}">`).join('')}</div>`:''}
+
+      <div class="ph1">PART 3&nbsp; ROOT CAUSE ANALYSIS<span class="th">&nbsp;&nbsp; การวิเคราะห์สาเหตุราก</span> <span class="fill">(ผู้รับผิดชอบกรอก)</span></div>
+      <div class="box">${esc(c.rc||'')}</div>
+
+      <div class="ph1">PART 4&nbsp; CORRECTIVE ACTION<span class="th">&nbsp;&nbsp; การแก้ไข</span> <span class="fill">(ผู้รับผิดชอบกรอก — การดำเนินการ + วันที่แล้วเสร็จ)</span></div>
+      <div class="box">${esc(c.ca||'')}${c.cadone?`\n\nCompletion date / วันที่แล้วเสร็จ: ${esc(c.cadone)}`:''}</div>
+
+      <div class="ph1">PART 5&nbsp; PREVENTIVE ACTION<span class="th">&nbsp;&nbsp; การป้องกันการเกิดซ้ำ</span></div>
+      <div class="box">${esc(c.pa||'')}</div>
+
+      <div class="ph1">PART 6&nbsp; VERIFICATION &amp; CLOSURE<span class="th">&nbsp;&nbsp; การทวนสอบและปิด CAR</span> <span class="fill">(Auditor / CMM กรอก)</span></div>
+      <table>
+        <tr><td class="l">Closure decision</td><td>${ck(c.cast==='V')} Accepted — CAR closed &nbsp;&nbsp;&nbsp; ${ck(c.cast==='X')} Rejected — further action required (new due date: ${c.cast==='X'?esc(c.due||''):'....................'})</td></tr>
+        <tr><td class="l">Verification evidence</td><td>${esc(c.vev||'')}</td></tr>
+        <tr><td class="l">Close date</td><td>${esc(c.vdate||'')}</td></tr>
+      </table>
+
+      <table class="sig"><tr>
+        <td class="l2">Responsible Person / ผู้รับผิดชอบ</td><td class="l2">Auditor / ผู้ตรวจ</td><td class="l2">Compliance Monitoring Manager</td></tr>
+        <tr>
+        ${sigCell(c,'resp',c.as)}
+        ${sigCell(c,'aud',meta.auditor)}
+        ${sigCell(c,'cmm','')}
+      </tr></table>
+      <div class="foot"><b>หมายเหตุ:</b> 1) ผู้รับผิดชอบต้องวิเคราะห์สาเหตุราก กำหนดการแก้ไข และส่งฟอร์มกลับภายในกำหนด &nbsp;2) แนบหลักฐานประกอบ (ภาพถ่าย/เอกสาร) ทุกครั้ง &nbsp;3) CAR ปิดได้เมื่อผู้ตรวจ/CMM ทวนสอบประสิทธิผลแล้วเท่านั้น &nbsp;4) บันทึกลงทะเบียน CAR Register และรายงานสถานะในการประชุมทบทวนฝ่ายบริหาร (OMM Section 5)</div>
+    </div>`;
+  }).join('');
+  const html=`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>D-0507 CAR Forms (D-0507-CAR-001)</title><style>
+  body{font-family:Arial,'Helvetica Neue',sans-serif;font-size:13.3px;color:#1A1A2A;margin:0}
+  .page{max-width:794px;margin:0 auto;padding:28px 34px;page-break-after:always}
+  table{width:100%;border-collapse:collapse;margin-bottom:0}
+  td{border:0.8px solid #000;padding:4px 8px;vertical-align:top;font-size:13.3px}
+  table.t0 td{text-align:center;border:0.8px solid #000}
+  table.t0 .co{background:#1F3864;color:#fff;font-size:16px;font-weight:bold;padding:8px;letter-spacing:.3px}
+  table.t0 .ti{background:#1F3864;color:#fff;font-size:14.5px;font-weight:bold;padding:4px 6px 6px}
+  table.t0 .ti .th{font-size:12px;font-weight:normal}
+  table.t1 td{font-size:12.7px;font-weight:bold;background:#2E75B6;color:#fff;width:25%;padding:4px 8px}
+  .ph1{background:#2E75B6;color:#fff;font-weight:bold;font-size:14px;padding:4px 9px;margin-top:8px;border:0.8px solid #000;border-bottom:none}
+  .ph1 .th{font-weight:normal;font-size:12px}
+  .ph1 .fill{color:#DCE6F5;font-size:10.7px;font-weight:normal}
+  td.l{background:#F0F4F8;font-weight:bold;color:#1F3864;width:17%;font-size:12.7px}
+  td.l2{background:#D6E4F7;font-weight:bold;color:#1F3864;text-align:center;font-size:12.7px}
+  .box{border:0.8px solid #000;min-height:64px;padding:6px 9px;white-space:pre-line;font-size:13.3px}
+  .fill{font-weight:normal}
+  .phx{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+  .phx img{max-width:240px;max-height:170px;border:0.8px solid #000}
+  table.sig{margin-top:8px}
+  table.sig td{text-align:center;height:88px;vertical-align:bottom;padding-bottom:8px;line-height:1.9}
+  table.sig td.l2{height:auto;vertical-align:middle;padding:4px}
+  .foot{font-size:11.3px;background:#F0F4F8;border:0.8px solid #000;border-top:none;margin-top:0;padding:5px 9px}
+  .foot b{color:#1F3864}
+  @media print{.page{padding:4px}}
+  </style></head><body>${pages}</body></html>`;
+  dl(`D-0507_CAR_Forms_${stamp()}.html`, html, 'text/html;charset=utf-8');
+}
+function renderCar(){
+  const cars=ALL.filter(it=>carOf(it.id)&&carOf(it.id).no);
+  const by={A:0,R:0,V:0,X:0};
+  cars.forEach(it=>{const c=carOf(it.id); by[c.cast]=(by[c.cast]||0)+1;});
+  const od=cars.filter(it=>isOverdue(carOf(it.id))).length;
+  let h=`<div class="toolbar">
+    <button class="abtn" onclick="downloadCarForms()">📄 CAR Form — เฉพาะที่เลือก</button>
+    <button class="abtn sec2" onclick="downloadCarForms(true)">📄 CAR Forms ทั้งหมด</button>
+    <button class="abtn sec2" onclick="exportCarCSV()">⬇ CAR Register (CSV)</button>
+    <button class="abtn" onclick="window.print()">🖨 พิมพ์</button></div>
+  <div class="dash">
+    <div class="dcard"><h3>CAR ทั้งหมด</h3><div class="dnum">${cars.length}</div></div>
+    <div class="dcard"><h3>รอแก้ไข</h3><div class="dnum" style="color:var(--amber)">${(by.A||0)+(by.X||0)}</div></div>
+    <div class="dcard"><h3>รอตรวจรับ</h3><div class="dnum" style="color:#1d5eb8">${by.R||0}</div></div>
+    <div class="dcard"><h3>ปิดแล้ว</h3><div class="dnum" style="color:var(--green)">${by.V||0}</div></div>
+    <div class="dcard"><h3>เกินกำหนด</h3><div class="dnum" style="color:var(--red)">${od}</div></div>
+  </div>
+  <div class="note" style="margin-bottom:8px"><b>ทำหลายใบพร้อมกัน</b> — ติ๊กเลือกในตาราง (เลือกแล้ว <b id="carselcnt">${carSel.size}</b> ใบ) แล้วกด:
+    <button class="carbtn" onclick="bulkReport()">📤 ส่งตอบกลับที่เลือก — เซ็นผู้รับผิดชอบครั้งเดียว</button>
+    <button class="carbtn v" onclick="bulkAccept()">✔ ตรวจรับที่เลือก — เซ็น Auditor ครั้งเดียว</button>
+    <button class="carbtn" onclick="bulkSign('cmm')">✍ CMM เซ็นที่เลือก</button></div>
+  <table class="cartab"><tr><th style="width:34px"></th><th>CAR No.</th><th>Finding</th><th>ผู้รับผิดชอบ</th><th>กำหนดเสร็จ</th><th>สถานะ</th><th>ลายเซ็น</th></tr>`;
+  cars.sort((a,b)=>(carOf(a.id).no||'').localeCompare(carOf(b.id).no||''));
+  cars.forEach(it=>{const c=carOf(it.id);
+    const sgs=['resp','aud','cmm'].map(r=>c.sg&&c.sg[r]?'✔':'—').join(' / ');
+    h+=`<tr><td style="text-align:center"><input type="checkbox" style="width:20px;height:20px" onchange="carSelTgl('${it.id}',this.checked)" ${carSel.has(it.id)?'checked':''}></td>
+      <td><b>${esc(c.no)}</b></td><td>[${it.id}] ${esc(it.d.slice(0,90))}${it.d.length>90?'…':''}</td>
+      <td>${esc(c.as||'-')}</td><td class="${isOverdue(c)?'overdue':''}">${esc(c.due||'-')}${isOverdue(c)?' ⚠':''}</td>
+      <td><span class="carpill ${c.cast||''}">${carStatusTxt(c)}</span></td>
+      <td style="white-space:nowrap;font-size:11px" title="ผู้รับผิดชอบ / Auditor / CMM">${sgs}</td></tr>`;
+  });
+  h+='</table><div style="color:#7a8798;font-size:11px;margin-top:4px">คอลัมน์ลายเซ็น: ผู้รับผิดชอบ / Auditor / CMM</div>';
+  if(!cars.length) h+='<p style="color:#889;margin-top:10px">ยังไม่มี CAR — ไปที่แท็บ GAP Report เลือก Finding แล้วกดมอบหมาย</p>';
+  return h;
+}
+function exportCarCSV(){
+  const rows=[["CAR No.","Item ID","Finding","GAP Type","Finding Level","Assignee","Position","Email","Due","Status","Root Cause","Corrective Action","CA Completion","Preventive Action","Responded Date","Verification Evidence","Closed Date","Verified By","History"]];
+  ALL.forEach(it=>{const c=carOf(it.id); if(c&&c.no)
+    rows.push([c.no,it.id,it.d,gapType(it),c.lvl==='1'?'Level 1':'Level 2',c.as||'',c.pos||'',c.ae||'',c.due||'',carStatusTxt(c),c.rc||'',c.ca||'',c.cadone||'',c.pa||'',c.cadate||'',c.vev||'',c.vdate||'',c.vby||'',(c.hist||'').replace(/\n/g,' | ')]);});
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  dl(`D-0507_CAR_Register_${stamp()}.csv`, csv, 'text/csv;charset=utf-8');
+}
+function gapType(it){
+  const s=st(it.id)||{};
+  if(!it.dual) return s.st==='U' ? 'Doc GAP – ไม่มี/ไม่ครบในคู่มือ' : '';
+  const d=s.st==='U', i=s.st2==='U';
+  if(d&&i) return 'Doc + Implementation GAP – ไม่มีในคู่มือและไม่ได้ปฏิบัติ';
+  if(d) return 'Doc GAP – ไม่มี/ไม่ครบในคู่มือ';
+  if(i) return 'Implementation GAP – เขียนไว้แต่ไม่ได้ปฏิบัติ/หลักฐานไม่พอ';
+  return '';
+}
+function renderGap(){
+  const gaps=ALL.filter(it=>{const s=st(it.id)||{};return s.st==='U'||(it.dual&&s.st2==='U');});
+  const pend=ALL.filter(it=>!rollup(it));
+  let h=`<div class="toolbar">
+    <button class="abtn" onclick="exportReport()">📋 สร้างรายงานผลการตรวจ (HTML + รูป)</button>
+    <button class="abtn" onclick="exportCSV()">⬇ CSV</button>
+    <button class="abtn sec2" onclick="exportJSON()">💾 บันทึกความคืบหน้า (JSON)</button>
+    <button class="abtn sec2" onclick="document.getElementById('imp').click()">📂 เปิดไฟล์ความคืบหน้า</button>
+    <input type="file" id="imp" accept=".json" class="hide" onchange="importJSON(this)">
+    <button class="abtn" onclick="window.print()">🖨 พิมพ์</button>
+  </div>
+  <div class="note"><b>สำคัญ:</b> แอปนี้เก็บผลไว้ในหน่วยความจำของหน้าเว็บเท่านั้น — ก่อนปิดหน้า ให้กด <b>“บันทึกความคืบหน้า (JSON)”</b> ทุกครั้ง แล้วเปิดกลับมาต่อได้ด้วยปุ่ม “เปิดไฟล์ความคืบหน้า”</div>
+  <div class="assignbar">
+    <h4>✉ มอบหมาย Finding เป็น CAR — ติ๊กเลือกหลายรายการด้านล่าง (เลือกแล้ว <span id="selcnt">0</span>) แล้วกรอกผู้รับผิดชอบ</h4>
+    <div class="row">
+      <input id="as_name" placeholder="ชื่อผู้รับผิดชอบ" style="flex:1 1 160px">
+      <input id="as_email" type="email" placeholder="อีเมล" style="flex:1 1 200px">
+      <input id="as_due" type="date" title="กำหนดเสร็จ">
+      <button class="abtn" onclick="assignSelected(true)">✉ มอบหมาย + เปิดอีเมล</button>
+      <button class="abtn sec2" onclick="assignSelected(false)">มอบหมายอย่างเดียว</button>
+      <button class="abtn sec2" onclick="copyMailSel()">📋 คัดลอกข้อความอีเมล</button>
+      <button class="abtn sec2" onclick="downloadCarForms()">📄 CAR Form (ที่เลือก)</button>
+    </div>
+    <div style="font-size:11.5px;color:#667;margin-top:6px">อีเมลแนบไฟล์เองไม่ได้ — หลังเปิดร่างอีเมลแล้ว ให้แนบไฟล์ CAR Form ที่ดาวน์โหลดไว้ · ติดตามสถานะทั้งหมดที่แท็บ <b>CAR</b></div>
+  </div>
+  <h3 style="color:var(--navy)">GAP Findings (U) — ${gaps.length} รายการ</h3>`;
+  if(!gaps.length) h+='<p style="color:#889">ยังไม่มีรายการ GAP</p>';
+  gaps.forEach(it=>{
+    const s=st(it.id);
+    const ph=(s&&s.ph)||[];
+    const c=carOf(it.id);
+    h+=`<div class="gapitem"><div class="gaphead">
+      <input type="checkbox" class="gsel" ${gapSel.has(it.id)?'checked':''} onchange="toggleSel('${it.id}',this.checked)">
+      <div style="flex:1"><b>[${it.id}]</b> ${esc(it.d)}
+      <div class="w" style="color:var(--red);font-weight:bold">${esc(gapType(it))}</div>
+      <div class="w">${esc(it._m)} · ${esc(it._p)}${it._s?' · '+esc(it._s):''}${it.rr?' · <b>'+esc(it.rr)+'</b>':''}${effRef(it)?' · Ref/Evidence: '+esc(effRef(it)):''}</div>
+      ${s.rm?`<div class="w" style="color:var(--red)">Remark: ${esc(s.rm)}</div>`:''}
+      ${ph.length?`<div class="photorow">${ph.map((p,i)=>`<span class="thumb"><img src="${p.d||p.u}" onclick="viewPhoto('${it.id}',${i})"></span>`).join('')}</div>`:''}
+      ${carBoxHTML(it)}
+      </div></div>
+    </div>`;
+  });
+  h+=`<h3 style="color:var(--navy);margin-top:18px">ยังไม่ได้ตรวจ — ${pend.length} รายการ</h3>
+  <p style="font-size:12.5px;color:#667">ใช้ตัวกรอง “ยังไม่ตรวจ” ในแท็บของแต่ละคู่มือเพื่อไล่ตรวจให้ครบทุกหัวข้อ</p>`;
+  return h;
+}
+
+// ---------- export / import ----------
+function stamp(){ return (meta.date||new Date().toISOString().slice(0,10)).replace(/-/g,''); }
+function dl(name, text, type){
+  const b=new Blob(["﻿"+text],{type});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+function exportCSV(){
+  const rows=[["Item ID","Module","Part","Section","No.","Subject","Description","Regulatory Ref","Manual Ref / Evidence","Prev ATO","Status Documented","Status Implemented","GAP Type","Sub-checks","Photos","Remark","CAR No.","CAR Assignee","CAR Due","CAR Status"]];
+  ALL.forEach(it=>{
+    const s=st(it.id)||{};
+    const scN=it.chk?`${Object.values(s.sc||{}).filter(Boolean).length}/${it.chk.length}`:'';
+    const c=s.car||{};
+    rows.push([it.id,it._m,it._p,it._s||'',it._g.n||'',it._g.subj||'',it.d,it.rr||'',effRef(it),it.prev||'',
+               s.st||'', it.dual?(s.st2||''):'', gapType(it), scN, (s.ph||[]).length||'', s.rm||'',
+               c.no||'', c.as||'', c.due||'', c.no?carStatusTxt(c):'']);
+  });
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  dl(`D-0507_GAP_Audit_${stamp()}.csv`, csv, 'text/csv;charset=utf-8');
+  dirty=false;
+}
+function exportJSON(){
+  dl(`D-0507_Audit_Progress_${stamp()}.json`, JSON.stringify({meta, state}, null, 1), 'application/json');
+  dirty=false;
+}
+// ---------- full audit report (standalone HTML with embedded photos) ----------
+function exportReport(){
+  const today=meta.date||new Date().toISOString().slice(0,10);
+  const cAll=countOf(ALL);
+  const gaps=ALL.filter(it=>{const s=st(it.id)||{};return s.st==='U'||(it.dual&&s.st2==='U');});
+  const withPhotos=ALL.filter(it=>{const s=st(it.id);return s&&s.ph&&s.ph.length&&!gaps.includes(it);});
+  let modRows='';
+  MODS.forEach(m=>{
+    const c=countOf(modItems(m.c));
+    modRows+=`<tr><td><b>${esc(m.c)}</b> — ${esc(m.th)}</td><td>${c.tot}</td><td>${c.S}</td>
+      <td style="color:#C00000;font-weight:bold">${c.U}</td><td>${c.NA}</td><td>${c.tot-c.done}</td>
+      <td>${Math.round(100*c.done/c.tot)}%</td></tr>`;
+  });
+  let clauseRows='';
+  CATALOG.forEach(([sub,subth,rows])=>{
+    clauseRows+=`<tr><td colspan="4" style="background:#D6E4F7;font-weight:bold;color:#1F3864">${esc(sub)} — ${esc(subth)}</td></tr>`;
+    rows.forEach(([code,ti,th])=>{
+      const its=ALL.filter(it=>it.rk===code); const c=countOf(its);
+      const stTxt=!its.length?'ไม่มีรายการ – ประเมินความเกี่ยวข้อง':(c.U?`GAP ${c.U}`:(c.done===c.tot?'ครบถ้วน':`ค้างตรวจ ${c.tot-c.done}`));
+      clauseRows+=`<tr><td><b>${esc(code)}</b></td><td>${esc(ti)}</td><td>${its.length?c.done+'/'+its.length:'—'}</td>
+        <td style="${c.U?'color:#C00000;font-weight:bold':''}">${stTxt}</td></tr>`;
+    });
+  });
+  const findHTML=(it,idx)=>{
+    const s=st(it.id)||{};
+    const scRows=it.chk?it.chk.map((c,i)=>`<li style="color:${(s.sc||{})[i]?'#1A6B1A':'#C00000'}">${(s.sc||{})[i]?'☑':'☐'} ${esc(c)}</li>`).join(''):'';
+    return `<div class="f">
+      <h4>Finding ${idx+1} — [${it.id}] ${it.rr?esc(it.rr):''}</h4>
+      <p><b>${esc(it.d)}</b>${it.th?`<br><span style="color:#556">${esc(it.th)}</span>`:''}</p>
+      <p class="gt">${esc(gapType(it))}</p>
+      <p class="w">ที่มา: ${esc(it._m)} · ${esc(it._p)}${it._s?' · '+esc(it._s):''}${effRef(it)?`<br>หลักฐาน/อ้างอิง: ${esc(effRef(it))}`:''}</p>
+      ${s.rm?`<p class="w"><b>รายละเอียด:</b> ${esc(s.rm)}</p>`:''}
+      ${scRows?`<ul class="sc">${scRows}</ul>`:''}
+      ${(s.ph||[]).length?`<div class="ph">${s.ph.map(p=>`<figure><img src="${p.d||p.u}"><figcaption>${it.id} · ${p.t||''}</figcaption></figure>`).join('')}</div>`:''}
+      ${s.car&&s.car.no?`<p class="w"><b>${esc(s.car.no)}</b> · ผู้รับผิดชอบ: ${esc(s.car.as||'-')} · กำหนดเสร็จ: ${esc(s.car.due||'-')} · สถานะ: ${carStatusTxt(s.car)}${s.car.ca?`<br>Corrective action: ${esc(s.car.ca)}`:''}</p>`
+        :`<p class="w">Corrective action / กำหนดเสร็จ / ผู้รับผิดชอบ: ..........................................................</p>`}
+    </div>`;
+  };
+  const html=`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D-0507 Internal Audit Report ${today}</title><style>
+body{font-family:Arial,sans-serif;color:#1a1a2a;font-size:13.5px;margin:0;padding:24px;max-width:900px;margin:0 auto;line-height:1.5}
+h1{background:#1F3864;color:#fff;padding:14px 18px;font-size:19px;margin:0 0 2px}
+.sub{background:#2E75B6;color:#fff;padding:7px 18px;font-size:12px;margin-bottom:18px}
+h2{color:#1F3864;border-bottom:2px solid #2E75B6;padding-bottom:4px;font-size:16px;margin-top:26px}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0}
+th{background:#1F3864;color:#fff;padding:7px;text-align:left}
+td{border:1px solid #c8d2e0;padding:6px 8px;vertical-align:top}
+.metaT td{border:1px solid #c8d2e0}
+.f{border:1px solid #FFD9D9;border-left:5px solid #C00000;border-radius:6px;padding:10px 14px;margin:12px 0;page-break-inside:avoid}
+.f h4{margin:0 0 6px;color:#C00000}
+.gt{color:#C00000;font-weight:bold;margin:4px 0}
+.w{color:#445;font-size:12.5px;margin:4px 0}
+.sc{margin:6px 0;padding-left:18px;font-size:12.5px}
+.ph{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0}
+.ph figure{margin:0;text-align:center}
+.ph img{max-width:300px;max-height:220px;border-radius:6px;border:1px solid #c8d2e0}
+.ph figcaption{font-size:10.5px;color:#667;margin-top:2px}
+.sig{display:flex;gap:24px;margin-top:36px;page-break-inside:avoid}
+.sig div{flex:1;text-align:center;font-size:12.5px}
+.sig .line{border-bottom:1px solid #1a1a2a;height:52px;margin-bottom:6px}
+footer{margin-top:28px;font-size:11px;color:#667;border-top:2px solid #1F3864;padding-top:8px;text-align:center}
+@media print{body{padding:0}}
+</style></head><body>
+<h1>D-0507 FLIGHT TRAINING CO., LTD. — INTERNAL AUDIT REPORT</h1>
+<div class="sub">GAP Analysis: OMM · OMA · TM/PPL(A) + On-Site Implementation ↔ TCAR PEL Part ORA (Rev 00, 30 OCT 2024) | Doc: D-0507-IAC-001</div>
+<table class="metaT">
+<tr><td style="width:25%"><b>Auditor / ผู้ตรวจ</b></td><td>${esc(meta.auditor||'-')}</td>
+<td style="width:20%"><b>Audit date</b></td><td>${esc(today)}</td></tr>
+<tr><td><b>Scope / ขอบเขต</b></td><td colspan="3">${esc(meta.scope||'Full GAP analysis — documents + on-site implementation')}</td></tr>
+<tr><td><b>เอกสารอ้างอิง</b></td><td colspan="3">OMM-2026 V3 · OMA 2026 V3 · TM-2026 + PPL Course Manual 2026 V3 · PEL-TO-CK-061/062/070 rev.02 · TCAR PEL Part ORA Rev 00</td></tr>
+</table>
+<h2>1. Executive Summary / สรุปผลการตรวจ</h2>
+<p>ตรวจแล้ว <b>${cAll.done}</b> จาก <b>${cAll.tot}</b> รายการ (${Math.round(100*cAll.done/cAll.tot)}%) —
+Satisfactory <b>${cAll.S}</b> · <span style="color:#C00000;font-weight:bold">GAP ${cAll.U}</span> · N/A ${cAll.NA} · ยังไม่ตรวจ ${cAll.tot-cAll.done}</p>
+<table><tr><th>Module</th><th>รายการ</th><th>S</th><th>GAP</th><th>N/A</th><th>ค้าง</th><th>ความคืบหน้า</th></tr>${modRows}</table>
+<h2>2. Findings / ข้อบกพร่องที่พบ (${gaps.length})</h2>
+${gaps.length?gaps.map(findHTML).join(''):'<p>— ไม่พบข้อบกพร่อง —</p>'}
+<h2>3. Coverage by TCAR-ORA / Part FCL Clause</h2>
+<table><tr><th style="width:110px">Clause</th><th>Requirement</th><th style="width:80px">ตรวจ/ทั้งหมด</th><th style="width:150px">สถานะ</th></tr>${clauseRows}</table>
+${withPhotos.length?`<h2>4. Photo Evidence (รายการที่ผ่าน) / ภาคผนวกภาพถ่าย</h2>${withPhotos.map(it=>{const s=st(it.id);return `<p class="w"><b>[${it.id}]</b> ${esc(it.d)}</p><div class="ph">${s.ph.map(p=>`<figure><img src="${p.d||p.u}"><figcaption>${it.id} · ${p.t||''}</figcaption></figure>`).join('')}</div>`;}).join('')}`:''}
+<div class="sig">
+<div><div class="line"></div>Auditor / ผู้ตรวจ<br>(${esc(meta.auditor||'.....................')})<br>วันที่ ${esc(today)}</div>
+<div><div class="line"></div>Compliance Monitoring Manager<br>(.....................)<br>วันที่ ..............</div>
+<div><div class="line"></div>Accountable Manager<br>(.....................)<br>วันที่ ..............</div>
+</div>
+<footer>D-0507-IAC-001 | Internal Audit Report | Generated ${new Date().toISOString().slice(0,16).replace('T',' ')} | CONTROLLED เมื่อพิมพ์จากระบบเท่านั้น</footer>
+</body></html>`;
+  dl(`D-0507_Audit_Report_${stamp()}.html`, html, 'text/html;charset=utf-8');
+}
+function importJSON(inp){
+  const f=inp.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{
+      const d=JSON.parse(r.result);
+      Object.assign(meta, d.meta||{});
+      Object.keys(state).forEach(k=>delete state[k]);
+      Object.assign(state, d.state||{});
+      if(fbReady){ Object.keys(state).forEach(k=>pending.add(k)); pendingMeta=true; }
+      dirty=false; render();
+      alert('โหลดความคืบหน้าเรียบร้อย ('+Object.keys(d.state||{}).length+' รายการ)');
+    }catch(e){ alert('ไฟล์ไม่ถูกต้อง: '+e.message); } };
+  r.readAsText(f);
+  inp.value='';
+}
+
+// ---------- main render ----------
+function render(){
+  renderTabs();
+  const el=document.getElementById('main');
+  if(curTab==='dash') el.innerHTML=renderDash();
+  else if(curTab==='gap') el.innerHTML=renderGap();
+  else if(curTab==='car') el.innerHTML=renderCar();
+  else el.innerHTML=renderModule(curTab);
+  refreshCounts();
+}
+window.addEventListener('beforeunload',e=>{ if(dirty && !fbReady){e.preventDefault(); e.returnValue='';} });
+render();
+
+// ═══════════════════ FIREBASE SERVER SYNC ═══════════════════
+let FB={};
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+function syncStatus(txt,color){ const el=document.getElementById('syncst'); if(el){ el.textContent=txt; el.style.color=color||'var(--navy)'; } }
+async function initFirebase(){
+  if(!FIREBASE_CONFIG) return;
+  const f=document.querySelector('footer.app');
+  f.insertAdjacentHTML('beforeend','<span id="syncst" style="font-size:11px">…</span><button id="fbout" class="carbtn hide" onclick="firebase.auth().signOut()">ออก</button>');
+  syncStatus('⏳ กำลังเชื่อมต่อ…');
+  try{
+    const V='10.12.2';
+    await loadScript(`https://www.gstatic.com/firebasejs/${V}/firebase-app-compat.js`);
+    await Promise.all([
+      loadScript(`https://www.gstatic.com/firebasejs/${V}/firebase-auth-compat.js`),
+      loadScript(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore-compat.js`),
+      loadScript(`https://www.gstatic.com/firebasejs/${V}/firebase-storage-compat.js`),
+    ]);
+    firebase.initializeApp(FIREBASE_CONFIG);
+    FB.db=firebase.firestore(); FB.st=firebase.storage();
+    firebase.auth().onAuthStateChanged(u=>{
+      fbUser=u;
+      document.getElementById('loginov')?.remove();
+      document.getElementById('fbout')?.classList.toggle('hide',!u);
+      if(u){ startSync(); }
+      else { fbReady=false; syncStatus('○ ยังไม่ได้เข้าสู่ระบบ','#C00000'); showLogin(); }
+    });
+  }catch(e){ syncStatus('⚠ เชื่อมต่อไม่ได้ — โหมดออฟไลน์','#C00000'); console.error(e); }
+}
+function showLogin(){
+  if(document.getElementById('loginov')) return;
+  const ov=document.createElement('div');
+  ov.id='loginov';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,25,45,.94);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
+  ov.innerHTML=`<div style="background:#fff;border-radius:14px;max-width:400px;width:100%;padding:24px">
+    <h2 style="color:var(--navy);margin:0 0 4px;font-size:18px">D-0507 Internal Audit</h2>
+    <p style="color:#667;font-size:13px;margin:0 0 16px">เข้าสู่ระบบเพื่อใช้งานร่วมกับทีม (ข้อมูล sync อัตโนมัติ)</p>
+    <button class="abtn" style="width:100%;margin-bottom:14px" onclick="fbGoogle()">🔵 เข้าสู่ระบบด้วย Google</button>
+    <div style="border-top:1px solid #e2e8f0;margin:10px 0;text-align:center;color:#99a;font-size:11px;line-height:0"><span style="background:#fff;padding:0 8px">หรือ</span></div>
+    <input id="li_em" type="email" placeholder="อีเมล" style="width:100%;min-height:44px;border:1px solid #c8d2e0;border-radius:8px;padding:8px 12px;margin:8px 0;box-sizing:border-box">
+    <input id="li_pw" type="password" placeholder="รหัสผ่าน" style="width:100%;min-height:44px;border:1px solid #c8d2e0;border-radius:8px;padding:8px 12px;margin:0 0 12px;box-sizing:border-box">
+    <div style="display:flex;gap:8px">
+      <button class="abtn sec2" style="flex:1" onclick="fbEmail(false)">เข้าสู่ระบบ</button>
+      <button class="fbtn" style="flex:1" onclick="fbEmail(true)">สมัครใหม่</button>
+    </div>
+    <p id="li_err" style="color:var(--red);font-size:12px;min-height:16px;margin:8px 0 0"></p>
+  </div>`;
+  document.body.appendChild(ov);
+}
+function fbErr(e){ const el=document.getElementById('li_err'); if(el) el.textContent=e.message||e; }
+function fbGoogle(){ firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(fbErr); }
+function fbEmail(create){
+  const em=document.getElementById('li_em').value.trim(), pw=document.getElementById('li_pw').value;
+  (create?firebase.auth().createUserWithEmailAndPassword(em,pw):firebase.auth().signInWithEmailAndPassword(em,pw)).catch(fbErr);
+}
+function itemsCol(){ return FB.db.collection('audits').doc(AUDIT_ID).collection('items'); }
+function cleanForWrite(s){
+  const o=JSON.parse(JSON.stringify(s||{}));
+  if(o.ph) o.ph=o.ph.filter(p=>p.u).map(p=>({u:p.u,t:p.t||''}));   // only Storage-uploaded photos sync
+  return o;
+}
+function startSync(){
+  fbReady=true;
+  syncStatus('☁ '+(fbUser.email||'signed in'),'var(--green)');
+  // meta
+  FB.db.collection('audits').doc(AUDIT_ID).onSnapshot(d=>{
+    if(pendingMeta||!d.exists) return;
+    const m=d.data().meta; if(m){ Object.assign(meta,m); if(curTab==='dash') render(); }
+  });
+  // items realtime
+  FB.unsub && FB.unsub();
+  FB.unsub=itemsCol().onSnapshot(snap=>{
+    let changed=0;
+    snap.docChanges().forEach(ch=>{
+      const id=ch.doc.id;
+      if(pending.has(id)) return;               // local edit wins until flushed
+      const {t,u,...rest}=ch.doc.data();
+      const loc=state[id];
+      // keep local-only dataURL photos
+      if(loc&&loc.ph){ const localOnly=loc.ph.filter(p=>p.d&&!p.u); rest.ph=[...(rest.ph||[]),...localOnly]; }
+      state[id]=rest; changed++;
+      refreshItem(id);
+    });
+    if(changed){ refreshCounts(); if(['gap','car','dash'].includes(curTab)) render(); }
+  },e=>{ syncStatus('⚠ sync error','#C00000'); console.error(e); });
+  // flusher
+  FB.timer && clearInterval(FB.timer);
+  FB.timer=setInterval(flush, 2500);
+  setTimeout(pushSummary, 6000);   // อัปเดตสรุปให้ Portal หลังโหลดข้อมูลรอบแรก
+}
+function pushSummary(){
+  if(!fbReady||!fbUser) return;
+  try{
+    const gaps=ALL.filter(it=>{const s=st(it.id)||{};return s.st==='U'||(it.dual&&s.st2==='U');}).length;
+    const done=ALL.filter(it=>rollup(it)).length;
+    const cars=ALL.filter(it=>carOf(it.id)&&carOf(it.id).no);
+    const open=cars.filter(it=>carOf(it.id).cast!=='V').length;
+    FB.db.collection('audits').doc(AUDIT_ID).set({sum:{done:done,gap:gaps,total:ALL.length,car:cars.length,carOpen:open,at:new Date().toISOString()}},{merge:true}).catch(console.error);
+  }catch(e){ console.error(e); }
+}
+async function flush(){
+  if(!fbReady||!fbUser) return;
+  if(pendingMeta){
+    pendingMeta=false;
+    FB.db.collection('audits').doc(AUDIT_ID).set({meta:{auditor:meta.auditor,date:meta.date,scope:meta.scope},
+      t:firebase.firestore.FieldValue.serverTimestamp(), u:fbUser.email||''},{merge:true}).catch(console.error);
+  }
+  if(!pending.size) return;
+  const ids=[...pending]; pending.clear();
+  const batch=FB.db.batch();
+  ids.forEach(id=>{
+    batch.set(itemsCol().doc(id), {...cleanForWrite(state[id]),
+      t:firebase.firestore.FieldValue.serverTimestamp(), u:fbUser.email||''}, {merge:false});
+  });
+  try{ await batch.commit(); syncStatus('☁ บันทึกแล้ว '+new Date().toTimeString().slice(0,5)+' · '+(fbUser.email||''),'var(--green)'); pushSummary(); }
+  catch(e){ ids.forEach(id=>pending.add(id)); syncStatus('⚠ บันทึกไม่สำเร็จ — จะลองใหม่','#C00000'); console.error(e); }
+}
+async function uploadPhoto(id, idx){
+  try{
+    const s=state[id]; const p=s.ph[idx]; if(!p||!p.d) return;
+    const ref=FB.st.ref().child(`audits/${AUDIT_ID}/photos/${id}/${Date.now()}_${idx}.jpg`);
+    await ref.putString(p.d,'data_url');
+    p.u=await ref.getDownloadURL(); delete p.d;
+    mark(id); refreshItem(id);
+  }catch(e){ console.error('photo upload failed',e); }
+}
+initFirebase();
+</script>
+</body>
+</html>
