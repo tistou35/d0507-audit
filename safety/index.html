@@ -154,6 +154,8 @@ footer .fbar{flex:1; margin:0 8px;}
  header.app,footer.app,.toolbar,.abtn,.fbtn,.bulk,.stbtn{display:none!important;}
  body{background:#fff;} .body{display:block!important;} main{padding-bottom:0;}
 }
+body.viewonly main button:not(.tabbtn), body.viewonly main input:not([type=search]), body.viewonly main textarea, body.viewonly main select{pointer-events:none; opacity:.55;}
+body.viewonly .toolbar{display:none;}
 </style>
 </head>
 <body>
@@ -188,9 +190,16 @@ const FIREBASE_CONFIG = {
   apiKey: "AIza....", authDomain: "d0507-audit.firebaseapp.com", projectId: "d0507-audit",
   storageBucket: "d0507-audit.firebasestorage.app", messagingSenderId: "...", appId: "..."
 }; */
-const AUDIT_ID = 'safety-2026';   // ผูกกับรอบตรวจ — กำหนดโดย pack.json ตอน build
+const _Q=new URLSearchParams(location.search);
+const AUDIT_ID=_Q.get('audit')||'safety-2026';   // รอบตรวจ: มาจาก ?audit= (Audit Plan) หรือค่า default ของ pack
+const VIEW_ONLY=_Q.has('view');                    // ?view=1 = เปิดดูรายการตรวจอย่างเดียว ไม่บันทึก
 const CAR_PREFIX = 'CAR-SAF';
 // ═══════════════════════════════════════════
+if(VIEW_ONLY){ document.body.classList.add('viewonly'); }
+if(_Q.get('audit')||VIEW_ONLY){
+  const sb=document.querySelector('header .sub');
+  if(sb) sb.innerHTML+= (VIEW_ONLY?' &nbsp;|&nbsp; <b style="color:#FFD966">👁 โหมดเปิดดูรายการตรวจ (read-only)</b>':' &nbsp;|&nbsp; <b style="color:#9fd3a8">รอบตรวจ: '+AUDIT_ID.replace(/[<>"']/g,'')+'</b>');
+}
 const DATA = JSON.parse(document.getElementById('DATA').textContent);
 const MODS = DATA.modules, CATALOG = DATA.catalog;
 const ALL = []; // flat items
@@ -1202,6 +1211,7 @@ async function initFirebase(){
       document.getElementById('loginov')?.remove();
       document.getElementById('fbout')?.classList.toggle('hide',!u);
       if(u){ startSync(); }
+      else if(VIEW_ONLY){ fbReady=false; syncStatus('👁 โหมดเปิดดูรายการตรวจ — ไม่บันทึกข้อมูล','var(--blue)'); }
       else { fbReady=false; syncStatus('○ ยังไม่ได้เข้าสู่ระบบ','#C00000'); showLogin(); }
     });
   }catch(e){ syncStatus('⚠ เชื่อมต่อไม่ได้ — โหมดออฟไลน์','#C00000'); console.error(e); }

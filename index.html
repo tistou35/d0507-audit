@@ -80,7 +80,7 @@ footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
     <div style="font-size:11.5px;color:#98a4b4;margin-top:8px">อีเมลต้องอยู่ในรายชื่อทีมตรวจ (Security Rules)</div>
   </div>
   <div id="content" style="display:none">
-    <h3 class="sec">งานตรวจสอบ / Audit Projects</h3>
+    <h3 class="sec">🔎 งานตรวจสอบ — รอบที่กำลังดำเนินการ / ใกล้ถึงกำหนด (ภายใน 30 วัน)</h3>
     <div class="grid" id="cards"></div>
     <h3 class="sec">📅 Audit Plan ประจำปี
       <select id="planyear" onchange="loadPlan()" style="min-height:36px;border-radius:7px;border:1px solid #c8d2e0;padding:3px 8px;font-size:14px"></select>
@@ -93,6 +93,9 @@ footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
     </div>
     <h3 class="sec" style="margin-top:20px">🗓 ปฏิทินการตรวจ 12 เดือน (Gantt)</h3>
     <div class="gwrap" id="gwrap"><div class="gantt" id="gantt"></div></div>
+    <h3 class="sec" style="margin-top:24px">📚 กรอบการตรวจ / Checklists</h3>
+    <div class="note" style="margin-top:6px">กรอบการตรวจคือแม่แบบ — <b>ไม่ใช่ที่เปิดงานตรวจ</b> · จะตรวจอะไร ให้เพิ่มรอบใน Audit Plan แล้วกด ▶ จากแผน/การ์ดด้านบน</div>
+    <div id="cklist" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px"></div>
     <div class="note"><b>การแจ้งการตรวจ (Audit Notification):</b> ปุ่ม 📄 ในแต่ละแถว = หนังสือแจ้งการตรวจอย่างเป็นทางการ (พิมพ์/บันทึก PDF) ·
     ✉ = ร่างอีเมลแจ้งผู้รับการตรวจ · 📅 = ไฟล์ลงปฏิทิน (.ics) ·
     สถานะคำนวณอัตโนมัติจากความคืบหน้าจริงของแต่ละงาน · แจ้งเตือนล่วงหน้า 14 วันที่แถบด้านบน</div>
@@ -125,38 +128,67 @@ firebase.auth().onAuthStateChanged(u=>{
   document.getElementById('loginui').style.display=u?'none':'block';
   document.getElementById('content').style.display=u?'block':'none';
   document.getElementById('authbox').innerHTML=u?`${esc(u.displayName||u.email)} <button onclick="firebase.auth().signOut()">ออก</button>`:'';
-  if(u){ watchSums(); initYears(); loadPlan(); }
+  if(u){ initYears(); loadPlan(); renderCk(); }
 });
-function watchSums(){
-  PACKS.forEach(p=>{
-    db.collection('audits').doc(p.aid).onSnapshot(d=>{
-      SUMS[p.aid]=(d.exists&&d.data().sum)||null; renderCards(); renderPlan();
-    },e=>console.error(e));
-  });
-}
 function renderCards(){
-  document.getElementById('cards').innerHTML=PACKS.map(p=>{
-    const s=SUMS[p.aid];
-    const pct=s?Math.round(100*s.done/(s.total||p.total||1)):0;
-    return `<a class="pcard" href="${p.outdir}/">
-      <div class="pc-code">${esc(p.code)} · ${esc(p.ver)}</div>
-      <h2>${esc(p.name)}</h2><p>${esc(p.desc)}</p>
+  const el=document.getElementById('cards'); if(!el) return;
+  const rounds=PLAN.map((r,i)=>({r,i})).filter(({r})=>{
+    if(r.done||!r.start) return false;
+    const d=(new Date(r.start)-new Date(today()))/86400000;
+    return d<=30;                              // ภายใน 30 วัน รวมที่เริ่มแล้ว/เลยกำหนด
+  });
+  if(!rounds.length){
+    el.innerHTML='<div class="note" style="margin:0">ยังไม่มีรอบตรวจในกรอบ 30 วัน — วางแผนรอบตรวจในตาราง Audit Plan ด้านล่าง แล้วการ์ดจะปรากฏเมื่อใกล้ถึงกำหนด</div>';
+    return;
+  }
+  el.innerHTML=rounds.map(({r,i})=>{
+    const p=PACKS.find(x=>x.proj===r.proj)||{};
+    const id=rid(r); watchRound(id);
+    const su=SUMS[id];
+    const pct=su?Math.round(100*su.done/(su.total||p.total||1)):0;
+    const [cls,txt]=rowStatus(r);
+    return `<div class="pcard" style="cursor:default">
+      <div class="pc-code">${esc(r.ref||'')} · ${esc(p.code||'')} ${esc(p.ver||'')}</div>
+      <h2>${esc(p.name||r.proj)}</h2>
+      <p>${esc(r.label||'')} · ${esc(r.start||'')} → ${esc(r.end||r.start||'')} · Lead: ${esc(r.lead||'-')}</p>
+      <div style="margin-top:6px"><span class="pill ${cls}">${txt}</span></div>
       <div class="bar"><i style="width:${pct}%"></i></div>
-      <div class="pc-stat">ตรวจแล้ว <b>${s?s.done:0}/${s?(s.total||p.total):p.total}</b> (${pct}%)
-        · GAP <b class="g">${s?s.gap:0}</b> · CAR ค้าง <b class="c">${s?s.carOpen:0}</b>/${s?s.car:0}</div>
-      <div style="margin-top:8px;font-weight:bold;color:var(--blue);font-size:13px">เปิดงานตรวจ →</div></a>`;
+      <div class="pc-stat">ตรวจแล้ว <b>${su?su.done:0}/${su?(su.total||p.total):p.total}</b> (${pct}%) · GAP <b class="g">${su?su.gap:0}</b> · CAR ค้าง <b class="c">${su?su.carOpen:0}</b>/${su?su.car:0}</div>
+      <a href="${p.outdir}/?audit=${encodeURIComponent(id)}" style="display:inline-block;margin-top:10px;background:var(--blue);color:#fff;font-weight:bold;font-size:13.5px;border-radius:8px;padding:8px 16px;text-decoration:none">▶ ${pct>0?'เข้าตรวจต่อ':'เริ่มตรวจ'}</a>
+    </div>`;
   }).join('');
+}
+function renderCk(){
+  const el=document.getElementById('cklist'); if(!el) return;
+  el.innerHTML=PACKS.map(p=>`<div style="background:#fff;border:1px solid #d8dfe8;border-radius:10px;padding:11px 14px;font-size:12.5px;min-width:250px">
+    <b style="color:var(--navy)">${esc(p.name)}</b><br>
+    <span style="color:#7a8798">${esc(p.code)} · ${esc(p.ver)} · ${p.total} ข้อ</span><br>
+    <a href="${p.outdir}/?view=1" class="pbtn" style="display:inline-block;text-decoration:none;margin-top:6px">👁 เปิดดูรายการตรวจ</a>
+    <button class="pbtn" onclick="planRound('${p.proj}')">＋ วางแผนรอบตรวจ</button>
+  </div>`).join('');
 }
 function initYears(){
   const sel=document.getElementById('planyear'); if(sel.options.length) return;
   const y=(new Date()).getFullYear();
   for(let i=y-1;i<=y+2;i++){ const o=document.createElement('option'); o.value=i; o.textContent=i; if(i===y)o.selected=true; sel.appendChild(o); }
 }
+function roundRef(){                       // ออกเลขอ้างอิงรอบ AP-YYYY-nn
+  let mx=0; PLAN.forEach(r=>{const m=(r.ref||'').match(/(\d+)$/); if(m) mx=Math.max(mx,+m[1]);});
+  return 'AP-'+PLANYEAR+'-'+String(mx+1).padStart(2,'0');
+}
+function rid(r){ return r.proj+'-'+((r.ref||'').replace(/^AP-/i,'').toLowerCase()||'x'); }
+const watched=new Set();
+function watchRound(id){
+  if(watched.has(id)) return; watched.add(id);
+  db.collection('audits').doc(id).onSnapshot(d=>{ SUMS[id]=(d.exists&&d.data().sum)||null; renderCards(); },e=>console.error(e));
+}
 function loadPlan(){
   PLANYEAR=+document.getElementById('planyear').value||PLANYEAR;
   if(planUnsub) planUnsub();
   planUnsub=db.collection('plans').doc(String(PLANYEAR)).onSnapshot(d=>{
-    PLAN=(d.exists&&d.data().rows)||[]; renderPlan();
+    PLAN=(d.exists&&d.data().rows)||[];
+    PLAN.forEach(r=>{ if(!r.ref) r.ref=roundRef(); });   // แถวเก่าก่อนมีระบบ ref
+    renderPlan();
   },e=>console.error(e));
 }
 function rowStatus(r){
@@ -175,7 +207,9 @@ function renderPlan(){
   PLAN.forEach((r,i)=>{
     const [cls,txt]=rowStatus(r);
     h+=`<tr>
-      <td><select onchange="PLAN[${i}].proj=this.value">${PACKS.map(p=>`<option value="${p.proj}"${r.proj===p.proj?' selected':''}>${esc(p.name)}</option>`).join('')}</select></td>
+      <td><span style="font-size:11px;font-weight:bold;color:var(--blue)">${esc(r.ref||'')}</span>
+        <select onchange="PLAN[${i}].proj=this.value">${PACKS.map(p=>`<option value="${p.proj}"${r.proj===p.proj?' selected':''}>${esc(p.name)}</option>`).join('')}</select>
+        ${r.start?`<a class="pbtn" style="display:inline-block;text-decoration:none;margin-top:4px" href="${(PACKS.find(x=>x.proj===r.proj)||{}).outdir}/?audit=${encodeURIComponent(rid(r))}">${r.done?'📖 ดูผลรอบนี้':'▶ เปิดงานตรวจ'}</a>`:''}</td>
       <td><input value="${esc(r.label||'')}" placeholder="เช่น Q4 รอบหลัก" onchange="PLAN[${i}].label=this.value"></td>
       <td><input type="date" value="${esc(r.start||'')}" onchange="PLAN[${i}].start=this.value"></td>
       <td><input type="date" value="${esc(r.end||'')}" onchange="PLAN[${i}].end=this.value"></td>
@@ -192,6 +226,8 @@ function renderPlan(){
   t.innerHTML=h;
   renderBanners();
   renderGantt();
+  renderCards();
+  renderCk();
 }
 function renderGantt(){
   const G=document.getElementById('gantt'); if(!G) return;
@@ -223,7 +259,7 @@ function renderGantt(){
     const left=a*PX, wdt=Math.max((b-a+1)*PX, 26);
     rowsH+=`<div class="grow"><div class="glab"><b>${esc(p.name||r.proj)}</b>${esc(r.label||'')}</div>
       <div class="gtl" style="width:${W}px">${grid}${todayLine}
-        <div class="gbar ${cls}" style="left:${left}px;width:${wdt}px" title="${esc((p.name||r.proj)+' '+(r.label||''))} · ${esc(r.start)} → ${esc(r.end||r.start)} · ${txt} · Lead: ${esc(r.lead||'-')}">${esc(r.label||p.proj||'')}</div>
+        <div class="gbar ${cls}" style="left:${left}px;width:${wdt}px" title="${esc((p.name||r.proj)+' '+(r.label||''))} · ${esc(r.start)} → ${esc(r.end||r.start)} · ${txt} · Lead: ${esc(r.lead||'-')}">${esc((r.ref?r.ref+" · ":"")+(r.label||p.proj||""))}</div>
       </div></div>`;
   });
   if(!withDates.length) rowsH+=`<div class="grow"><div style="padding:14px;color:#889;font-size:12.5px">ยังไม่มีรายการที่กำหนดวันเริ่ม — กำหนดวันในตารางด้านบนแล้วแท่งจะปรากฏที่นี่</div></div>`;
@@ -233,8 +269,10 @@ function renderGantt(){
   const wrap=document.getElementById('gwrap');
   if(wrap&&tNow.getFullYear()===y) wrap.scrollLeft=Math.max(0,doy(today())*PX-wrap.clientWidth/2+190);
 }
-function addRow(){ PLAN.push({proj:PACKS[0].proj,label:'',start:'',end:'',lead:'',auditee:'',done:false}); renderPlan(); }
+function addRow(proj){ PLAN.push({proj:proj||PACKS[0].proj,ref:roundRef(),label:'',start:'',end:'',lead:'',auditee:'',done:false}); renderPlan(); }
+function planRound(proj){ addRow(proj); document.getElementById('plantab').scrollIntoView({behavior:'smooth'}); }
 function savePlan(){
+  PLAN.forEach(r=>{ if(!r.ref) r.ref=roundRef(); });
   db.collection('plans').doc(String(PLANYEAR)).set({rows:PLAN,u:USER?USER.email:'',t:firebase.firestore.FieldValue.serverTimestamp()})
     .then(()=>{ const el=document.getElementById('plansaved'); el.textContent='☁ บันทึกแล้ว '+new Date().toTimeString().slice(0,5); setTimeout(()=>el.textContent='',4000); })
     .catch(e=>alert('บันทึกไม่สำเร็จ: '+e.message));
