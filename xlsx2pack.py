@@ -13,7 +13,7 @@ import openpyxl
 
 COLS = ['Module','ModuleTitle','ModuleTH','ManualRef','Part','PartTH','Section',
         'GroupNo','GroupSubject','ItemID','Item_EN','Item_TH','RegRef','RefKey',
-        'Evidence','HowToVerify','Dual']
+        'Evidence','HowToVerify','SubChecklist','Dual']
 
 def convert(xlsx_path, out_path=None):
     wb = openpyxl.load_workbook(xlsx_path, data_only=True)
@@ -66,6 +66,8 @@ def convert(xlsx_path, out_path=None):
                 'ref': vals['Evidence'], 'prev': '', 'hd': 0, 'how': vals['HowToVerify']}
         if vals['Item_TH']: item['th'] = vals['Item_TH']
         if vals['Dual'].upper().startswith('Y'): item['dual'] = 1
+        sub=[x.strip() for x in vals['SubChecklist'].replace('|','\n').split('\n') if x.strip()]
+        if sub: item['chk']=sub
         g['items'].append(item)
 
     data = {'modules': modules, 'catalog': []}

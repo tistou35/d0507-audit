@@ -53,8 +53,8 @@ main{padding:12px; max-width:1080px; margin:0 auto; padding-bottom:80px;}
 .stbtn.U.on{background:var(--red); border-color:var(--red); color:#fff;}
 .stbtn.NA.on{background:#667; border-color:#667; color:#fff;}
 .refin{flex:1 1 200px; min-height:38px; border:1px solid #c8d2e0; border-radius:7px; padding:6px 9px; font-size:13px; font-family:inherit; color:var(--navy); background:#fff;}
-.rmk{width:100%; margin-top:7px; border:1.5px solid var(--redbg); background:#fff8f8; border-radius:7px; padding:7px 9px; font-size:13px; font-family:inherit; min-height:44px; display:none;}
-.item.stU .rmk{display:block; border-color:var(--red);}
+.rmk{width:100%; margin-top:7px; border:1.5px solid #d3dce8; background:#fbfcfe; border-radius:7px; padding:7px 9px; font-size:13px; font-family:inherit; min-height:44px;}
+.item.stU .rmk{border-color:var(--red); background:#fff8f8;}
 .thd{margin:0 0 6px; color:#556; font-size:13px; line-height:1.45;}
 details.mref{margin:0 0 8px; border:1px solid #c9dcf2; border-radius:7px; background:#f4f8fd; font-size:12.5px;}
 details.mref summary{padding:7px 10px; color:var(--blue); font-weight:bold; cursor:pointer; min-height:36px; display:flex; align-items:center; gap:6px; list-style:none;}
@@ -355,7 +355,7 @@ function itemHTML(it){
           onchange="setRef('${it.id}',this.value)">
       </div>
       ${photoRowHTML(it)}
-      <textarea class="rmk" placeholder="Finding — ระบุ GAP: ไม่มีในคู่มือ / เขียนไว้แต่ไม่ได้ปฏิบัติ / ปฏิบัติต่างจากคู่มือ + รายละเอียด"
+      <textarea class="rmk" placeholder="Inspector comment — Finding: ไม่มีในคู่มือ/ไม่ได้ปฏิบัติ + รายละเอียด · ถ้า N.A/ไม่ตรวจ ให้ระบุเหตุผล"
         onchange="setRm('${it.id}',this.value)">${esc(s.rm||'')}</textarea>
     </div>`;
   }
@@ -375,7 +375,7 @@ function itemHTML(it){
         onchange="setRef('${it.id}',this.value)">
     </div>
     ${photoRowHTML(it)}
-    <textarea class="rmk" placeholder="Remark / Finding — ระบุรายละเอียดช่องว่างที่พบ และเอกสาร/หัวข้อที่ต้องแก้ไข"
+    <textarea class="rmk" placeholder="Inspector comment — Finding/ข้อสังเกต · ถ้า N.A หรือไม่ตรวจข้อนี้ ให้ระบุเหตุผล"
       onchange="setRm('${it.id}',this.value)">${esc(s.rm||'')}</textarea>
   </div>`;
 }
