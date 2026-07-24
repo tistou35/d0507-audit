@@ -2,12 +2,12 @@
   "project": "vendor",
   "version": "v2026",
   "outdir": "vendor",
-  "name": "Vendor / Contracted Activities Audit",
-  "desc": "ตรวจผู้ให้บริการภายนอกและกิจกรรมจ้างช่วง (ORA.GEN.205) · DRAFT รอ review",
-  "doc_code": "D-0507-IAC-002 (DRAFT)",
-  "ptitle": "D-0507 Vendor Audit Checklist (DRAFT)",
-  "htitle": "D-0507 FLIGHT TRAINING – VENDOR / CONTRACTED ACTIVITIES AUDIT",
-  "hsub": "Vendor Audit ↔ ORA.GEN.205 Contracted Activities &nbsp;|&nbsp; D-0507-IAC-002 (DRAFT — รอ @reviewer/@legal review) &nbsp;|&nbsp; v2026",
+  "name": "Vendor / Contracted Services Audit",
+  "desc": "ตรวจผู้ให้บริการภายนอก/กิจกรรมจ้างช่วง ตามฟอร์ม D-0507-VAC-001 (ORA.GEN.205)",
+  "doc_code": "D-0507-VAC-001",
+  "ptitle": "D-0507 Vendor / Contracted Services Audit Checklist",
+  "htitle": "D-0507 FLIGHT TRAINING – VENDOR / CONTRACTED SERVICES AUDIT",
+  "hsub": "Vendor Audit ↔ ORA.GEN.205 Contracted Activities · OMM Section 5 &nbsp;|&nbsp; D-0507-VAC-001 ISSUE 01/REV 00 &nbsp;|&nbsp; v2026 · ระบุชื่อ Vendor/สัญญา ในช่อง Scope ของรอบตรวจ",
   "audit_id": "vendor-2026",
   "car_prefix": "CAR-VEN"
 }

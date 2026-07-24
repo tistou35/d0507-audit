@@ -1,0 +1,13 @@
+{
+  "project": "surveillance",
+  "version": "v2026",
+  "outdir": "surveillance",
+  "name": "Safety Surveillance (Spot Check)",
+  "desc": "เฝ้าระวังความปลอดภัยแบบตรวจจุดตามฟอร์ม D-0507-SSC-001 · ระบุกิจกรรม/สถานที่ในช่อง Scope",
+  "doc_code": "D-0507-SSC-001",
+  "ptitle": "D-0507 Safety Surveillance Checklist (Spot Check)",
+  "htitle": "D-0507 FLIGHT TRAINING – SAFETY SURVEILLANCE (SPOT CHECK)",
+  "hsub": "Safety Surveillance ↔ FSOP 2024 · MMSOP 2024 &nbsp;|&nbsp; D-0507-SSC-001 ISSUE 01/REV 00 &nbsp;|&nbsp; v2026",
+  "audit_id": "surveil-2026",
+  "car_prefix": "CAR-SSC"
+}
