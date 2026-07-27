@@ -71,6 +71,8 @@ URL: Portal ที่ root, งาน IAC ที่ `/iac/` (AUDIT_ID เดิ�
 
 - **Multi-user + ACM + link อ้างอิง (24 JUL 2026):** ① Portal มีปุ่ม "สมัครใหม่" (อีเมล/รหัสผ่าน — ไม่ต้องใช้ Gmail) + แบนเนอร์แจ้งเมื่ออีเมลไม่มีสิทธิ์ (permission-denied) ② ระบบ ACM อนุมัติแผน: ช่องอีเมล ACM ท้ายตาราง (เก็บใน plans/{year}.acm — ถ้าตั้งแล้ว เฉพาะอีเมลนั้นอนุมัติได้), ปุ่ม "ACM อนุมัติทั้งแผนปีนี้" (อนุมัติทุกแถวที่ค้าง = แผนประจำปี) + ปุ่มอนุมัติรายแถว (รายครั้ง/แทรกระหว่างปี), แก้ project/วันที่หลังอนุมัติ → ต้องอนุมัติใหม่, ปุ่ม ▶ เปิดงานตรวจถูกล็อกจนกว่าอนุมัติ, ลงวันที่ย้อนหลังได้ ③ ทุกข้อตรวจมีช่อง "🔗 ลิงก์เอกสารอ้างอิง" วาง URL หลายลิงก์ → แสดงเป็น chip กดเปิดได้ (รวมในโหมด view) sync ขึ้น Firestore ④ **Security Rules อัปเดตแล้ว (25 JUL 2026):** Firestore + Storage รวมเป็นบล็อกเดียว (/{document=**} และ /{allPaths=**}) allowlist 7 อีเมล: tistou35, navywut, bankapoo77, oceanfly46103, thapphawutw, amy.pinnoi, warutmitthumsiri (@gmail.com ทั้งหมด — ทุกคนที่ login ณ วันนั้น) · เพิ่มคนใหม่ = เพิ่มอีเมล 1 บรรทัดใน 2 ที่ (Firestore Rules + Storage Rules) แล้ว Publish
 
+- **Open registration + คลังเอกสารกลาง (25 JUL 2026):** ① Firestore Rules เปลี่ยนเป็น `request.auth != null` — สมัคร (register) แล้วเข้าถึงได้ทันที ไม่ต้องแก้ rules รายคน (ข้อแลก: ใครก็สมัครได้ — URL อย่าแชร์สาธารณะ · **Storage rules ยังเป็น allowlist 7 คน รอผู้ใช้วางเวอร์ชัน auth!=null เอง** เพราะ classifier บล็อกการพิมพ์) ② ยกเลิกช่องลิงก์รายข้อ → เป็น "📎 เอกสารอ้างอิง" แถบใต้ header ทุกหน้าของแต่ละ project (Firestore `library/{proj}` แชร์ทุกรอบ): chip ชื่อเอกสารกดเปิด, ทุกคนเพิ่ม (＋ ชื่อ+URL) / ลบ (✕) ได้, sync สด, โหมด view เห็นแต่กดแก้ไม่ได้
+
 ## งานค้าง
 
 1. แก้ reference 16 จุดใน PEL-TO-CK-061/062 ที่เลข section เลื่อน (แอปแสดง ⚠ ในกล่อง "คู่มือ:" ของข้อนั้น ๆ)
