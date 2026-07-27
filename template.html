@@ -86,6 +86,11 @@ details.how2 summary{color:var(--amber);}
 .castep .sb{flex:1; min-width:0;}
 .ca-lb{font-weight:bold; color:var(--navy); font-size:12px; margin-top:7px;}
 .ca-sm{min-height:34px; border:1px solid #c8d2e0; border-radius:6px; padding:3px 8px;}
+#libbox{background:#eef4fb; border-bottom:1px solid #d3deec;}
+#libbox .lb-in{max-width:1240px; margin:0 auto; padding:7px 14px; font-size:12.5px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;}
+#libbox .lb-t{font-weight:bold; color:var(--navy);}
+#libbox .lb-add{min-height:32px; border-radius:7px; border:1px dashed var(--blue); background:#fff; color:var(--blue); font-size:11.5px; font-weight:bold; padding:3px 10px; cursor:pointer;}
+#libbox .lkchip .x{margin-left:6px; color:var(--red); font-weight:bold; cursor:pointer;}
 .lkrow{margin-top:6px;}
 .lkchip{display:inline-block; background:#eef4fb; border:1px solid #c9d6e8; border-radius:8px; padding:4px 10px; font-size:11.5px; margin:0 4px 4px 0; color:var(--blue); text-decoration:none; font-weight:bold;}
 .lkin{width:100%; min-height:36px; border:1px dashed #c8d2e0; border-radius:7px; padding:5px 9px; font-size:12px; font-family:inherit;}
@@ -168,6 +173,7 @@ body.viewonly .toolbar{display:none;}
   <div class="sub">__HSUB__</div>
   <nav class="tabs" id="tabs"></nav>
 </header>
+<div id="libbox"></div>
 <main id="main"></main>
 <footer class="app">
   <span id="ftxt">0 / 0</span>
@@ -195,7 +201,8 @@ const FIREBASE_CONFIG = {
 }; */
 const _Q=new URLSearchParams(location.search);
 const AUDIT_ID=_Q.get('audit')||'__AUDIT_ID__';   // รอบตรวจ: มาจาก ?audit= (Audit Plan) หรือค่า default ของ pack
-const VIEW_ONLY=_Q.has('view');                    // ?view=1 = เปิดดูรายการตรวจอย่างเดียว ไม่บันทึก
+const VIEW_ONLY=_Q.has('view');
+const PROJ='__PROJ__';                    // ?view=1 = เปิดดูรายการตรวจอย่างเดียว ไม่บันทึก
 const CAR_PREFIX = '__CARPFX__';
 // ═══════════════════════════════════════════
 if(VIEW_ONLY){ document.body.classList.add('viewonly'); }
@@ -236,6 +243,29 @@ function rollup(it){
   return 'S';
 }
 function setRm(id,v){ (state[id]||(state[id]={})).rm=v; mark(id); }
+let LIB=[];
+function renderLib(){
+  const el=document.getElementById('libbox'); if(!el) return;
+  if(VIEW_ONLY&&!fbUser){ el.innerHTML=''; return; }
+  el.innerHTML=`<div class="lb-in"><span class="lb-t">📎 เอกสารอ้างอิง:</span>
+    ${LIB.map((l,i)=>`<span class="lkchip"><a href="${escAttr(l.u)}" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none">🔗 ${esc(l.t||l.u)}</a>${VIEW_ONLY?'':`<span class="x" onclick="delLib(${i})" title="ลบ">✕</span>`}</span>`).join('')}
+    ${LIB.length?'':'<span style="color:#7a8798">ยังไม่มี — เพิ่มลิงก์คู่มือ/เอกสารให้ทีมกดเปิดได้จากทุกหน้า</span>'}
+    ${VIEW_ONLY?'':'<button class="lb-add" onclick="addLib()">＋ เพิ่มเอกสาร</button>'}</div>`;
+}
+function addLib(){
+  const t=prompt('ชื่อเอกสาร (ที่จะแสดง):'); if(t===null||!t.trim()) return;
+  const u=prompt('วางลิงก์ URL ของเอกสาร:'); if(u===null||!u.trim()) return;
+  if(!/^https?:\/\//i.test(u.trim())){ alert('ลิงก์ต้องขึ้นต้นด้วย http:// หรือ https://'); return; }
+  LIB.push({t:t.trim(),u:u.trim(),by:fbUser?fbUser.email:''}); saveLib();
+}
+function delLib(i){ if(!confirm('ลบ "'+(LIB[i].t||'')+'" ออกจากคลังเอกสาร?')) return; LIB.splice(i,1); saveLib(); }
+function saveLib(){
+  renderLib();
+  if(fbReady&&fbUser) FB.db.collection('library').doc(PROJ).set({links:LIB,u:fbUser.email||''}).catch(e=>{alert('บันทึกคลังเอกสารไม่สำเร็จ: '+e.message);});
+}
+function watchLib(){
+  FB.db.collection('library').doc(PROJ).onSnapshot(d=>{ LIB=(d.exists&&d.data().links)||[]; renderLib(); },e=>console.error(e));
+}
 function setLk(id,v){ (state[id]||(state[id]={})).lk=v.trim(); mark(id); refreshItem(id); }
 function linkRowHTML(it){
   const s=st(it.id)||{};
@@ -374,7 +404,7 @@ function itemHTML(it){
         <input class="refin" placeholder="Evidence / หลักฐานที่พบ + อ้างอิงคู่มือ (${escAttr(it.ref||'')})" value="${escAttr(effRef(it)===it.ref?'':effRef(it))}"
           onchange="setRef('${it.id}',this.value)">
       </div>
-      ${photoRowHTML(it)}${linkRowHTML(it)}
+      ${photoRowHTML(it)}
       <textarea class="rmk" placeholder="Inspector comment — Finding: ไม่มีในคู่มือ/ไม่ได้ปฏิบัติ + รายละเอียด · ถ้า N.A/ไม่ตรวจ ให้ระบุเหตุผล"
         onchange="setRm('${it.id}',this.value)">${esc(s.rm||'')}</textarea>
     </div>`;
@@ -394,7 +424,7 @@ function itemHTML(it){
       <input class="refin" placeholder="Reference (Section/Page/Topic)" value="${escAttr(effRef(it))}"
         onchange="setRef('${it.id}',this.value)">
     </div>
-    ${photoRowHTML(it)}${linkRowHTML(it)}
+    ${photoRowHTML(it)}
     <textarea class="rmk" placeholder="Inspector comment — Finding/ข้อสังเกต · ถ้า N.A หรือไม่ตรวจข้อนี้ ให้ระบุเหตุผล"
       onchange="setRm('${it.id}',this.value)">${esc(s.rm||'')}</textarea>
   </div>`;
@@ -1286,6 +1316,7 @@ function startSync(){
   FB.timer && clearInterval(FB.timer);
   FB.timer=setInterval(flush, 2500);
   setTimeout(pushSummary, 6000);   // อัปเดตสรุปให้ Portal หลังโหลดข้อมูลรอบแรก
+  watchLib();
 }
 function pushSummary(){
   if(!fbReady||!fbUser) return;

@@ -38,6 +38,7 @@ for proj, cfg in latest.items():
               .replace('__HSUB__', cfg['hsub'])
               .replace('__AUDIT_ID__', cfg['audit_id'])
               .replace('__CARPFX__', cfg.get('car_prefix', 'CAR'))
+              .replace('__PROJ__', cfg['project'])
               .replace('__DATA__', data))
     outdir = os.path.join(HERE, cfg['outdir'])
     os.makedirs(outdir, exist_ok=True)
