@@ -13,7 +13,11 @@
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
 body{margin:0; font-family:Arial,"Helvetica Neue",sans-serif; background:var(--grey); color:var(--ink); font-size:15px;}
-header.app{background:var(--navy); color:#fff; padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 0 16px; position:sticky; top:0; z-index:50;}
+header.app{background:var(--navy); color:#fff; padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 0 16px; position:sticky; top:0; z-index:50; box-shadow:0 2px 10px rgba(10,20,40,.18);}
+body.shrunk header.app{padding-top:calc(env(safe-area-inset-top,0px) + 5px);}
+body.shrunk header.app h1{font-size:13.5px;}
+body.shrunk header.app .sub{display:none;}
+body.shrunk header.app .homelnk{top:4px; padding:3px 9px; font-size:11.5px;}
 header.app h1{margin:0; font-size:17px; letter-spacing:.2px;}
 header.app .sub{font-size:12px; opacity:.85; margin:3px 0 8px;}
 .tabs{display:flex; gap:4px; overflow-x:auto; padding-bottom:0;}
@@ -86,8 +90,9 @@ details.how2 summary{color:var(--amber);}
 .castep .sb{flex:1; min-width:0;}
 .ca-lb{font-weight:bold; color:var(--navy); font-size:12px; margin-top:7px;}
 .ca-sm{min-height:34px; border:1px solid #c8d2e0; border-radius:6px; padding:3px 8px;}
-#libbox{background:#eef4fb; border-bottom:1px solid #d3deec;}
-#libbox .lb-in{max-width:1240px; margin:0 auto; padding:7px 14px; font-size:12.5px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;}
+#libbox{background:#eef4fb; margin:0 -16px; border-top:1px solid #3d5f96;}
+#libbox .lb-in{max-width:1240px; margin:0 auto; padding:6px 14px; font-size:12.5px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; max-height:96px; overflow-y:auto;}
+body.shrunk #libbox .lb-in{padding:4px 14px; max-height:60px;}
 #libbox .lb-t{font-weight:bold; color:var(--navy);}
 #libbox .lb-add{min-height:32px; border-radius:7px; border:1px dashed var(--blue); background:#fff; color:var(--blue); font-size:11.5px; font-weight:bold; padding:3px 10px; cursor:pointer;}
 #libbox .lkchip .x{margin-left:6px; color:var(--red); font-weight:bold; cursor:pointer;}
@@ -167,13 +172,13 @@ body.viewonly .toolbar{display:none;}
 </style>
 </head>
 <body>
-<header class="app" style="position:relative">
-  <a href="../" style="position:absolute;top:10px;right:12px;color:#cfe0f5;text-decoration:none;font-size:12.5px;border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:5px 12px">⌂ Audit Portal</a>
+<header class="app">
+  <a href="../" class="homelnk" style="position:absolute;top:10px;right:12px;color:#cfe0f5;text-decoration:none;font-size:12.5px;border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:5px 12px;transition:all .15s">⌂ Audit Portal</a>
   <h1>D-0507 FLIGHT TRAINING – SAFETY SURVEILLANCE (SPOT CHECK)</h1>
   <div class="sub">Safety Surveillance ↔ FSOP 2024 · MMSOP 2024 &nbsp;|&nbsp; D-0507-SSC-001 ISSUE 01/REV 00 &nbsp;|&nbsp; v2026</div>
   <nav class="tabs" id="tabs"></nav>
+  <div id="libbox"></div>
 </header>
-<div id="libbox"></div>
 <main id="main"></main>
 <footer class="app">
   <span id="ftxt">0 / 0</span>
@@ -243,14 +248,15 @@ function rollup(it){
   return 'S';
 }
 function setRm(id,v){ (state[id]||(state[id]={})).rm=v; mark(id); }
-let LIB=[];
+let LIB=[], LIBEDIT=false;
 function renderLib(){
   const el=document.getElementById('libbox'); if(!el) return;
   if(VIEW_ONLY&&!fbUser){ el.innerHTML=''; return; }
   el.innerHTML=`<div class="lb-in"><span class="lb-t">📎 เอกสารอ้างอิง:</span>
-    ${LIB.map((l,i)=>`<span class="lkchip"><a href="${escAttr(l.u)}" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none">🔗 ${esc(l.t||l.u)}</a>${VIEW_ONLY?'':`<span class="x" onclick="delLib(${i})" title="ลบ">✕</span>`}</span>`).join('')}
+    ${LIB.map((l,i)=>`<span class="lkchip"><a href="${escAttr(l.u)}" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none">🔗 ${esc(l.t||l.u)}</a>${(VIEW_ONLY||!LIBEDIT)?'':`<span class="x" onclick="delLib(${i})" title="ลบเอกสารนี้">✕</span>`}</span>`).join('')}
     ${LIB.length?'':'<span style="color:#7a8798">ยังไม่มี — เพิ่มลิงก์คู่มือ/เอกสารให้ทีมกดเปิดได้จากทุกหน้า</span>'}
-    ${VIEW_ONLY?'':'<button class="lb-add" onclick="addLib()">＋ เพิ่มเอกสาร</button>'}</div>`;
+    ${VIEW_ONLY?'':`<button class="lb-add" onclick="addLib()">＋ เพิ่มเอกสาร</button>
+      ${LIB.length?`<button class="lb-add" style="border-style:solid;${LIBEDIT?'background:var(--red);color:#fff;border-color:var(--red)':''}" onclick="LIBEDIT=!LIBEDIT;renderLib()">${LIBEDIT?'✓ เสร็จสิ้น (ปิดโหมดลบ)':'✎ จัดการ'}</button>`:''}`}</div>`;
 }
 function addLib(){
   const t=prompt('ชื่อเอกสาร (ที่จะแสดง):'); if(t===null||!t.trim()) return;
@@ -258,7 +264,11 @@ function addLib(){
   if(!/^https?:\/\//i.test(u.trim())){ alert('ลิงก์ต้องขึ้นต้นด้วย http:// หรือ https://'); return; }
   LIB.push({t:t.trim(),u:u.trim(),by:fbUser?fbUser.email:''}); saveLib();
 }
-function delLib(i){ if(!confirm('ลบ "'+(LIB[i].t||'')+'" ออกจากคลังเอกสาร?')) return; LIB.splice(i,1); saveLib(); }
+function delLib(i){
+  const l=LIB[i]; if(!l) return;
+  if(!confirm('ยืนยันลบเอกสารนี้ออกจากคลัง (ทุกคนในทีมจะไม่เห็นลิงก์นี้อีก)\n\n📄 '+(l.t||l.u))) return;
+  LIB.splice(i,1); LIBEDIT=false; saveLib();
+}
 function saveLib(){
   renderLib();
   if(fbReady&&fbUser) FB.db.collection('library').doc(PROJ).set({links:LIB,u:fbUser.email||''}).catch(e=>{alert('บันทึกคลังเอกสารไม่สำเร็จ: '+e.message);});
@@ -1354,6 +1364,10 @@ async function uploadPhoto(id, idx){
     mark(id); refreshItem(id);
   }catch(e){ console.error('photo upload failed',e); }
 }
+(function(){
+  let last=false;
+  addEventListener('scroll',()=>{ const on=scrollY>60; if(on!==last){ last=on; document.body.classList.toggle('shrunk',on); } },{passive:true});
+})();
 initFirebase();
 </script>
 </body>
