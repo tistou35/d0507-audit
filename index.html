@@ -77,6 +77,7 @@ footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
     <input id="lp_em" type="email" placeholder="อีเมล">
     <input id="lp_pw" type="password" placeholder="รหัสผ่าน">
     <button class="alt" onclick="loginEmail()">เข้าสู่ระบบด้วยอีเมล</button>
+    <button class="alt" onclick="signupEmail()">สมัครใหม่ (ครั้งแรกของอีเมลนี้)</button>
     <div style="font-size:11.5px;color:#98a4b4;margin-top:8px">อีเมลต้องอยู่ในรายชื่อทีมตรวจ (Security Rules)</div>
   </div>
   <div id="content" style="display:none">
@@ -90,6 +91,8 @@ footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
     <div style="margin-top:8px">
       <button class="pbtn" onclick="addRow()">➕ เพิ่มรายการตรวจ</button>
       <button class="pbtn g" onclick="savePlan()">💾 บันทึกแผน</button>
+      &nbsp;·&nbsp; ACM ผู้อนุมัติแผน: <input id="acmemail" placeholder="อีเมล Accountable Executive Manager" style="min-height:36px;border:1px solid #c8d2e0;border-radius:7px;padding:4px 8px;width:250px" onchange="ACM=this.value.trim().toLowerCase()">
+      <button class="pbtn g" onclick="approveAll()">🖋 ACM อนุมัติทั้งแผนปีนี้</button>
     </div>
     <h3 class="sec" style="margin-top:20px">🗓 ปฏิทินการตรวจ 12 เดือน (Gantt)</h3>
     <div class="gwrap" id="gwrap"><div class="gantt" id="gantt"></div></div>
@@ -118,11 +121,12 @@ const CFG={
 const PACKS=[{"proj": "aerodrome", "outdir": "aerodrome", "name": "Aerodrome Certification Readiness", "desc": "ตรวจความพร้อมรับการรับรองสนามบิน · ICAO Annex 14 / Doc 9774 · DRAFT รอ review", "code": "D-0507-IAC-003 (DRAFT)", "ver": "v2026", "aid": "aerodrome-2026", "total": 81}, {"proj": "iac", "outdir": "iac", "name": "Internal Audit — GAP Analysis (TCAR-ORA)", "desc": "OMM · OMA · TM/PPL(A) + On-Site Implementation · 2,081 รายการตรวจ", "code": "D-0507-IAC-001", "ver": "v2026", "aid": "audit-2026", "total": 2081}, {"proj": "safety", "outdir": "safety", "name": "School Safety Audit (SMS)", "desc": "ตรวจความปลอดภัยทั้งโรงเรียนตามฟอร์ม D-0507-SAC-001 · ตรวจ 2 มิติ Documented/Implemented", "code": "D-0507-SAC-001", "ver": "v2026", "aid": "safety-2026", "total": 26}, {"proj": "surveillance", "outdir": "surveillance", "name": "Safety Surveillance (Spot Check)", "desc": "เฝ้าระวังความปลอดภัยแบบตรวจจุดตามฟอร์ม D-0507-SSC-001 · ระบุกิจกรรม/สถานที่ในช่อง Scope", "code": "D-0507-SSC-001", "ver": "v2026", "aid": "surveil-2026", "total": 29}, {"proj": "vendor", "outdir": "vendor", "name": "Vendor / Contracted Services Audit", "desc": "ตรวจผู้ให้บริการภายนอก/กิจกรรมจ้างช่วง ตามฟอร์ม D-0507-VAC-001 (ORA.GEN.205)", "code": "D-0507-VAC-001", "ver": "v2026", "aid": "vendor-2026", "total": 25}];
 firebase.initializeApp(CFG);
 const db=firebase.firestore();
-let USER=null, SUMS={}, PLAN=[], PLANYEAR=(new Date()).getFullYear(), planUnsub=null;
+let USER=null, SUMS={}, PLAN=[], PLANYEAR=(new Date()).getFullYear(), planUnsub=null, ACM='';
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const today=()=>new Date().toISOString().slice(0,10);
 function loginGoogle(){ firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert(e.message)); }
 function loginEmail(){ firebase.auth().signInWithEmailAndPassword(document.getElementById('lp_em').value.trim(),document.getElementById('lp_pw').value).catch(e=>alert(e.message)); }
+function signupEmail(){ firebase.auth().createUserWithEmailAndPassword(document.getElementById('lp_em').value.trim(),document.getElementById('lp_pw').value).catch(e=>alert(e.message)); }
 firebase.auth().onAuthStateChanged(u=>{
   USER=u;
   document.getElementById('loginui').style.display=u?'none':'block';
@@ -154,7 +158,7 @@ function renderCards(){
       <div style="margin-top:6px"><span class="pill ${cls}">${txt}</span></div>
       <div class="bar"><i style="width:${pct}%"></i></div>
       <div class="pc-stat">ตรวจแล้ว <b>${su?su.done:0}/${su?(su.total||p.total):p.total}</b> (${pct}%) · GAP <b class="g">${su?su.gap:0}</b> · CAR ค้าง <b class="c">${su?su.carOpen:0}</b>/${su?su.car:0}</div>
-      <a href="${p.outdir}/?audit=${encodeURIComponent(id)}" style="display:inline-block;margin-top:10px;background:var(--blue);color:#fff;font-weight:bold;font-size:13.5px;border-radius:8px;padding:8px 16px;text-decoration:none">▶ ${pct>0?'เข้าตรวจต่อ':'เริ่มตรวจ'}</a>
+      ${r.appr?`<a href="${p.outdir}/?audit=${encodeURIComponent(id)}" style="display:inline-block;margin-top:10px;background:var(--blue);color:#fff;font-weight:bold;font-size:13.5px;border-radius:8px;padding:8px 16px;text-decoration:none">▶ ${pct>0?'เข้าตรวจต่อ':'เริ่มตรวจ'}</a>`:`<span style="display:inline-block;margin-top:10px;background:#c9d2de;color:#667;font-weight:bold;font-size:13.5px;border-radius:8px;padding:8px 16px">⏳ รอ ACM อนุมัติก่อนเริ่มตรวจ</span>`}
     </div>`;
   }).join('');
 }
@@ -191,10 +195,20 @@ function loadPlan(){
   PLANYEAR=+document.getElementById('planyear').value||PLANYEAR;
   if(planUnsub) planUnsub();
   planUnsub=db.collection('plans').doc(String(PLANYEAR)).onSnapshot(d=>{
+    document.getElementById('permerr')?.remove();
     PLAN=(d.exists&&d.data().rows)||[];
+    ACM=(d.exists&&d.data().acm)||'';
+    const ai=document.getElementById('acmemail'); if(ai&&document.activeElement!==ai) ai.value=ACM;
     PLAN.forEach(r=>{ if(!r.ref) r.ref=roundRef(); });   // แถวเก่าก่อนมีระบบ ref
     renderPlan();
-  },e=>console.error(e));
+  },e=>{
+    console.error(e);
+    if(e.code==='permission-denied'&&!document.getElementById('permerr')){
+      const b=document.createElement('div'); b.id='permerr'; b.className='banner late';
+      b.innerHTML='⛔ <b>อีเมลของคุณยังไม่มีสิทธิ์เข้าถึงข้อมูล</b> — แจ้งแอดมิน (tistou35@gmail.com) ให้เพิ่มอีเมลนี้ใน Firestore/Storage Security Rules แล้วรีเฟรชหน้า';
+      document.getElementById('banners').prepend(b);
+    }
+  });
 }
 function rowStatus(r){
   if(r.done) return ['done','✅ เสร็จสิ้น'];
@@ -213,11 +227,12 @@ function renderPlan(){
     const [cls,txt]=rowStatus(r);
     h+=`<tr>
       <td><span style="font-size:11px;font-weight:bold;color:var(--blue)">${esc(r.ref||'')}</span>
-        <select onchange="PLAN[${i}].proj=this.value">${PACKS.map(p=>`<option value="${p.proj}"${r.proj===p.proj?' selected':''}>${esc(p.name)}</option>`).join('')}</select>
-        ${r.start?`<a class="pbtn" style="display:inline-block;text-decoration:none;margin-top:4px" href="${(PACKS.find(x=>x.proj===r.proj)||{}).outdir}/?audit=${encodeURIComponent(rid(r))}">${r.done?'📖 ดูผลรอบนี้':'▶ เปิดงานตรวจ'}</a>`:''}</td>
+        <select onchange="PLAN[${i}].proj=this.value;PLAN[${i}].appr=null;renderPlan()">${PACKS.map(p=>`<option value="${p.proj}"${r.proj===p.proj?' selected':''}>${esc(p.name)}</option>`).join('')}</select>
+        ${r.appr?`<span class="pill done" title="โดย ${esc(r.appr.n)} (${esc(r.appr.scope||'')}) ${esc(r.appr.dt)}">🖋 อนุมัติแล้ว ${esc(r.appr.dt)}</span>`:`<span class="pill soon">⏳ รอ ACM อนุมัติ</span> <button class="pbtn" onclick="approveRow(${i})">🖋 อนุมัติ</button>`}
+        ${r.start?(r.appr?`<a class="pbtn" style="display:inline-block;text-decoration:none;margin-top:4px" href="${(PACKS.find(x=>x.proj===r.proj)||{}).outdir}/?audit=${encodeURIComponent(rid(r))}">${r.done?'📖 ดูผลรอบนี้':'▶ เปิดงานตรวจ'}</a>`:`<span class="pbtn" style="opacity:.5;cursor:not-allowed">▶ เปิดได้เมื่ออนุมัติ</span>`):''}</td>
       <td><input value="${esc(r.label||'')}" placeholder="เช่น Q4 รอบหลัก" onchange="PLAN[${i}].label=this.value"></td>
-      <td><input type="date" value="${esc(r.start||'')}" onchange="PLAN[${i}].start=this.value"></td>
-      <td><input type="date" value="${esc(r.end||'')}" onchange="PLAN[${i}].end=this.value"></td>
+      <td><input type="date" value="${esc(r.start||'')}" onchange="PLAN[${i}].start=this.value;PLAN[${i}].appr=null;renderPlan()"></td>
+      <td><input type="date" value="${esc(r.end||'')}" onchange="PLAN[${i}].end=this.value;PLAN[${i}].appr=null;renderPlan()"></td>
       <td><input value="${esc(r.lead||'')}" onchange="PLAN[${i}].lead=this.value"></td>
       <td><input value="${esc(r.auditee||'')}" placeholder="หน่วย/บริษัทที่รับการตรวจ" onchange="PLAN[${i}].auditee=this.value">
         <input value="${esc(ackList(r).join(', '))}" placeholder="อีเมลผู้ต้องรับทราบ — หลายคนคั่นด้วย ," style="margin-top:3px" onchange="PLAN[${i}].ackList=this.value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);renderPlan()">
@@ -280,7 +295,7 @@ function addRow(proj){ PLAN.push({proj:proj||PACKS[0].proj,ref:roundRef(),label:
 function planRound(proj){ addRow(proj); document.getElementById('plantab').scrollIntoView({behavior:'smooth'}); }
 function savePlan(){
   PLAN.forEach(r=>{ if(!r.ref) r.ref=roundRef(); });
-  db.collection('plans').doc(String(PLANYEAR)).set({rows:PLAN,u:USER?USER.email:'',t:firebase.firestore.FieldValue.serverTimestamp()})
+  db.collection('plans').doc(String(PLANYEAR)).set({rows:PLAN,acm:ACM,u:USER?USER.email:'',t:firebase.firestore.FieldValue.serverTimestamp()})
     .then(()=>{ const el=document.getElementById('plansaved'); el.textContent='☁ บันทึกแล้ว '+new Date().toTimeString().slice(0,5); setTimeout(()=>el.textContent='',4000); })
     .catch(e=>alert('บันทึกไม่สำเร็จ: '+e.message));
 }
@@ -320,6 +335,24 @@ function openSigP(i,role){
   cv.onpointermove=e=>{if(!drawing)return; const p=pos(e); ctx.lineTo(p[0],p[1]); ctx.stroke(); e.preventDefault();};
   cv.onpointerup=cv.onpointercancel=()=>{drawing=false;};
   SIGP={i,role,cv,ctx,hasInk:()=>drew,reset:()=>{drew=false;}};
+}
+function isACM(){ if(!USER) return false; if(!ACM) return true; return (USER.email||'').toLowerCase()===ACM; }
+function approveRow(i){
+  if(!USER){ alert('เข้าสู่ระบบก่อน'); return; }
+  if(!isACM()){ alert('เฉพาะ ACM ('+ACM+') เท่านั้นที่อนุมัติได้'); return; }
+  if(!ACM&&!confirm('ยังไม่ได้กำหนดอีเมล ACM ในช่องท้ายตาราง — ยืนยันอนุมัติในนามผู้ใช้ปัจจุบัน?')) return;
+  const r=PLAN[i];
+  r.appr={n:(USER.displayName||USER.email),by:(USER.email||'').toLowerCase(),dt:today(),scope:'รายครั้ง'};
+  savePlan(); renderPlan();
+}
+function approveAll(){
+  if(!USER){ alert('เข้าสู่ระบบก่อน'); return; }
+  if(!isACM()){ alert('เฉพาะ ACM ('+ACM+') เท่านั้นที่อนุมัติได้'); return; }
+  const pend=PLAN.filter(r=>!r.appr);
+  if(!pend.length){ alert('ทุกรายการในแผนปี '+PLANYEAR+' อนุมัติแล้ว'); return; }
+  if(!confirm('ACM อนุมัติแผนประจำปี '+PLANYEAR+' — รายการที่ยังไม่อนุมัติทั้งหมด '+pend.length+' รายการ?')) return;
+  pend.forEach(r=>{ r.appr={n:(USER.displayName||USER.email),by:(USER.email||'').toLowerCase(),dt:today(),scope:'แผนประจำปี'}; });
+  savePlan(); renderPlan();
 }
 function openAckSig(i){
   const r=PLAN[i];

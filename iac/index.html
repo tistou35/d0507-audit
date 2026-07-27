@@ -86,6 +86,9 @@ details.how2 summary{color:var(--amber);}
 .castep .sb{flex:1; min-width:0;}
 .ca-lb{font-weight:bold; color:var(--navy); font-size:12px; margin-top:7px;}
 .ca-sm{min-height:34px; border:1px solid #c8d2e0; border-radius:6px; padding:3px 8px;}
+.lkrow{margin-top:6px;}
+.lkchip{display:inline-block; background:#eef4fb; border:1px solid #c9d6e8; border-radius:8px; padding:4px 10px; font-size:11.5px; margin:0 4px 4px 0; color:var(--blue); text-decoration:none; font-weight:bold;}
+.lkin{width:100%; min-height:36px; border:1px dashed #c8d2e0; border-radius:7px; padding:5px 9px; font-size:12px; font-family:inherit;}
 .sigwrap{position:fixed; inset:0; background:rgba(10,20,40,.55); display:flex; align-items:center; justify-content:center; z-index:99;}
 .sigbox{background:#fff; border-radius:12px; padding:16px; max-width:580px; width:94%; box-shadow:0 10px 40px rgba(0,0,0,.3);}
 .sigbox canvas{border:1.5px dashed #8fa3bd; border-radius:8px; touch-action:none; width:100%; height:180px; background:#fff; display:block; margin-top:6px;}
@@ -233,6 +236,13 @@ function rollup(it){
   return 'S';
 }
 function setRm(id,v){ (state[id]||(state[id]={})).rm=v; mark(id); }
+function setLk(id,v){ (state[id]||(state[id]={})).lk=v.trim(); mark(id); refreshItem(id); }
+function linkRowHTML(it){
+  const s=st(it.id)||{};
+  const links=(s.lk||'').split(/[\s,]+/).filter(x=>/^https?:\/\//i.test(x));
+  return `<div class="lkrow">${links.map(u=>`<a class="lkchip" href="${escAttr(u)}" target="_blank" rel="noopener">🔗 ${esc(u.replace(/^https?:\/\//i,'').slice(0,44))}</a>`).join('')}
+    <input class="lkin" placeholder="🔗 ลิงก์เอกสารอ้างอิง (วาง URL — หลายลิงก์คั่นด้วยเว้นวรรค เช่น Google Drive/คู่มือออนไลน์)" value="${escAttr(s.lk||'')}" onchange="setLk('${it.id}',this.value)"></div>`;
+}
 function setRef(id,v){ (state[id]||(state[id]={})).ref=v; mark(id); }
 function setSc(id,i,val){
   const s=(state[id]=state[id]||{}); s.sc=s.sc||{}; s.sc[i]=!!val; mark(id);
@@ -364,7 +374,7 @@ function itemHTML(it){
         <input class="refin" placeholder="Evidence / หลักฐานที่พบ + อ้างอิงคู่มือ (${escAttr(it.ref||'')})" value="${escAttr(effRef(it)===it.ref?'':effRef(it))}"
           onchange="setRef('${it.id}',this.value)">
       </div>
-      ${photoRowHTML(it)}
+      ${photoRowHTML(it)}${linkRowHTML(it)}
       <textarea class="rmk" placeholder="Inspector comment — Finding: ไม่มีในคู่มือ/ไม่ได้ปฏิบัติ + รายละเอียด · ถ้า N.A/ไม่ตรวจ ให้ระบุเหตุผล"
         onchange="setRm('${it.id}',this.value)">${esc(s.rm||'')}</textarea>
     </div>`;
@@ -384,7 +394,7 @@ function itemHTML(it){
       <input class="refin" placeholder="Reference (Section/Page/Topic)" value="${escAttr(effRef(it))}"
         onchange="setRef('${it.id}',this.value)">
     </div>
-    ${photoRowHTML(it)}
+    ${photoRowHTML(it)}${linkRowHTML(it)}
     <textarea class="rmk" placeholder="Inspector comment — Finding/ข้อสังเกต · ถ้า N.A หรือไม่ตรวจข้อนี้ ให้ระบุเหตุผล"
       onchange="setRm('${it.id}',this.value)">${esc(s.rm||'')}</textarea>
   </div>`;
