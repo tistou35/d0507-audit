@@ -177,7 +177,7 @@ body.viewonly .toolbar{display:none;}
 </head>
 <body>
 <header class="app">
-  <a href="../" class="homelnk" style="position:absolute;top:10px;right:12px;color:#cfe0f5;text-decoration:none;font-size:12.5px;border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:5px 12px;transition:all .15s">⌂ Audit Portal</a>
+  <a href="../" class="homelnk" style="position:absolute;top:10px;right:12px;color:#cfe0f5;text-decoration:none;font-size:12.5px;border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:5px 12px">⌂ Audit Portal</a>
   <h1>D-0507 FLIGHT TRAINING – AERODROME CERTIFICATION READINESS</h1>
   <div class="sub">Aerodrome Certification / GAP ↔ กพท./พ.ร.บ.เดินอากาศ (สนามบินส่วนบุคคล — หลัก) · ICAO Annex 14 Vol I · Doc 9774 · EASA Reg 139/2014 ADR (best practice — สนามบินไม่เปิดสาธารณะอยู่นอกขอบเขต EASA) &nbsp;|&nbsp; D-0507-IAC-003 (DRAFT — รอ @reviewer/@legal) &nbsp;|&nbsp; v2026</div>
   <nav class="tabs" id="tabs"></nav>
@@ -1379,9 +1379,19 @@ async function uploadPhoto(id, idx){
     mark(id); refreshItem(id);
   }catch(e){ console.error('photo upload failed',e); }
 }
-(function(){
-  let last=false;
-  addEventListener('scroll',()=>{ const on=scrollY>60; if(on!==last){ last=on; document.body.classList.toggle('shrunk',on); } },{passive:true});
+(function(){          // ย่อหัวเมื่อเลื่อน — hysteresis + กัน loop ตอนอยู่ก้นหน้า
+  let on=false, tick=false;
+  const upd=()=>{
+    tick=false;
+    const y=scrollY, doc=document.documentElement;
+    const nearBottom=(y+innerHeight)>=(doc.scrollHeight-12);
+    const shortPage=doc.scrollHeight<=innerHeight+140;   // หน้าสั้น: หดแล้วจะเด้ง ไม่ต้องหด
+    if(shortPage){ if(on){ on=false; document.body.classList.remove('shrunk'); } return; }
+    if(nearBottom) return;                               // อยู่ก้นหน้า คงสถานะเดิม
+    if(!on && y>110){ on=true; document.body.classList.add('shrunk'); }
+    else if(on && y<45){ on=false; document.body.classList.remove('shrunk'); }
+  };
+  addEventListener('scroll',()=>{ if(!tick){ tick=true; requestAnimationFrame(upd); } },{passive:true});
 })();
 initFirebase();
 </script>
