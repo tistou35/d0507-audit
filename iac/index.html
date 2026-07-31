@@ -100,6 +100,10 @@ body.shrunk #libbox .lb-in{padding:4px 14px; max-height:60px;}
 #libbox .lb-t{font-weight:bold; color:var(--navy);}
 #libbox .lb-add{min-height:32px; border-radius:7px; border:1px dashed var(--blue); background:#fff; color:var(--blue); font-size:11.5px; font-weight:bold; padding:3px 10px; cursor:pointer;}
 #libbox .lkchip .x{margin-left:6px; color:var(--red); font-weight:bold; cursor:pointer;}
+.item.jump{animation:jumpfx 2.2s ease-out;}
+@keyframes jumpfx{0%{background:#FFF3C4; box-shadow:0 0 0 3px #E9B949;}70%{background:#FFFBEB; box-shadow:0 0 0 3px rgba(233,185,73,.5);}100%{background:transparent; box-shadow:none;}}
+.gotobtn{background:#fff; border:1px solid var(--blue); color:var(--blue); border-radius:7px; font-size:11.5px; font-weight:bold; padding:4px 10px; min-height:32px; cursor:pointer; margin-top:6px;}
+.gaphead b.idlink{color:var(--blue); cursor:pointer; text-decoration:underline dotted;}
 .lkrow{margin-top:6px;}
 .lkchip{display:inline-block; background:#eef4fb; border:1px solid #c9d6e8; border-radius:8px; padding:4px 10px; font-size:11.5px; margin:0 4px 4px 0; color:var(--blue); text-decoration:none; font-weight:bold;}
 .lkin{width:100%; min-height:36px; border:1px dashed #c8d2e0; border-radius:7px; padding:5px 9px; font-size:12px; font-family:inherit;}
@@ -177,7 +181,7 @@ body.viewonly .toolbar{display:none;}
 </head>
 <body>
 <header class="app">
-  <a href="../" class="homelnk" style="position:absolute;top:10px;right:12px;color:#cfe0f5;text-decoration:none;font-size:12.5px;border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:5px 12px">⌂ Audit Portal</a>
+  <a href="../audit/" class="homelnk" style="position:absolute;top:10px;right:12px;color:#cfe0f5;text-decoration:none;font-size:12.5px;border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:5px 12px">⌂ Audit Portal</a>
   <h1>D-0507 FLIGHT TRAINING – INTERNAL AUDIT CHECKLIST</h1>
   <div class="sub">GAP Analysis: OMM · OMA · TM/PPL(A) + On-Site Implementation ↔ TCAR PEL Part ORA (Rev 00, 30 OCT 2024) &nbsp;|&nbsp; D-0507-IAC-001 &nbsp;|&nbsp; ตรวจเอกสาร + ตรวจสถานที่และการปฏิบัติจริง</div>
   <nav class="tabs" id="tabs"></nav>
@@ -520,6 +524,21 @@ function renderModule(mc){
   return h;
 }
 const openParts=new Set();
+function gotoItem(id){
+  const it=ALL.find(x=>x.id===id); if(!it) return;
+  filter.q=''; filter.st='';                 // ล้างตัวกรองที่อาจซ่อนข้อนี้
+  curTab=it._m;
+  openParts.add(`${it._m}|${it._pi}`);       // เปิด Part ที่ข้อนั้นอยู่
+  render();
+  setTimeout(()=>{
+    const el=document.getElementById('it_'+id);
+    if(!el){ return; }
+    const hdr=document.querySelector('header.app');
+    const off=(hdr?hdr.getBoundingClientRect().height:0)+12;
+    window.scrollTo({top:el.getBoundingClientRect().top+scrollY-off, behavior:'smooth'});
+    el.classList.add('jump'); setTimeout(()=>el.classList.remove('jump'),2400);
+  },120);
+}
 function togglePart(key){
   const [mc,pi]=key.split('|');
   if(openParts.has(key)) openParts.delete(key); else openParts.add(key);
@@ -1094,11 +1113,12 @@ function renderGap(){
     const c=carOf(it.id);
     h+=`<div class="gapitem"><div class="gaphead">
       <input type="checkbox" class="gsel" ${gapSel.has(it.id)?'checked':''} onchange="toggleSel('${it.id}',this.checked)">
-      <div style="flex:1"><b>[${it.id}]</b> ${esc(it.d)}
+      <div style="flex:1"><b class="idlink" onclick="gotoItem('${it.id}')" title="ไปที่ข้อตรวจนี้">[${it.id}]</b> ${esc(it.d)}
       <div class="w" style="color:var(--red);font-weight:bold">${esc(gapType(it))}</div>
       <div class="w">${esc(it._m)} · ${esc(it._p)}${it._s?' · '+esc(it._s):''}${it.rr?' · <b>'+esc(it.rr)+'</b>':''}${effRef(it)?' · Ref/Evidence: '+esc(effRef(it)):''}</div>
       ${s.rm?`<div class="w" style="color:var(--red)">Remark: ${esc(s.rm)}</div>`:''}
       ${ph.length?`<div class="photorow">${ph.map((p,i)=>`<span class="thumb"><img src="${p.d||p.u}" onclick="viewPhoto('${it.id}',${i})"></span>`).join('')}</div>`:''}
+      <button class="gotobtn" onclick="gotoItem('${it.id}')">↪ ไปที่ข้อตรวจนี้ (${esc(it._m)})</button>
       ${carBoxHTML(it)}
       </div></div>
     </div>`;

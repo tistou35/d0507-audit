@@ -1,0 +1,295 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>D-0507 Forms Portal — ทะเบียนฟอร์มควบคุม</title>
+<style>
+:root{--navy:#1F3864;--blue:#2E75B6;--green:#1E7B34;--amber:#9C6500;--red:#C00000;
+  --mono:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,'Segoe UI','Noto Sans Thai',Arial,sans-serif;background:#eef2f7;color:#1a1a2a;min-height:100vh;}
+/* หัวขาว — แยกตัวตนจาก Audit Portal ที่ใช้แถบ navy ทึบ */
+header{background:#fff;border-bottom:1px solid #d8dfe8;padding:14px 26px;display:flex;
+  justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+header h1{font-size:19px;color:var(--navy);letter-spacing:-.2px;}
+header .sub{font-size:12.5px;color:#5a6675;margin-top:3px;}
+#authbox{font-size:13px;text-align:right;color:#5a6675;}
+#authbox button{min-height:36px;border-radius:8px;border:1px solid #c8d2e0;background:#fff;color:var(--navy);
+  font-weight:bold;padding:5px 13px;cursor:pointer;margin-left:6px;font-size:12.5px;}
+#authbox a.swap{display:inline-block;min-height:36px;border-radius:8px;border:1px solid var(--blue);background:#fff;
+  color:var(--blue);font-weight:bold;padding:8px 13px;text-decoration:none;font-size:12.5px;margin-left:6px;}
+.ctrl{background:#F0F4F8;border-bottom:1px solid #d8dfe8;padding:9px 26px;font-family:var(--mono);
+  font-size:11px;color:#98a4b4;letter-spacing:.4px;display:flex;flex-wrap:wrap;gap:4px 22px;}
+.ctrl b{color:var(--navy);font-weight:bold;}
+main{max-width:1150px;margin:0 auto;padding:22px 16px 60px;}
+h3.sec{color:var(--navy);font-size:15px;margin:22px 0 9px;display:flex;align-items:baseline;
+  justify-content:space-between;gap:12px;flex-wrap:wrap;}
+h3.sec .note{font-size:12px;color:#98a4b4;font-weight:normal;}
+
+#loginui{background:#fff;border:1px solid #d8dfe8;border-radius:12px;padding:22px;max-width:420px;margin:30px auto;text-align:center;}
+#loginui input{width:100%;min-height:42px;border:1px solid #c8d2e0;border-radius:8px;padding:8px 10px;margin-top:8px;font-size:14px;}
+#loginui button{width:100%;min-height:44px;border-radius:8px;border:none;background:var(--navy);color:#fff;font-weight:bold;font-size:14px;margin-top:10px;cursor:pointer;}
+#loginui button.alt{background:#fff;color:var(--blue);border:1px solid var(--blue);}
+
+/* สรุปสถานะทะเบียน */
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(126px,1fr));gap:10px;}
+.sbox{background:#fff;border:1px solid #d8dfe8;border-radius:10px;padding:11px 14px;border-left:4px solid #c9d2de;}
+.sbox.ok{border-left-color:var(--green);} .sbox.warn{border-left-color:var(--amber);} .sbox.bad{border-left-color:var(--red);}
+.sbox .n{font-family:var(--mono);font-size:21px;font-weight:bold;color:var(--navy);}
+.sbox.ok .n{color:var(--green);} .sbox.warn .n{color:var(--amber);} .sbox.bad .n{color:var(--red);}
+.sbox .l{font-size:11.5px;color:#5a6675;margin-top:1px;line-height:1.35;}
+
+/* แถบกลุ่มผู้ใช้ */
+.rolebar{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;}
+.rolebtn{min-height:54px;flex:1 0 auto;min-width:138px;border:1px solid #d8dfe8;background:#fff;border-radius:10px;
+  padding:8px 15px;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:1px;
+  text-align:left;font-family:inherit;}
+.rolebtn .rn{font-size:13.5px;font-weight:bold;color:var(--navy);white-space:nowrap;}
+.rolebtn .rc{font-family:var(--mono);font-size:10.5px;color:#98a4b4;white-space:nowrap;}
+.rolebtn:hover{border-color:var(--blue);}
+.rolebtn[aria-selected="true"]{background:var(--navy);border-color:var(--navy);}
+.rolebtn[aria-selected="true"] .rn{color:#fff;}
+.rolebtn[aria-selected="true"] .rc{color:#fff;opacity:.72;}
+
+/* การ์ดฟอร์ม */
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:12px;}
+.fcard{background:#fff;border:1px solid #d8dfe8;border-radius:12px;padding:13px 15px;
+  display:flex;flex-direction:column;gap:6px;}
+.fcard:hover{box-shadow:0 6px 22px rgba(31,56,100,.14);}
+.fcard .cd{font-family:var(--mono);font-size:10.5px;font-weight:bold;color:var(--blue);letter-spacing:.3px;}
+.fcard .fn{font-size:14px;font-weight:bold;color:var(--navy);line-height:1.3;}
+.fcard .fth{font-size:12px;color:#98a4b4;}
+.fcard .fr{font-size:12.5px;color:#5a6675;line-height:1.5;flex:1;}
+.fcard .fm{display:flex;flex-wrap:wrap;gap:5px;}
+.fcard .act{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px;}
+.tag{font-size:10.5px;font-weight:bold;padding:2px 8px;border-radius:10px;white-space:nowrap;
+  background:#F0F4F8;color:#5a6675;border:1px solid #e4eaf2;}
+.tag.sh{background:#dbe9ff;color:#1d5eb8;border-color:transparent;}
+.tag.ok{background:#DFF2E3;color:var(--green);border-color:transparent;}
+.tag.warn{background:#FFF0D5;color:var(--amber);border-color:transparent;}
+.tag.bad{background:#FBE0E0;color:var(--red);border-color:transparent;}
+.ab{min-height:34px;border-radius:7px;border:1px solid var(--blue);background:var(--blue);color:#fff;
+  font-size:12px;font-weight:bold;padding:5px 12px;cursor:pointer;text-decoration:none;display:inline-block;
+  font-family:inherit;}
+.ab.o{background:#fff;color:var(--blue);}
+.ab.x{background:#F0F4F8;color:#98a4b4;border-color:#d8dfe8;cursor:not-allowed;}
+
+/* ทะเบียน */
+.filters{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:9px;}
+.fb{min-height:34px;border-radius:7px;border:1px solid #c8d2e0;background:#fff;color:#5a6675;font-size:12px;
+  font-weight:bold;padding:5px 12px;cursor:pointer;font-family:inherit;}
+.fb[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy);}
+.filters input{min-height:34px;border:1px solid #c8d2e0;border-radius:7px;padding:5px 10px;font-size:13px;
+  font-family:inherit;flex:1;min-width:180px;max-width:300px;}
+.twrap{overflow-x:auto;background:#fff;border:1px solid #d8dfe8;border-radius:10px;}
+table.reg{width:100%;border-collapse:collapse;font-size:12.5px;min-width:900px;}
+table.reg th{background:var(--navy);color:#fff;padding:8px 11px;font-size:11px;text-align:left;white-space:nowrap;}
+table.reg td{border-bottom:1px solid #e4eaf2;padding:7px 11px;vertical-align:middle;}
+table.reg tr:last-child td{border-bottom:none;}
+table.reg tbody tr:hover td{background:#F0F4F8;}
+table.reg td.c{font-family:var(--mono);font-size:11.5px;color:#5a6675;white-space:nowrap;}
+table.reg td.nm{font-weight:600;color:var(--navy);}
+.note{background:#fff;border-left:4px solid var(--blue);border-radius:8px;padding:11px 15px;font-size:12.5px;
+  color:#445;margin-top:14px;line-height:1.6;}
+.note b{color:var(--navy);}
+footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
+@media(max-width:700px){main{padding:14px 8px 50px;} header,.ctrl{padding-left:14px;padding-right:14px;}}
+</style></head><body>
+<header>
+  <div><h1>D-0507 FLIGHT TRAINING — FORMS PORTAL</h1>
+  <div class="sub">ทะเบียนฟอร์มควบคุม · List of Effective Forms (OMA · OMM · TM)</div></div>
+  <div id="authbox"></div>
+</header>
+<div class="ctrl" id="ctrl"></div>
+
+<main>
+  <div id="loginui" style="display:none">
+    <b style="color:var(--navy);font-size:16px">เข้าสู่ระบบ Forms Portal</b>
+    <button onclick="loginGoogle()">🔵 เข้าสู่ระบบด้วย Google</button>
+    <input id="lp_em" type="email" placeholder="อีเมล">
+    <input id="lp_pw" type="password" placeholder="รหัสผ่าน">
+    <button class="alt" onclick="loginEmail()">เข้าสู่ระบบด้วยอีเมล</button>
+    <button class="alt" onclick="signupEmail()">สมัครใหม่ (ครั้งแรกของอีเมลนี้)</button>
+    <div style="font-size:11.5px;color:#98a4b4;margin-top:8px">อีเมลต้องอยู่ในรายชื่อขององค์กร (Security Rules)</div>
+  </div>
+
+  <div id="content" style="display:none">
+    <h3 class="sec">สถานะทะเบียนฟอร์ม</h3>
+    <div class="sum" id="sum"></div>
+
+    <h3 class="sec">เลือกกลุ่มผู้ใช้ <span class="note" id="rolenote"></span></h3>
+    <div class="rolebar" id="rolebar" role="tablist"></div>
+
+    <h3 class="sec" id="rolehead">ฟอร์มของกลุ่ม</h3>
+    <div class="fgrid" id="fgrid"></div>
+
+    <h3 class="sec">ทะเบียนฟอร์มทั้งหมด <span class="note">ทะเบียนกลางสำหรับควบคุมเอกสาร — ไม่แยกตามกลุ่มผู้ใช้</span></h3>
+    <div class="filters" id="filters">
+      <button class="fb" data-f="all" aria-pressed="true">ทั้งหมด</button>
+      <button class="fb" data-f="issue" aria-pressed="false">เฉพาะที่มีปัญหา</button>
+      <button class="fb" data-f="inlef" aria-pressed="false">อยู่ใน LEF</button>
+      <button class="fb" data-f="notlef" aria-pressed="false">ยังไม่อยู่ใน LEF</button>
+      <input id="q" type="search" placeholder="ค้นหา — ชื่อฟอร์ม, รหัสเอกสาร, control code">
+    </div>
+    <div class="twrap">
+      <table class="reg"><thead><tr>
+        <th>Doc Code</th><th>Control Code</th><th>ชื่อฟอร์ม</th><th>Issue/Rev</th>
+        <th>Effective</th><th>อยู่ใน</th><th>สถานะควบคุม</th><th>เปิด</th>
+      </tr></thead><tbody id="regbody"></tbody></table>
+    </div>
+
+    <div class="note">
+      <b>ระยะนี้เป็นทะเบียนอ่านและเปิดฟอร์มเท่านั้น</b> — ปุ่ม “เปิดฟอร์ม” ยังพาไป Jotform ใบเดิม
+      ยังไม่ได้ย้ายการกรอกเข้าระบบนี้ · ประโยชน์ทันทีคือทุกคนเปิดฟอร์ม<b>ถูกใบ</b>จากที่เดียว
+      ไม่ต้องพึ่งลิงก์ในคู่มือที่ยังชี้ผิดอยู่
+      <br><br>
+      <b>สถานะควบคุมมาจากการ match สามช่องทาง</b> — LEF ใน OMA/OMM/TM · ไฟล์ต้นฉบับ .docx · บัญชี Jotform ·
+      แก้ข้อมูลที่ <code>forms_register.json</code> แล้วรัน <code>build.py</code>
+    </div>
+  </div>
+</main>
+<footer>D-0507 Flight Training Co., Ltd. · Controlled Document System · Forms Portal</footer>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+"use strict";
+const CFG={
+  apiKey: "AIzaSyB_O40YpkQJJQIpx8gWNdiC9XrZ1o9SlHs",
+  authDomain: "d0507-audit.firebaseapp.com",
+  projectId: "d0507-audit",
+  storageBucket: "d0507-audit.firebasestorage.app",
+  messagingSenderId: "880880454045",
+  appId: "1:880880454045:web:a8fe249ca18f1a7a20c774"
+};
+const REG={"_comment": "ทะเบียนฟอร์มควบคุม D-0507 — แหล่งข้อมูลกลางของ Forms Portal. ข้อมูลจาก match 3 ช่องทาง: LEF ใน OMA/OMM/TM + ไฟล์ docx ในโฟลเดอร์ Manual revision + Jotform account. แก้ไขไฟล์นี้แล้วรัน build.py", "_generated": "30 JUL 2026", "lefcount": {"OMA": 18, "OMM": 13, "TM": 27, "unique": 30}, "roles": [{"k": "stu", "n": "นักเรียน", "d": "นักศึกษาการบิน · ผู้เข้ารับการฝึก"}, {"k": "ins", "n": "ครูการบิน / ครูภาคทฤษฎี", "d": "FI · TKI · FIE"}, {"k": "mnt", "n": "ช่างอากาศยาน", "d": "ฝ่ายซ่อมบำรุง (ME)"}, {"k": "ops", "n": "ฝ่ายปฏิบัติการ", "d": "Operations · Dispatch · ธุรการเอกสาร"}, {"k": "mgt", "n": "ฝ่ายบริหาร", "d": "ACM · HT · CMM · Safety Manager"}], "status": {"ok": {"n": "พร้อมใช้", "lv": "ok"}, "linkwrong": {"n": "ลิงก์ใน LEF ผิดใบ", "lv": "bad"}, "nolink": {"n": "LEF ยังไม่ใส่ลิงก์", "lv": "warn"}, "noform": {"n": "ยังไม่มีฟอร์มออนไลน์", "lv": "warn"}, "pdfonly": {"n": "เป็น PDF บน Drive", "lv": "warn"}, "notinlef": {"n": "ยังไม่อยู่ใน LEF", "lv": "warn"}, "shadow": {"n": "ใช้บน Jotform · ไม่มีในคู่มือ", "lv": "bad"}}, "forms": [{"doc": "D-0507-FRAE-001", "code": "IM-DRM-304-A", "abbr": "FRAE", "t": "Flight Risk Assessment and Evaluation", "th": "การประเมินความเสี่ยงก่อนทำการบิน", "iss": "01", "rev": "00", "eff": "07 JUL 2022", "own": "IM", "lef": ["OMA", "TM"], "jot": "210071253532038", "docx": "D-0507-FRAE-001.docx", "st": "ok", "chain": "preflight", "r": {"stu": "กรอกฝั่งนักเรียนก่อนบินทุกเที่ยว", "ins": "กรอกฝั่งครู แล้วยืนยัน fit to fly ร่วมกับนักเรียน", "mgt": "อนุมัติเมื่อคะแนนความเสี่ยงอยู่ระดับเหลืองหรือแดง"}, "with": ["นักเรียน", "ครูการบิน", "HT"]}, {"doc": "D-0507-SDF-001", "code": "AD-SDF-301-A", "abbr": "SDF", "t": "Self Declaration Form", "th": "แบบแจ้งข้อมูลด้วยตนเอง", "iss": "01", "rev": "00", "eff": "10 FEB 2021", "own": "AD", "lef": ["OMA", "TM"], "jot": "210394186308456", "docx": "D-0507-SDF-001.docx", "st": "ok", "chain": "preflight", "r": {"stu": "แจ้งเมื่อหยุดบินเกิน 2 สัปดาห์ หรือมีการบินอื่นนอกหลักสูตร", "ins": "แจ้งเมื่อหยุดปฏิบัติหน้าที่เกิน 2 สัปดาห์ หรือมีหน้าที่บินอื่น"}, "with": []}, {"doc": "D-0507-BCK-001", "code": "IM-BCK-303-A", "abbr": "BCK", "t": "Briefing Checklist", "th": "รายการตรวจการบรรยายก่อนบิน", "iss": "01", "rev": "00", "eff": "18 JUL 2024", "own": "IM", "lef": ["OMA", "TM"], "jot": "242818896187071", "docx": "D-0507-BCK-001.docx", "st": "ok", "chain": "preflight", "r": {"ins": "ยืนยันหัวข้อ briefing กับนักเรียนก่อนบินทุกเที่ยว"}, "with": ["นักเรียน"]}, {"doc": "D-0507-AFM-001", "code": "OP-AFM-301-B", "abbr": "AFM", "t": "Authorize Flight Form", "th": "ใบอนุญาตทำการบิน", "iss": "01", "rev": "00", "eff": "07 JUL 2022", "own": "OP", "lef": ["OMA", "TM"], "jot": "221334919954059", "docx": "D-0507-AFM-001.docx", "st": "ok", "chain": "preflight", "r": {"ops": "ออกใบอนุญาตทำการบินรายวัน ต้องมี FRAE ผ่านแนบก่อน", "ins": "ตรวจสอบรายการบินของตนก่อนออกบิน", "mgt": "อนุมัติตารางบินรายวัน"}, "with": ["ครูการบิน", "HT"]}, {"doc": "D-0507-ASF-001", "code": "IM-ASF-003-A", "abbr": "ASF", "t": "Authorize Solo Flight Form", "th": "ใบอนุญาตบินเดี่ยว", "iss": "01", "rev": "00", "eff": "07 JUL 2022", "own": "IM", "lef": ["OMA", "TM"], "jot": "241828892999078", "docx": "D-0507-ASF-001.docx", "st": "linkwrong", "chain": "preflight", "note": "LEF ของ OMA และ TM ชี้ไปฟอร์ม DOCUMENT RECEIPT", "r": {"stu": "รับทราบเงื่อนไขก่อนออกบินเดี่ยว", "ins": "ตรวจ pre-solo checklist แล้วส่งให้ HT อนุมัติ", "mgt": "อนุมัติการบินเดี่ยว — ขั้นสุดท้ายก่อนออกบิน"}, "with": ["นักเรียน", "ครูการบิน", "HT"]}, {"doc": "D-0507-GSP-001", "code": "IM-GSP-301-B", "abbr": "GSP", "t": "PPL Ground and Flight Training Record", "th": "บันทึกการฝึกภาคพื้นและภาคอากาศ PPL", "iss": "01", "rev": "00", "eff": "07 JUL 2022", "own": "IM", "lef": ["OMA", "TM"], "jot": "212454638036455", "docx": "D-0507-GSP-001.docx", "st": "ok", "chain": "training", "r": {"stu": "ดูบันทึกการฝึกและความคืบหน้าของตัวเอง (อ่านเท่านั้น)", "ins": "บันทึกผลการฝึกและให้เกรดรายเที่ยวบิน"}, "with": ["นักเรียน", "ครูการบิน", "HT"]}, {"doc": "D-0507-EFM-001", "code": "QA-EFM-301-B", "abbr": "EFM", "t": "Progress and Evaluation Form", "th": "แบบประเมินความคืบหน้า", "iss": "01", "rev": "00", "eff": "20 NOV 2024", "own": "QA", "lef": ["OMA", "TM"], "jot": "200178588209461", "docx": "D-0507-EFM-001.docx", "st": "ok", "chain": "training", "r": {"ins": "ประเมินความคืบหน้า ภาคทฤษฎีและภาคอากาศ"}, "with": ["ครูภาคทฤษฎี", "ครูการบิน"]}, {"doc": "D-0507-EFC-001", "code": "IM-EFC-303-A", "abbr": "EFC", "t": "End of Course / Stage Report", "th": "รายงานจบหลักสูตรหรือจบขั้นการฝึก", "iss": "01", "rev": "00", "eff": "20 AUG 2020", "own": "IM", "lef": ["OMA", "TM"], "jot": "212381199813055", "docx": "D-0507-EFC-001.docx", "st": "ok", "chain": "training", "r": {"ins": "ปิด Stage หรือปิดหลักสูตร พร้อมผลสอบ", "mgt": "รับรองผลการจบหลักสูตร"}, "with": ["HT"]}, {"doc": "D-0507-SEF-001", "code": "IM-SEF-301-A", "abbr": "SEF", "t": "Student Evaluation Form", "th": "แบบประเมินครูผู้สอนโดยนักเรียน", "iss": "01", "rev": "00", "eff": "20 AUG 2020", "own": "IM", "lef": ["OMA", "TM"], "jot": "210063447392452", "docx": "D-0507-SEF-001.docx", "st": "ok", "chain": "training", "r": {"stu": "ประเมินครูผู้สอนเมื่อจบแต่ละ Stage (ไม่เปิดเผยชื่อ)"}, "with": []}, {"doc": "D-0507-STR-001", "code": "IM-STR-301-A", "abbr": "STR", "t": "Standardisation Training Record", "th": "บันทึกการอบรมมาตรฐานครูการบิน", "iss": "01", "rev": "00", "eff": "06 JUN 2026", "own": "IM", "lef": ["OMA"], "jot": "261578705156060", "docx": "D-0507-STR-001.docx", "st": "nolink", "chain": "standardisation", "note": "มี Jotform แล้ว (261578705156060) แต่ LEF ยังไม่ใส่ลิงก์", "r": {"ins": "บันทึกการอบรมมาตรฐานครูการบิน (OMA D.2.8.2)", "mgt": "จัดและรับรองการอบรมมาตรฐาน"}, "with": ["HT"]}, {"doc": "D-0507-PCR-FI-001", "code": "IM-PCR-FI-301-A", "abbr": "PCR-FI", "t": "In-House Proficiency Check Record — Flight Instructor", "th": "บันทึกการตรวจสมรรถนะครูการบิน", "iss": "01", "rev": "01", "eff": "06 JUN 2026", "own": "IM", "lef": ["OMA"], "jot": "261580093591056", "docx": "D-0507-PCR-FI-001.docx", "st": "nolink", "chain": "standardisation", "note": "มี Jotform แล้ว (261580093591056) แต่ LEF ยังไม่ใส่ลิงก์ · ให้เกรดตาม D-0507-ECA-001", "r": {"ins": "รับทราบและลงนามผลการตรวจสมรรถนะของตัวเอง", "mgt": "ประเมินสมรรถนะครูในบทบาท HT / FIE"}, "with": ["HT", "FIE"]}, {"doc": "D-0507-PCR-TKI-001", "code": "IM-PCR-TKI-302-A", "abbr": "PCR-TKI", "t": "In-House Proficiency Check Record — Theoretical Knowledge Instructor", "th": "บันทึกการตรวจสมรรถนะครูภาคทฤษฎี", "iss": "01", "rev": "01", "eff": "06 JUN 2026", "own": "IM", "lef": ["OMA"], "jot": "", "docx": "D-0507-PCR-TKI-001.docx", "st": "noform", "chain": "standardisation", "r": {"ins": "รับทราบและลงนามผลการตรวจสมรรถนะของตัวเอง", "mgt": "ประเมินสมรรถนะครูภาคทฤษฎี"}, "with": ["HT", "FIE"]}, {"doc": "D-0507-RTR-001", "code": "IM-RTR-301-A", "abbr": "RTR", "t": "Refresher Training Record", "th": "บันทึกการอบรมทบทวน", "iss": "01", "rev": "00", "eff": "06 JUN 2026", "own": "IM", "lef": ["OMA"], "jot": "", "docx": "D-0507-RTR-001.docx", "st": "noform", "chain": "standardisation", "note": "เปิดอัตโนมัติเมื่อ PCR ไม่ผ่าน (OMA D.2.8 Corrective Standardisation)", "r": {"ins": "บันทึกการอบรมทบทวนของตัวเอง", "mgt": "จัดการอบรมทบทวนและรับรองผล"}, "with": ["HT"]}, {"doc": "D-0507-ECA-001", "code": "IM-ECA-301-A", "abbr": "ECA", "t": "Proficiency Check — Evaluation Criteria and Assessment Standards", "th": "เกณฑ์การประเมินการตรวจสมรรถนะ", "iss": "01", "rev": "00", "eff": "08 JUN 2026", "own": "IM", "lef": [], "jot": "", "docx": "D-0507-ECA-001.docx", "st": "notinlef", "chain": "standardisation", "note": "เป็นเอกสารมาตรฐานอ้างอิง ไม่ใช่ฟอร์ม — พิจารณาใส่ LEP แทน LEF", "r": {"ins": "อ่านเกณฑ์การให้เกรดก่อนเข้ารับการตรวจ", "mgt": "ใช้เป็นเกณฑ์ให้เกรดใน PCR"}, "with": []}, {"doc": "D-0507-FPL-001", "code": "OP-FPL-301-3", "abbr": "FPL", "t": "Flight Plan", "th": "แผนการบิน", "iss": "01", "rev": "00", "eff": "18 JUL 2024", "own": "OP", "lef": ["OMA", "TM"], "jot": "93194090184459", "docx": "D-0507-FPL-001.docx", "st": "ok", "chain": "ops", "r": {"ops": "ยื่นแผนการบินตามแบบ ICAO"}, "with": []}, {"doc": "D-0507-NPC-001", "code": "NP-CHK-303-B", "abbr": "NPC", "t": "Normal Procedures Checklist", "th": "รายการตรวจขั้นตอนปกติ", "iss": "01", "rev": "00", "eff": "11 NOV 2024", "own": "OP", "lef": ["OMA", "TM"], "jot": "", "docx": "D-0507-NPC-001.docx", "st": "noform", "chain": "ops", "note": "LEF ระบุ Online แต่ไม่มี Jotform · ลิงก์ปัจจุบันชี้ Hazard Identification Form", "r": {"ops": "Cessna 172 Series — ใช้ประกอบการฝึก", "ins": "ใช้สอนขั้นตอนปกติกับนักเรียน"}, "with": []}, {"doc": "D-0507-EPC-001", "code": "EP-CHK-303-B", "abbr": "EPC", "t": "Emergency Procedures Checklist", "th": "รายการตรวจขั้นตอนฉุกเฉิน", "iss": "01", "rev": "00", "eff": "11 NOV 2024", "own": "OP", "lef": ["OMA", "TM"], "jot": "", "docx": "D-0507-EPC-001.docx", "st": "pdfonly", "chain": "ops", "note": "LEF ชี้ไป PDF บน Google Drive · TM มีแถวซ้ำ 2 แถว", "r": {"ops": "Cessna 172 Series — memory items", "ins": "ใช้สอนขั้นตอนฉุกเฉินกับนักเรียน"}, "with": []}, {"doc": "D-0507-PWR-001", "code": "AD/PWR/301-A", "abbr": "PWR", "t": "Passenger Waiver and Release Form", "th": "หนังสือสละสิทธิ์เรียกร้องของผู้โดยสาร", "iss": "01", "rev": "02", "eff": "18 JUL 2024", "own": "AD", "lef": ["OMA", "TM"], "jot": "243218657614460", "docx": "D-0507-PWR-001.docx", "st": "ok", "chain": "admin", "r": {"stu": "ผู้โดยสาร trial flight ลงนามก่อนขึ้นบิน", "ops": "จัดให้ผู้โดยสารลงนามและเก็บเข้าแฟ้ม"}, "with": ["PIC", "HT"]}, {"doc": "D-0507-PCK-001", "code": "ME-PCK-303-A", "abbr": "PCK", "t": "Pre-Inspection Checklist", "th": "รายการตรวจก่อนเริ่มงานซ่อมบำรุง", "iss": "01", "rev": "00", "eff": "18 JUL 2024", "own": "ME", "lef": ["OMM", "TM"], "jot": "242401486833456", "docx": "D-0507-PCK-001.docx", "st": "linkwrong", "chain": "maint", "note": "LEF ของ OMM และ TM ชี้ไปฟอร์ม Flight Plan Confirmation", "r": {"mnt": "เช็คก่อนเริ่มงานซ่อมบำรุงทุกครั้ง"}, "with": []}, {"doc": "D-0507-MTC-001", "code": "ME-MTC-306-A", "abbr": "MTC", "t": "Maintenance Task Card", "th": "ใบสั่งงานซ่อมบำรุง", "iss": "01", "rev": "00", "eff": "05 JAN 2023", "own": "ME", "lef": ["OMA", "OMM", "TM"], "jot": "230023273391042", "docx": "D-0507-MTC-001.docx", "st": "linkwrong", "chain": "maint", "note": "LEF ทั้งสามคู่มือชี้ไปฟอร์ม Pre-Inspection Checklist", "r": {"mnt": "บันทึกงานซ่อมบำรุงตามใบสั่งงาน"}, "with": []}, {"doc": "D-0507-FTR-001", "code": "ME-FTR-301-A", "abbr": "FTR", "t": "Flight Test Report", "th": "รายงานการบินทดสอบ", "iss": "01", "rev": "00", "eff": "27 JAN 2021", "own": "ME", "lef": ["OMM", "TM"], "jot": "210242903261039", "docx": "D-0507-FTR-001.docx", "st": "ok", "chain": "maint", "r": {"mnt": "บันทึกการบินทดสอบหลังซ่อม แล้วออก CRS", "ops": "จัดเที่ยวบินทดสอบและนักบินทดสอบ"}, "with": ["นักบินทดสอบ"]}, {"doc": "D-0507-ALR-001", "code": "ME-ALR-301-A", "abbr": "ALR", "t": "Aircraft Log Report Form", "th": "บันทึกการใช้อากาศยานรายวัน", "iss": "01", "rev": "00", "eff": "26 FEB 2021", "own": "ME", "lef": ["OMM", "TM"], "jot": "221733809707460", "docx": "D-0507-ALR-001.docx", "st": "ok", "chain": "maint", "r": {"mnt": "บันทึกการใช้อากาศยาน ข้อบกพร่อง และการใช้น้ำมันรายวัน", "ops": "ปิดบันทึกการใช้อากาศยานรายวัน"}, "with": ["ช่างอากาศยาน", "ฝ่ายปฏิบัติการ"]}, {"doc": "D-0507-APP-001", "code": "AD-APP-302-B", "abbr": "APP", "t": "Application Form", "th": "ใบสมัคร", "iss": "01", "rev": "00", "eff": "13 JAN 2022", "own": "AD", "lef": ["OMM", "TM"], "jot": "221220820577045", "docx": "D-0507-APP-001.docx", "st": "linkwrong", "chain": "admin", "note": "LEF ของ OMM และ TM ชี้ไปฟอร์ม Authorize Solo Flight", "r": {"stu": "สมัครเข้าเรียน เปลี่ยนหลักสูตร หรือขอ licence / rating", "mgt": "พิจารณารับเข้าเรียนหรือรับเป็นครูการบิน"}, "with": []}, {"doc": "D-0507-APF-001", "code": "AD/APF/301-A", "abbr": "APF", "t": "Appeal Form", "th": "แบบอุทธรณ์", "iss": "01", "rev": "00", "eff": "18 JUL 2022", "own": "AD", "lef": ["OMM", "TM"], "jot": "243218287458465", "docx": "D-0507-APF-001.docx", "st": "ok", "chain": "admin", "note": "SLA: ยื่นภายใน 14 วัน · แจ้งผลภายใน 21 วัน", "r": {"stu": "ยื่นอุทธรณ์คำวินิจฉัยของ ATO ภายใน 14 วัน", "mgt": "พิจารณาอุทธรณ์โดยคณะกรรมการอิสระจากผู้ตัดสินเดิม"}, "with": ["คณะกรรมการอุทธรณ์", "ACM"]}, {"doc": "D-0507-DAF-001", "code": "AD-DAF-301-A", "abbr": "DAF", "t": "Disciplinary Action Form", "th": "แบบบันทึกการดำเนินการทางวินัย", "iss": "01", "rev": "00", "eff": "07 JUL 2022", "own": "AD", "lef": ["OMM", "TM"], "jot": "213368613135049", "docx": "D-0507-DAF-001.docx", "st": "linkwrong", "chain": "admin", "note": "LEF ชี้ไปฟอร์ม Safety Report · เอกสารลับ จำกัดสิทธิ์เข้าถึง", "r": {"mgt": "บันทึกการดำเนินการทางวินัย (จำกัดสิทธิ์เข้าถึง)"}, "with": ["HR", "ACM"]}, {"doc": "D-0507-LDU-001", "code": "AD-LDU-301-B", "abbr": "LDU", "t": "Licence Holder Document Updated", "th": "บันทึกการปรับปรุงเอกสารผู้ถือใบอนุญาต", "iss": "01", "rev": "00", "eff": "04 NOV 2024", "own": "AD", "lef": ["OMM", "TM"], "jot": "241230138904044", "docx": "D-0507-LDU-001.docx", "st": "ok", "chain": "doccontrol", "r": {"ops": "ส่งใบอนุญาต rating และใบตรวจแพทย์ฉบับปรับปรุง", "mgt": "ตรวจสอบความครบถ้วนของทะเบียนบุคลากร"}, "with": ["ธุรการ"]}, {"doc": "D-0507-MRF-001", "code": "", "abbr": "MRF", "t": "Monthly Reimbursement Form", "th": "แบบเบิกค่าใช้จ่ายรายเดือน", "iss": "01", "rev": "00", "eff": "", "own": "AD", "lef": [], "jot": "210050755822448", "docx": "D-0507-MRF-001.docx", "st": "notinlef", "chain": "admin", "r": {"ins": "ยื่นเบิกค่าใช้จ่ายและ timesheet รายเดือน", "mgt": "อนุมัติการเบิกจ่ายรายเดือนของพนักงาน"}, "with": ["หัวหน้างาน", "Finance", "ACM"]}, {"doc": "D-0507-DRF-001", "code": "QA-DRF-301-A", "abbr": "DRF", "t": "Document Revision Form", "th": "แบบขอแก้ไขเอกสารควบคุม", "iss": "01", "rev": "00", "eff": "20 AUG 2020", "own": "QA", "lef": ["OMM", "TM"], "jot": "193573500355053", "docx": "D-0507-DRF-001.docx", "st": "ok", "chain": "doccontrol", "r": {"ops": "ยื่นคำขอแก้ไขเอกสารควบคุม", "mgt": "อนุมัติการแก้ไขเอกสารควบคุมและออก revision"}, "with": ["@reviewer", "@legal", "CMM", "ACM"]}, {"doc": "D-0507-DRC-001", "code": "QA-DRF-302-A", "abbr": "DRC", "t": "Document Receipt", "th": "ใบรับเอกสารควบคุม", "iss": "01", "rev": "00", "eff": "20 AUG 2020", "own": "QA", "lef": ["OMM", "TM"], "jot": "221830582177053", "docx": "D-0507-DRC-001.docx", "st": "linkwrong", "chain": "doccontrol", "note": "LEF ของ OMM และ TM ชี้ไปฟอร์ม Maintenance Task Card", "r": {"ops": "ลงนามรับเอกสารควบคุมและคืนฉบับที่ถูกแทน", "mgt": "ติดตามให้ Distribution List ลงนามรับครบ"}, "with": ["ผู้แจกจ่าย", "ผู้รับ"]}, {"doc": "D-0507-NCHR-001", "code": "QA-NCHR-301-A", "abbr": "NCHR", "t": "Non-Conformance / Corrective Action Record", "th": "บันทึกข้อไม่สอดคล้องและการแก้ไข", "iss": "01", "rev": "00", "eff": "07 JUL 2022", "own": "QA", "lef": ["OMM", "TM"], "jot": "210655063681050", "docx": "D-0507-NCHR-001.docx", "st": "linkwrong", "chain": "audit", "note": "LEF ชี้ไปฟอร์ม APPLICATION FORM · ทับซ้อนกับ D-0507-CAR-001 ต้องตัดสินว่าใช้ใบไหน", "r": {"mgt": "บันทึกและติดตามข้อไม่สอดคล้องจากการตรวจ"}, "with": ["CMM"]}, {"doc": "D-0507-VSR-001", "code": "SM-VSR-303-A", "abbr": "VSR", "t": "Voluntary Safety Report", "th": "รายงานนิรภัยโดยสมัครใจ", "iss": "01", "rev": "00", "eff": "01 MAR 2020", "own": "SM", "lef": ["OMM", "TM"], "jot": "221482584465058", "docx": "D-0507-VSR-001.docx", "st": "linkwrong", "chain": "safety", "note": "LEF ชี้ไปฟอร์ม Non-Conformance / Corrective Action", "r": {"stu": "แจ้งเหตุหรือความเสี่ยงด้านนิรภัย (ไม่ระบุชื่อได้)", "ins": "แจ้งเหตุหรือความเสี่ยงด้านนิรภัย", "mnt": "แจ้งเหตุหรือความเสี่ยงด้านนิรภัย", "ops": "แจ้งเหตุหรือความเสี่ยงด้านนิรภัย"}, "with": ["Safety Manager"]}, {"doc": "D-0507-HIF-001", "code": "SM-HIF-301-A", "abbr": "HIF", "t": "Hazard Identification Form", "th": "แบบชี้บ่งอันตราย", "iss": "01", "rev": "00", "eff": "24 AUG 2021", "own": "SM", "lef": ["OMM", "TM"], "jot": "210431245943449", "docx": "D-0507-HIF-001.docx", "st": "linkwrong", "chain": "safety", "note": "LEF ชี้ไปฟอร์ม Disciplinary Action Form", "r": {"ins": "แจ้งอันตรายที่พบและเสนอมาตรการลดความเสี่ยง", "mnt": "แจ้งอันตรายที่พบในพื้นที่ซ่อมบำรุง", "ops": "แจ้งอันตรายที่พบในพื้นที่ปฏิบัติการ"}, "with": ["Safety Manager"]}, {"doc": "D-0507-MOC-001", "code": "", "abbr": "MOC", "t": "Management of Change (MoC) Form", "th": "แบบบริหารการเปลี่ยนแปลง", "iss": "01", "rev": "00", "eff": "", "own": "SM", "lef": [], "jot": "", "docx": "D-0507-MOC-001.docx", "st": "notinlef", "chain": "safety", "r": {"mgt": "พิจารณาและอนุมัติการเปลี่ยนแปลงตามกระบวนการ SMS"}, "with": ["Safety Manager", "HT", "ACM"]}, {"doc": "D-0507-CAR-001", "code": "", "abbr": "CAR", "t": "Corrective Action Request", "th": "คำขอให้ดำเนินการแก้ไขข้อบกพร่อง", "iss": "01", "rev": "00", "eff": "23 JUL 2026", "own": "QA", "lef": [], "jot": "", "docx": "D-0507-CAR-001.docx", "st": "notinlef", "chain": "audit", "app": "audit", "note": "ทำงานอยู่แล้วในประตูงานตรวจสอบ · ต้องเพิ่มเข้า LEF ของ OMM Section 5", "r": {"ins": "ตอบกลับ Part 3–5 (Root cause → Corrective → Preventive)", "mnt": "ตอบกลับ Part 3–5 เมื่อเป็นผู้รับผิดชอบ", "ops": "ตอบกลับ Part 3–5 เมื่อเป็นผู้รับผิดชอบ", "mgt": "ตรวจรับหลักฐานและปิด CAR ในบทบาท CMM"}, "with": ["Auditor", "ผู้รับผิดชอบ", "CMM"]}, {"doc": "D-0507-IAC-001", "code": "", "abbr": "IAC", "t": "Internal Audit Checklist — GAP Analysis (TCAR-ORA)", "th": "รายการตรวจติดตามภายใน", "iss": "01", "rev": "00", "eff": "23 JUL 2026", "own": "QA", "lef": [], "jot": "", "docx": "", "app": "audit", "st": "notinlef", "chain": "audit", "note": "2,081 รายการ · ใช้งานที่ประตูงานตรวจสอบ", "r": {"mgt": "ดำเนินการตรวจติดตามภายในตามแผนประจำปี"}, "with": ["Auditor", "CMM"]}, {"doc": "D-0507-VAC-001", "code": "", "abbr": "VAC", "t": "Vendor / Contracted Services Audit Checklist", "th": "รายการตรวจผู้ให้บริการภายนอก", "iss": "01", "rev": "00", "eff": "24 JUL 2026", "own": "QA", "lef": [], "jot": "250133574068455", "docx": "D-0507-VAC-001.docx", "app": "audit", "st": "notinlef", "chain": "audit", "note": "อ้างอิง ORA.GEN.205 · 25 รายการ", "r": {"mgt": "ตรวจผู้ให้บริการภายนอกตามแผน"}, "with": ["Auditor", "CMM"]}, {"doc": "D-0507-SAC-001", "code": "", "abbr": "SAC", "t": "School Safety Audit Checklist (SMS)", "th": "รายการตรวจนิรภัยภาพรวมของโรงเรียน", "iss": "01", "rev": "00", "eff": "24 JUL 2026", "own": "SM", "lef": [], "jot": "250488767178474", "docx": "D-0507-SAC-001.docx", "app": "audit", "st": "notinlef", "chain": "audit", "note": "26 รายการ 2 มิติ Doc / Impl", "r": {"mgt": "ตรวจนิรภัยภาพรวมของโรงเรียนตามแผน"}, "with": ["Safety Manager", "CMM"]}, {"doc": "D-0507-SSC-001", "code": "", "abbr": "SSC", "t": "Safety Surveillance Checklist (Spot Check)", "th": "รายการเฝ้าสังเกตการณ์กิจกรรม", "iss": "01", "rev": "00", "eff": "24 JUL 2026", "own": "SM", "lef": [], "jot": "", "docx": "D-0507-SSC-001.docx", "app": "audit", "st": "notinlef", "chain": "audit", "note": "29 รายการ · อ้างอิง FSOP 2024 · MMSOP 2024", "r": {"mgt": "เฝ้าสังเกตการณ์กิจกรรมแบบ spot check"}, "with": ["Safety Manager"]}, {"doc": "", "code": "", "abbr": "ACPL-TR", "t": "ACPL Training Record", "th": "บันทึกการฝึกหลักสูตร ACPL", "iss": "", "rev": "", "eff": "", "own": "IM", "lef": [], "jot": "221584141965459", "docx": "", "st": "shadow", "chain": "training", "r": {"ins": "บันทึกการฝึกหลักสูตร ACPL", "stu": "ดูความคืบหน้าของตัวเอง"}, "with": []}, {"doc": "", "code": "", "abbr": "IR-TR", "t": "IR Training Record", "th": "บันทึกการฝึก Instrument Rating", "iss": "", "rev": "", "eff": "", "own": "IM", "lef": [], "jot": "212284129236049", "docx": "", "st": "shadow", "chain": "training", "r": {"ins": "บันทึกการฝึก Instrument Rating", "stu": "ดูความคืบหน้าของตัวเอง"}, "with": []}, {"doc": "", "code": "", "abbr": "IP-TR", "t": "IP Training Record", "th": "บันทึกการฝึกครูการบิน", "iss": "", "rev": "", "eff": "", "own": "IM", "lef": [], "jot": "212324411781447", "docx": "", "st": "shadow", "chain": "training", "r": {"ins": "บันทึกการฝึกหลักสูตรครูการบิน"}, "with": []}, {"doc": "", "code": "", "abbr": "IRM-TR", "t": "IRM Training Record", "th": "บันทึกการฝึก IRM", "iss": "", "rev": "", "eff": "", "own": "IM", "lef": [], "jot": "242807814555462", "docx": "", "st": "shadow", "chain": "training", "r": {"ins": "บันทึกการฝึกหลักสูตร IRM"}, "with": []}, {"doc": "", "code": "", "abbr": "FTD-TR", "t": "FTD Training Record", "th": "บันทึกการฝึกเครื่องฝึกบินจำลอง", "iss": "", "rev": "", "eff": "", "own": "IM", "lef": [], "jot": "212293868959071", "docx": "", "st": "shadow", "chain": "training", "r": {"ins": "บันทึกการฝึกในเครื่องฝึกบินจำลอง (FTD)", "stu": "ดูความคืบหน้าของตัวเอง"}, "with": []}, {"doc": "", "code": "", "abbr": "REC-TR", "t": "Recurrent Training Record", "th": "บันทึกการฝึกทบทวนประจำปี", "iss": "", "rev": "", "eff": "", "own": "IM", "lef": [], "jot": "212334261940448", "docx": "", "st": "shadow", "chain": "training", "note": "มีฟอร์มซ้ำบน Jotform อีกใบ (221830386692057) ควรเลือกใบเดียว", "r": {"ins": "บันทึกการฝึกทบทวนประจำปี"}, "with": []}, {"doc": "", "code": "", "abbr": "LSN", "t": "Lesson Plan", "th": "แผนการสอน", "iss": "", "rev": "", "eff": "", "own": "IM", "lef": [], "jot": "211490789942467", "docx": "", "st": "shadow", "chain": "training", "r": {"ins": "จัดทำแผนการสอนรายคาบ"}, "with": []}, {"doc": "", "code": "", "abbr": "FTM", "t": "Flight Time Record", "th": "บันทึกชั่วโมงบิน", "iss": "", "rev": "", "eff": "", "own": "IM", "lef": [], "jot": "242233803638051", "docx": "", "st": "shadow", "chain": "training", "r": {"ins": "บันทึกชั่วโมงบินของตัวเอง", "ops": "รวบรวมชั่วโมงบินเข้าทะเบียน"}, "with": []}, {"doc": "", "code": "", "abbr": "AUTH", "t": "Authorization Record", "th": "บันทึกการมอบอำนาจ", "iss": "", "rev": "", "eff": "", "own": "OP", "lef": [], "jot": "221831008515043", "docx": "", "st": "shadow", "chain": "ops", "note": "มีฟอร์มซ้ำบน Jotform อีกใบ (210068540868055) ควรเลือกใบเดียว", "r": {"ops": "บันทึกการมอบอำนาจปฏิบัติหน้าที่", "mgt": "ลงนามมอบอำนาจ"}, "with": []}, {"doc": "", "code": "", "abbr": "INJ", "t": "Incident / Injury Report", "th": "รายงานอุบัติการณ์และการบาดเจ็บ", "iss": "", "rev": "", "eff": "", "own": "SM", "lef": [], "jot": "222210761720443", "docx": "", "st": "shadow", "chain": "safety", "r": {"ops": "รายงานอุบัติการณ์และการบาดเจ็บ", "mgt": "พิจารณาและส่งต่อ AAIC/CAAT ตามเกณฑ์"}, "with": ["Safety Manager"]}, {"doc": "", "code": "", "abbr": "ACI", "t": "Aircraft Inspection Checklist < 5,700 kg", "th": "รายการตรวจอากาศยานน้ำหนักน้อยกว่า 5,700 กก.", "iss": "", "rev": "", "eff": "", "own": "ME", "lef": [], "jot": "250272192919056", "docx": "", "st": "shadow", "chain": "maint", "r": {"mnt": "ตรวจอากาศยานตามรายการ"}, "with": []}, {"doc": "", "code": "", "abbr": "ATJ", "t": "Aircraft Technical and Journey Log", "th": "สมุดปูมเทคนิคและการเดินทางของอากาศยาน", "iss": "", "rev": "", "eff": "", "own": "ME", "lef": [], "jot": "240054562363047", "docx": "", "st": "shadow", "chain": "maint", "r": {"mnt": "บันทึกสมุดปูมเทคนิค", "ops": "บันทึกการเดินทางของอากาศยาน"}, "with": []}, {"doc": "", "code": "", "abbr": "DVL", "t": "Document Verification Log", "th": "บันทึกการทวนสอบเอกสาร", "iss": "", "rev": "", "eff": "", "own": "QA", "lef": [], "jot": "250422504322442", "docx": "", "st": "shadow", "chain": "doccontrol", "r": {"ops": "บันทึกการทวนสอบเอกสาร", "mgt": "ทวนสอบความครบถ้วนของเอกสารควบคุม"}, "with": []}, {"doc": "", "code": "", "abbr": "ICT", "t": "Instructor Contract", "th": "สัญญาจ้างครูการบิน", "iss": "", "rev": "", "eff": "", "own": "AD", "lef": [], "jot": "241914981807061", "docx": "", "st": "shadow", "chain": "admin", "note": "เป็นเอกสารผูกพันทางกฎหมาย — ต้องให้ @legal ยืนยันการใช้ลายเซ็นอิเล็กทรอนิกส์", "r": {"mgt": "จัดทำและลงนามสัญญาจ้างครูการบิน"}, "with": ["ACM"]}]};
+firebase.initializeApp(CFG);
+const db=firebase.firestore();
+let USER=null, MYROLES=[], ROLE=REG.roles[0].k, FILTER='all';
+
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const jotUrl=id=>'https://form.jotform.com/'+encodeURIComponent(id);
+const stOf=f=>REG.status[f.st]||{n:f.st,lv:'warn'};
+const hasIssue=f=>f.st!=='ok';
+
+function loginGoogle(){ firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert(e.message)); }
+function loginEmail(){ firebase.auth().signInWithEmailAndPassword(document.getElementById('lp_em').value.trim(),document.getElementById('lp_pw').value).catch(e=>alert(e.message)); }
+function signupEmail(){ firebase.auth().createUserWithEmailAndPassword(document.getElementById('lp_em').value.trim(),document.getElementById('lp_pw').value).catch(e=>alert(e.message)); }
+
+firebase.auth().onAuthStateChanged(async u=>{
+  USER=u;
+  document.getElementById('loginui').style.display=u?'none':'block';
+  document.getElementById('content').style.display=u?'block':'none';
+  document.getElementById('authbox').innerHTML=u
+    ? `${esc(u.displayName||u.email)} <button onclick="firebase.auth().signOut()">ออก</button><a class="swap" href="../?pick=1">เปลี่ยนประตู</a>`
+    : `<a class="swap" href="../?pick=1">เปลี่ยนประตู</a>`;
+  if(!u) return;
+  MYROLES=[];
+  try{
+    const d=await db.collection('users').doc(u.uid).get();
+    if(d.exists && Array.isArray(d.data().roles)) MYROLES=d.data().roles;
+  }catch(e){ /* ยังไม่มี users/{uid} หรือ rule ไม่อนุญาต — แสดงทุกกลุ่ม */ }
+  const mine=REG.roles.filter(r=>MYROLES.includes(r.k));
+  ROLE = mine.length ? mine[0].k : REG.roles[0].k;
+  document.getElementById('rolenote').textContent = MYROLES.length
+    ? 'บทบาทของคุณ: '+mine.map(r=>r.n).join(' · ')
+    : 'ยังไม่ได้กำหนดบทบาทให้บัญชีนี้ (users/'+u.uid.slice(0,6)+'… .roles) — แสดงทุกกลุ่มไว้ก่อน';
+  renderCtrl(); renderSum(); renderRoles(); renderCards(); renderReg();
+});
+
+function renderCtrl(){
+  const L=REG.lefcount;
+  document.getElementById('ctrl').innerHTML=
+    `<span><b>ทะเบียนฟอร์มควบคุม</b> · อ้างอิง LEF</span>`+
+    `<span>OMA §0.7 <b>${L.OMA} แถว</b></span>`+
+    `<span>OMM §0.7 <b>${L.OMM} แถว</b></span>`+
+    `<span>TM §0.11 <b>${L.TM} แถว</b></span>`+
+    `<span>UNIQUE <b>${L.unique} CONTROL CODE</b></span>`+
+    `<span>ในทะเบียน <b>${REG.forms.length} ฟอร์ม</b></span>`;
+}
+
+function renderSum(){
+  const F=REG.forms, c=k=>F.filter(f=>f.st===k).length;
+  const boxes=[
+    ['ok',  c('ok'),                          'พร้อมใช้ — ครบทั้งสามช่องทาง'],
+    ['bad', c('linkwrong'),                   'ลิงก์ใน LEF ชี้ฟอร์มผิดใบ'],
+    ['bad', c('shadow'),                      'ใช้บน Jotform แต่ไม่มีในคู่มือ'],
+    ['warn',c('notinlef'),                    'มีเอกสารแต่ยังไม่อยู่ใน LEF'],
+    ['warn',c('noform')+c('pdfonly'),         'LEF ระบุ Online แต่ยังไม่มีฟอร์ม'],
+    ['warn',c('nolink'),                      'มีฟอร์มแล้วแต่ LEF ยังไม่ใส่ลิงก์']
+  ];
+  document.getElementById('sum').innerHTML=boxes.map(b=>
+    `<div class="sbox ${b[0]}"><div class="n">${b[1]}</div><div class="l">${esc(b[2])}</div></div>`).join('');
+}
+
+function renderRoles(){
+  document.getElementById('rolebar').innerHTML=REG.roles.map(r=>{
+    const n=REG.forms.filter(f=>f.r&&f.r[r.k]).length;
+    const mine=MYROLES.includes(r.k)?' · กลุ่มของคุณ':'';
+    return `<button class="rolebtn" role="tab" data-r="${r.k}" aria-selected="${r.k===ROLE}">`+
+           `<span class="rn">${esc(r.n)}</span><span class="rc">${n} ฟอร์ม${mine}</span></button>`;
+  }).join('');
+  document.querySelectorAll('.rolebtn').forEach(b=>b.addEventListener('click',()=>{
+    ROLE=b.dataset.r;
+    document.querySelectorAll('.rolebtn').forEach(x=>x.setAttribute('aria-selected', x.dataset.r===ROLE));
+    renderCards();
+  }));
+}
+
+function renderCards(){
+  const role=REG.roles.find(r=>r.k===ROLE)||REG.roles[0];
+  const list=REG.forms.filter(f=>f.r&&f.r[ROLE]);
+  document.getElementById('rolehead').innerHTML=
+    `ฟอร์มของกลุ่ม ${esc(role.n)} <span class="note">${list.length} ฟอร์ม · ${esc(role.d)}</span>`;
+  document.getElementById('fgrid').innerHTML=list.map(f=>{
+    const s=stOf(f);
+    const tags=[];
+    if(f.st!=='ok') tags.push(`<span class="tag ${s.lv}">${esc(s.n)}</span>`);
+    if(f.with&&f.with.length) tags.push(`<span class="tag sh">ร่วมกับ ${esc(f.with.join(' · '))}</span>`);
+    const act=[];
+    if(f.jot) act.push(`<a class="ab" href="${jotUrl(f.jot)}" target="_blank" rel="noopener">เปิดฟอร์ม</a>`);
+    else act.push(`<span class="ab x">ยังไม่มีฟอร์มออนไลน์</span>`);
+    if(f.app==='audit') act.push(`<a class="ab o" href="../audit/">ไปประตูงานตรวจสอบ</a>`);
+    return `<div class="fcard">
+      <div class="cd">${esc(f.doc||f.abbr)}${f.code?' · '+esc(f.code):''}</div>
+      <div class="fn">${esc(f.t)}</div>
+      <div class="fth">${esc(f.th||'')}</div>
+      <div class="fr">${esc(f.r[ROLE])}</div>
+      ${f.note?`<div class="fth" style="color:var(--amber)">${esc(f.note)}</div>`:''}
+      <div class="fm">${tags.join('')}</div>
+      <div class="act">${act.join('')}</div>
+    </div>`;
+  }).join('') || '<div class="note">ยังไม่มีฟอร์มที่ผูกกับกลุ่มนี้</div>';
+}
+
+function renderReg(){
+  const q=(document.getElementById('q').value||'').trim().toLowerCase();
+  let list=REG.forms.slice();
+  if(FILTER==='issue')  list=list.filter(hasIssue);
+  if(FILTER==='inlef')  list=list.filter(f=>f.lef&&f.lef.length);
+  if(FILTER==='notlef') list=list.filter(f=>!f.lef||!f.lef.length);
+  if(q) list=list.filter(f=>[f.doc,f.code,f.t,f.th,f.abbr].join(' ').toLowerCase().includes(q));
+  document.getElementById('regbody').innerHTML=list.map(f=>{
+    const s=stOf(f);
+    const open=f.jot?`<a class="ab" href="${jotUrl(f.jot)}" target="_blank" rel="noopener">เปิด</a>`
+                    :(f.app==='audit'?`<a class="ab o" href="../audit/">งานตรวจ</a>`:'<span class="ab x">—</span>');
+    return `<tr>
+      <td class="c">${esc(f.doc||'—')}</td>
+      <td class="c">${esc(f.code||'—')}</td>
+      <td class="nm">${esc(f.t)}<div style="font-weight:400;color:#98a4b4;font-size:11.5px">${esc(f.th||'')}</div></td>
+      <td class="c">${f.iss?esc(f.iss)+' / '+esc(f.rev):'—'}</td>
+      <td class="c">${esc(f.eff||'—')}</td>
+      <td class="c">${f.lef&&f.lef.length?esc(f.lef.join(' · ')):'—'}</td>
+      <td><span class="tag ${s.lv}">${esc(s.n)}</span>${f.note?`<div style="color:#98a4b4;font-size:11px;margin-top:3px">${esc(f.note)}</div>`:''}</td>
+      <td>${open}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" style="color:#98a4b4;padding:14px">ไม่พบฟอร์มที่ตรงเงื่อนไข</td></tr>';
+}
+
+document.querySelectorAll('.fb').forEach(b=>b.addEventListener('click',()=>{
+  FILTER=b.dataset.f;
+  document.querySelectorAll('.fb').forEach(x=>x.setAttribute('aria-pressed', x.dataset.f===FILTER));
+  renderReg();
+}));
+document.getElementById('q').addEventListener('input',renderReg);
+</script>
+</body></html>

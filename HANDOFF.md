@@ -103,3 +103,66 @@ URL: Portal ที่ root, งาน IAC ที่ `/iac/` (AUDIT_ID เดิ�
 - ต้นฉบับเนื้อหา: `new_checklists.py` · ฟอร์มควบคุม: `make_checklist_forms.js` + `forms_data.json` → D-0507-VAC-001 / SAC-001 / SSC-001 .docx (อยู่ root โฟลเดอร์ ลงทะเบียนใน CLAUDE.md แล้ว)
 - Tabs ในแอปสร้างจาก MODS อัตโนมัติแล้ว (TAB_LABEL map ใน template.html)
 - Catalog เพิ่มกลุ่ม "Internal SOPs" (FSOP, MMSOP) สำหรับ coverage dashboard
+
+---
+
+## อัปเดต 30 JUL 2026 — แยกเป็นสองประตู + Forms Portal (เฟส 1)
+
+### โครง URL ใหม่
+
+```
+/                 door.html          → เลือกประตู · จำใน localStorage 'd0507_door' · เลือกใหม่ที่ /?pick=1
+/forms/           portal_forms.html  → 📋 FORMS PORTAL (ใหม่)
+/audit/           portal_audit.html  → 🔍 AUDIT PORTAL (ย้ายมาจาก /)
+/iac/ /vendor/ /safety/ /surveillance/ /aerodrome/   ← ไม่ย้าย คงเดิมทุกอย่าง
+```
+
+**หลักการ:** ผู้ใช้รู้สึกว่าเป็นคนละแอป · หลังบ้านเป็น Firebase project เดียว → login ครั้งเดียวใช้ได้ทั้งสองประตู
+(same origin + same authDomain) · Firestore/Storage/Rules **ไม่แตะ** · `AUDIT_ID` เดิม ข้อมูลการตรวจไม่กระทบ
+
+### ไฟล์ที่เพิ่ม / เปลี่ยน
+
+| ไฟล์ | สถานะ | คืออะไร |
+|---|---|---|
+| `portal_audit.html` | **ใหม่** | Portal เดิมที่แกะออกจาก string ใน `build.py` — **แก้ Audit Portal ที่ไฟล์นี้ ไม่ใช่ใน build.py แล้ว** |
+| `portal_forms.html` | **ใหม่** | Forms Portal — หัวขาว (แยกตัวตนจาก audit ที่ใช้แถบ navy ทึบ) |
+| `door.html` | **ใหม่** | หน้าเลือกประตู · ตัวเลขบนการ์ดคำนวณจาก register + packs |
+| `forms_register.json` | **ใหม่** | ทะเบียนฟอร์ม 52 ใบ — **แหล่งข้อมูลกลางของ Forms Portal** แก้ที่นี่แล้ว build |
+| `build.py` | แก้ | ตัด PORTAL literal ออก (37,183 → 4,892 bytes) · เพิ่ม `_emit()` สร้างสามประตู |
+| `template.html` | แก้ 1 บรรทัด | บรรทัด 180 ปุ่ม `⌂ Audit Portal` จาก `href="../"` → `href="../audit/"` |
+| `build.py.bak` | สำรอง | build.py ก่อนแยกไฟล์ (ลบได้เมื่อมั่นใจ) |
+
+### placeholder ในไฟล์ portal (build.py แทนค่าให้)
+
+- `portal_audit.html` — `@@FBCFG@@` `@@PACKS@@` `@@BASE@@` (= `../` เพราะแอปย่อยอยู่ root แต่ portal อยู่ `/audit/`)
+- `portal_forms.html` — `@@FBCFG@@` `@@REG@@`
+- `door.html` — `@@STATS@@`
+
+`_emit()` จะ **error ถ้ามี placeholder เหลือ** — กันลืมแทนค่า
+
+### ตรวจแล้ว (30 JUL 2026)
+
+- `audit/index.html` ต่างจาก portal เดิมที่ HEAD **แค่ 3 จุด** — เติม `../` หน้าลิงก์แอปย่อยทั้งสามที่ · ที่เหลือ byte-identical (+9 bytes)
+- ทั้งสามหน้า: ไม่มี placeholder เหลือ · JSON ที่ฝังใน `<script>` parse ผ่าน (escape `</` → `<\/` แล้ว) · `node --check` ผ่าน
+- ทดสอบ render logic ของ Forms Portal ด้วย register ตัวจริง: 5 กลุ่ม (stu 12 / ins 27 / mnt 9 / ops 18 / mgt 27 ฟอร์ม) · ทะเบียน 52 แถว · filter "มีปัญหา" 37 แถว · "ยังไม่อยู่ใน LEF" 22 แถว · ไม่มี undefined/NaN หลุด
+- Door แสดงตัวเลขสด: 30 ฟอร์มใน LEF · 52 ในทะเบียน · 5 กรอบการตรวจ · 2,242 รายการ
+
+### Forms Portal เฟสนี้ทำอะไรได้
+
+**อ่านและเปิดฟอร์มเท่านั้น** — ยังไม่ได้ย้ายการกรอกเข้าระบบ ปุ่ม "เปิดฟอร์ม" พาไป Jotform ใบเดิม
+ประโยชน์ทันที: เปิดฟอร์ม **ถูกใบ** จากที่เดียว ไม่ต้องพึ่งลิงก์ใน LEF ที่ยังชี้ผิด 21 จุด
+
+- จัดกลุ่มตามผู้ใช้ 5 กลุ่ม: นักเรียน · ครูการบิน/ครูภาคทฤษฎี · ช่างอากาศยาน · ฝ่ายปฏิบัติการ · ฝ่ายบริหาร
+- ฟอร์มเดียวโผล่หลายกลุ่มได้ โดยข้อความ "บทบาทคุณ" ต่างกันต่อกลุ่ม (`r` ใน register)
+- ป้ายสถานะควบคุมระดับการ์ด: `linkwrong` `nolink` `noform` `pdfonly` `notinlef` `shadow`
+- ทะเบียนกลาง 52 แถว + filter + ค้นหา
+- cross-link: ฟอร์มที่ `"app":"audit"` (CAR/IAC/VAC/SAC/SSC) มีปุ่มไปประตูงานตรวจสอบ
+
+### ค้างไว้ (เฟสถัดไป)
+
+1. **`users/{uid}.roles`** — โค้ดอ่านแล้ว (`db.collection('users').doc(uid)`) แต่ **ยังไม่มี Firestore rule + ยังไม่มี document**
+   ตอนนี้ถ้าอ่านไม่ได้จะ fallback แสดงทุกกลุ่มพร้อมข้อความบอก · ต้องเพิ่ม rule `match /users/{uid} { allow read: if request.auth.uid == uid; }` และสร้าง doc ให้แต่ละคน
+2. เฟส 2 — form engine 3 ตัว (dynamic/rule · approval-route · scoring/gate) + นำร่อง FRAE / ASF / PCR-FI
+3. `formpacks/<formCode>/<rev>/form.json` — โครง schema ฟอร์ม (ยังไม่สร้าง)
+4. DOCX export ด้วย docxtemplater โดยใช้ `.docx` ในโฟลเดอร์ root เป็นแม่แบบ
+5. **ยังไม่ push** — build แล้วในเครื่องเท่านั้น ยังไม่ deploy ขึ้น GitHub Pages
