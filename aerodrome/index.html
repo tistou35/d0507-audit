@@ -231,7 +231,7 @@ MODS.forEach(m=>m.parts.forEach((p,pi)=>p.secs.forEach(s=>s.groups.forEach(g=>g.
 })))));
 const state = {};   // id -> {st:'S'|'U'|'NA', rm:'', ref:''}
 let dirty=false;
-const meta = {auditor:'', date: new Date().toISOString().slice(0,10), scope:'', note:''};
+const meta = {auditor:'', date: new Date().toISOString().slice(0,10), scope:'', note:'', auditee:'', concl:'', reco:''};
 // ---- sync bookkeeping (no-op when FIREBASE_CONFIG is null) ----
 const pending=new Set(); let pendingMeta=false, fbReady=false, fbUser=null;
 function mark(id){ dirty=true; if(fbReady) pending.add(id); }
@@ -613,6 +613,13 @@ function renderDash(){
     <div><label>Auditor / ผู้ตรวจ</label><input value="${escAttr(meta.auditor)}" onchange="meta.auditor=this.value;markMeta()"></div>
     <div><label>Audit Date / วันที่ตรวจ</label><input type="date" value="${escAttr(meta.date)}" onchange="meta.date=this.value;markMeta()"></div>
     <div><label>Scope / ขอบเขตรอบนี้</label><input placeholder="เช่น Full GAP ก่อนยื่น กพท." value="${escAttr(meta.scope)}" onchange="meta.scope=this.value;markMeta()"></div>
+    <div><label>Auditee / หน่วยรับการตรวจ</label><input placeholder="เช่น ทุกหน่วยงาน / แผนกปฏิบัติการบิน" value="${escAttr(meta.auditee||'')}" onchange="meta.auditee=this.value;markMeta()"></div>
+  </div>
+  <div class="audmeta" style="grid-template-columns:1fr 1fr">
+    <div><label>ข้อสรุปของผู้ตรวจ / Auditor conclusion (ใช้ในรายงานสรุป)</label>
+      <textarea style="width:100%;min-height:66px;border:1px solid #c8d2e0;border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13.5px" placeholder="สรุปภาพรวมผลการตรวจรอบนี้" onchange="meta.concl=this.value;markMeta()">${esc(meta.concl||'')}</textarea></div>
+    <div><label>ข้อเสนอแนะ / Recommendations (บรรทัดละ 1 ข้อ)</label>
+      <textarea style="width:100%;min-height:66px;border:1px solid #c8d2e0;border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13.5px" placeholder="ข้อเสนอแนะเพื่อการปรับปรุง — บรรทัดละ 1 ข้อ" onchange="meta.reco=this.value;markMeta()">${esc(meta.reco||'')}</textarea></div>
   </div>`;
   h+='<div class="dash">';
   MODS.forEach(m=>{
@@ -1035,6 +1042,7 @@ function renderCar(){
   cars.forEach(it=>{const c=carOf(it.id); by[c.cast]=(by[c.cast]||0)+1;});
   const od=cars.filter(it=>isOverdue(carOf(it.id))).length;
   let h=`<div class="toolbar">
+    <button class="abtn" onclick="exportSummary()">📊 รายงานสรุป (Summary Report)</button>
     <button class="abtn" onclick="downloadCarForms()">📄 CAR Form — เฉพาะที่เลือก</button>
     <button class="abtn sec2" onclick="downloadCarForms(true)">📄 CAR Forms ทั้งหมด</button>
     <button class="abtn sec2" onclick="exportCarCSV()">⬇ CAR Register (CSV)</button>
@@ -1084,7 +1092,8 @@ function renderGap(){
   const gaps=ALL.filter(it=>{const s=st(it.id)||{};return s.st==='U'||(it.dual&&s.st2==='U');});
   const pend=ALL.filter(it=>!rollup(it));
   let h=`<div class="toolbar">
-    <button class="abtn" onclick="exportReport()">📋 สร้างรายงานผลการตรวจ (HTML + รูป)</button>
+    <button class="abtn" onclick="exportSummary()">📊 รายงานสรุป (Summary Report)</button>
+    <button class="abtn sec2" onclick="exportReport()">📋 รายงานฉบับเต็ม + รูป</button>
     <button class="abtn" onclick="exportCSV()">⬇ CSV</button>
     <button class="abtn sec2" onclick="exportJSON()">💾 บันทึกความคืบหน้า (JSON)</button>
     <button class="abtn sec2" onclick="document.getElementById('imp').click()">📂 เปิดไฟล์ความคืบหน้า</button>
@@ -1243,6 +1252,158 @@ ${withPhotos.length?`<h2>4. Photo Evidence (รายการที่ผ่า
 </body></html>`;
   dl(`D-0507_Audit_Report_${stamp()}.html`, html, 'text/html;charset=utf-8');
 }
+
+// ---------- รายงานสรุปผู้บริหาร (Audit Summary Report) ----------
+function exportSummary(){
+  const today=meta.date||new Date().toISOString().slice(0,10);
+  const cAll=countOf(ALL);
+  const pct=n=>cAll.tot?Math.round(100*n/cAll.tot):0;
+  const gaps=ALL.filter(it=>{const s=st(it.id)||{};return s.st==='U'||(it.dual&&s.st2==='U');});
+  const cars=ALL.filter(it=>{const c=carOf(it.id); return c&&c.no;});
+  const carOpen=cars.filter(it=>carOf(it.id).cast!=='V');
+  const carLate=cars.filter(it=>isOverdue(carOf(it.id)));
+  const lvl1=cars.filter(it=>(carOf(it.id).lvl==='1')).length;
+  const noCar=gaps.filter(it=>!(carOf(it.id)&&carOf(it.id).no)).length;
+
+  // จัดอันดับหมวดที่พบ GAP มากสุด
+  const byArea={};
+  gaps.forEach(it=>{ const k=it._m+' · '+(it._s||it._p); byArea[k]=(byArea[k]||0)+1; });
+  const top=Object.entries(byArea).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const topMax=top.length?top[0][1]:1;
+
+  // แถบสัดส่วนต่อโมดูล
+  let modRows='', modBars='';
+  MODS.forEach(m=>{
+    const c=countOf(modItems(m.c)); if(!c.tot) return;
+    const p=n=>Math.round(100*n/c.tot);
+    modRows+=`<tr><td><b>${esc(m.c)}</b> — ${esc(m.th||m.t)}</td><td class="n">${c.tot}</td><td class="n">${c.S}</td>
+      <td class="n gapn">${c.U}</td><td class="n">${c.NA}</td><td class="n">${c.tot-c.done}</td>
+      <td class="n"><b>${Math.round(100*c.done/c.tot)}%</b></td></tr>`;
+    modBars+=`<div class="mb"><div class="mbl">${esc(m.c)} <i>${c.done}/${c.tot}</i></div>
+      <div class="mbar"><span class="s" style="width:${p(c.S)}%"></span><span class="u" style="width:${p(c.U)}%"></span><span class="na" style="width:${p(c.NA)}%"></span></div></div>`;
+  });
+
+  const carRows=cars.sort((a,b)=>(carOf(a.id).no||'').localeCompare(carOf(b.id).no||'')).map(it=>{
+    const c=carOf(it.id);
+    return `<tr><td><b>${esc(c.no)}</b></td><td>[${esc(it.id)}] ${esc(it.d.slice(0,80))}${it.d.length>80?'…':''}</td>
+      <td>${c.lvl==='1'?'<b style="color:#C00000">Level 1</b>':'Level 2'}</td><td>${esc(c.as||'-')}</td>
+      <td${isOverdue(c)?' class="gapn"':''}>${esc(c.due||'-')}${isOverdue(c)?' ⚠':''}</td><td>${esc(carStatusTxt(c))}</td></tr>`;
+  }).join('');
+
+  const findRows=gaps.map((it,i)=>{
+    const s=st(it.id)||{}; const c=s.car||{};
+    return `<tr><td class="n">${i+1}</td><td><b>${esc(it.id)}</b></td>
+      <td>${esc(it.d.slice(0,110))}${it.d.length>110?'…':''}${s.rm?`<div class="rm">${esc(s.rm.slice(0,140))}</div>`:''}</td>
+      <td>${esc(it._m)}<div class="sm">${esc(it._s||it._p)}</div></td>
+      <td>${esc(it.rr||'-')}</td><td class="gapn">${esc(gapType(it).split('–')[0])}</td>
+      <td>${c.no?esc(c.no)+'<div class="sm">'+esc(carStatusTxt(c))+'</div>':'<span class="gapn">ยังไม่ออก CAR</span>'}</td></tr>`;
+  }).join('');
+
+  const recos=(meta.reco||'').split('\n').map(x=>x.trim()).filter(Boolean);
+  const donut=(v,tot,col)=>{const p=tot?Math.round(100*v/tot):0;return `conic-gradient(${col} 0 ${p*3.6}deg,#e6ecf4 ${p*3.6}deg 360deg)`;};
+
+  const html=`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>D-0507 Audit Summary Report ${today}</title><style>
+*{box-sizing:border-box}
+body{font-family:Arial,'Noto Sans Thai',sans-serif;color:#1A1A2A;font-size:13.3px;margin:0;padding:0;background:#fff;line-height:1.55}
+.pg{max-width:900px;margin:0 auto;padding:26px 30px}
+.cover{background:#1F3864;color:#fff;padding:30px;border-radius:0}
+.cover .co{font-size:20px;font-weight:bold;letter-spacing:.4px}
+.cover h1{font-size:26px;margin:12px 0 4px;font-weight:bold}
+.cover .th{font-size:15px;opacity:.9}
+.cover .ref{margin-top:18px;font-size:12.5px;opacity:.92;border-top:1px solid rgba(255,255,255,.3);padding-top:12px}
+h2{color:#1F3864;font-size:16.5px;margin:26px 0 8px;border-bottom:2px solid #2E75B6;padding-bottom:5px}
+h3{color:#1F3864;font-size:14px;margin:16px 0 6px}
+table{width:100%;border-collapse:collapse;font-size:12.3px;margin:8px 0}
+th{background:#1F3864;color:#fff;padding:7px 8px;text-align:left;font-size:11.8px}
+td{border:1px solid #c8d2e0;padding:6px 8px;vertical-align:top}
+td.n{text-align:center}
+.gapn{color:#C00000;font-weight:bold}
+.sm{font-size:10.8px;color:#667}
+.rm{font-size:11px;color:#8a3a3a;margin-top:2px}
+.kpis{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.kpi{flex:1;min-width:130px;border:1px solid #d8dfe8;border-radius:10px;padding:10px 12px;background:#F7FAFD}
+.kpi .l{font-size:11px;color:#5a6675}
+.kpi .v{font-size:24px;font-weight:bold;color:#1F3864;line-height:1.1}
+.kpi.red .v{color:#C00000}.kpi.amber .v{color:#9C6500}.kpi.green .v{color:#1E7B34}
+.rings{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.ring{text-align:center;font-size:11.5px;color:#445}
+.ring .d{width:96px;height:96px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:4px}
+.ring .d i{width:70px;height:70px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:bold;font-size:17px;color:#1F3864}
+.mb{margin:6px 0}
+.mbl{font-size:11.5px;color:#1F3864;font-weight:bold}
+.mbl i{font-style:normal;font-weight:normal;color:#667}
+.mbar{display:flex;height:15px;border-radius:8px;overflow:hidden;background:#e6ecf4}
+.mbar span.s{background:#1E7B34}.mbar span.u{background:#C00000}.mbar span.na{background:#9aa7b8}
+.lgd{font-size:11px;color:#667;margin-top:4px}
+.lgd b{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 3px 0 10px;vertical-align:-1px}
+.top{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:12.3px}
+.top .bar{height:14px;background:#C00000;border-radius:7px;min-width:6px}
+.box{border:1px solid #c8d2e0;border-radius:8px;padding:10px 13px;background:#FBFCFE;white-space:pre-line;min-height:52px}
+ul.rc{margin:6px 0 0 18px}ul.rc li{margin:3px 0}
+.sig{display:flex;gap:20px;margin-top:34px;page-break-inside:avoid}
+.sig div{flex:1;text-align:center;font-size:12.3px}
+.sig .line{border-bottom:1px solid #1A1A2A;height:54px;margin-bottom:6px}
+footer{margin-top:26px;font-size:10.8px;color:#667;border-top:2px solid #1F3864;padding-top:8px;text-align:center}
+.noprint{margin:16px 0}
+.noprint button{background:#1F3864;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:bold;cursor:pointer}
+@media print{.noprint{display:none}.pg{padding:8px}h2{page-break-after:avoid}table{page-break-inside:auto}tr{page-break-inside:avoid}}
+</style></head><body>
+<div class="cover"><div class="co">D-0507 FLIGHT TRAINING CO., LTD.</div>
+  <h1>AUDIT SUMMARY REPORT</h1><div class="th">รายงานสรุปผลการตรวจติดตามภายใน</div>
+  <div class="ref"><b>${esc(document.title.split('–')[0].trim())}</b><br>
+  รอบตรวจ (Audit round): <b>${esc(AUDIT_ID)}</b> &nbsp;·&nbsp; วันที่ตรวจ: <b>${esc(today)}</b><br>
+  ผู้ตรวจ (Lead Auditor): <b>${esc(meta.auditor||'-')}</b> &nbsp;·&nbsp; หน่วยรับการตรวจ: <b>${esc(meta.auditee||'-')}</b><br>
+  ขอบเขต: ${esc(meta.scope||'-')}</div></div>
+<div class="pg">
+<div class="noprint"><button onclick="window.print()">🖨 พิมพ์ / บันทึกเป็น PDF</button></div>
+
+<h2>1. บทสรุปผู้บริหาร / Executive Summary</h2>
+<div class="kpis">
+  <div class="kpi"><div class="l">ความคืบหน้าการตรวจ</div><div class="v">${pct(cAll.done)}%</div><div class="sm">${cAll.done} / ${cAll.tot} รายการ</div></div>
+  <div class="kpi green"><div class="l">Satisfactory (S)</div><div class="v">${cAll.S}</div><div class="sm">${pct(cAll.S)}% ของทั้งหมด</div></div>
+  <div class="kpi red"><div class="l">GAP / Finding (U)</div><div class="v">${cAll.U}</div><div class="sm">Level 1: ${lvl1} · ยังไม่ออก CAR: ${noCar}</div></div>
+  <div class="kpi"><div class="l">N/A</div><div class="v">${cAll.NA}</div><div class="sm">ไม่เกี่ยวข้อง</div></div>
+  <div class="kpi amber"><div class="l">CAR คงค้าง</div><div class="v">${carOpen.length}</div><div class="sm">ทั้งหมด ${cars.length} ใบ · ปิดแล้ว ${cars.length-carOpen.length}</div></div>
+  <div class="kpi red"><div class="l">CAR เกินกำหนด</div><div class="v">${carLate.length}</div><div class="sm">ต้องเร่งติดตาม</div></div>
+</div>
+<div class="rings">
+  <div class="ring"><div class="d" style="background:${donut(cAll.done,cAll.tot,'#2E75B6')}"><i>${pct(cAll.done)}%</i></div>ตรวจแล้ว</div>
+  <div class="ring"><div class="d" style="background:${donut(cAll.S,cAll.done||1,'#1E7B34')}"><i>${cAll.done?Math.round(100*cAll.S/cAll.done):0}%</i></div>สอดคล้อง (ในที่ตรวจแล้ว)</div>
+  <div class="ring"><div class="d" style="background:${donut(cars.length-carOpen.length,cars.length||1,'#1E7B34')}"><i>${cars.length?Math.round(100*(cars.length-carOpen.length)/cars.length):0}%</i></div>CAR ที่ปิดแล้ว</div>
+</div>
+
+<h2>2. ผลการตรวจรายโมดูล / Results by Module</h2>
+${modBars}
+<div class="lgd"><b style="background:#1E7B34"></b>Satisfactory <b style="background:#C00000"></b>GAP <b style="background:#9aa7b8"></b>N/A <b style="background:#e6ecf4"></b>ยังไม่ตรวจ</div>
+<table><tr><th>Module</th><th class="n">รายการ</th><th class="n">S</th><th class="n">GAP</th><th class="n">N/A</th><th class="n">ค้าง</th><th class="n">คืบหน้า</th></tr>${modRows}</table>
+
+${top.length?`<h2>3. หมวดที่พบข้อบกพร่องมากที่สุด / Areas of Concern</h2>
+${top.map(([k,v])=>`<div class="top"><div style="flex:0 0 300px">${esc(k)}</div><div class="bar" style="width:${Math.round(160*v/topMax)}px"></div><b>${v}</b></div>`).join('')}`:''}
+
+<h2>${top.length?4:3}. สรุปข้อบกพร่อง / Findings Summary (${gaps.length})</h2>
+${gaps.length?`<table><tr><th class="n" style="width:32px">#</th><th style="width:78px">Item</th><th>ข้อบกพร่องที่พบ</th><th style="width:110px">ที่มา</th><th style="width:110px">ข้อกำหนด</th><th style="width:80px">ประเภท</th><th style="width:110px">CAR</th></tr>${findRows}</table>`:'<p>— ไม่พบข้อบกพร่องในรอบนี้ —</p>'}
+
+${cars.length?`<h2>${top.length?5:4}. ทะเบียน CAR / Corrective Action Register</h2>
+<table><tr><th style="width:110px">CAR No.</th><th>Finding</th><th style="width:70px">Level</th><th style="width:110px">ผู้รับผิดชอบ</th><th style="width:90px">กำหนดเสร็จ</th><th style="width:130px">สถานะ</th></tr>${carRows}</table>`:''}
+
+<h2>${(top.length?5:4)+(cars.length?1:0)}. ข้อสรุปและข้อเสนอแนะ / Conclusion &amp; Recommendations</h2>
+<h3>ข้อสรุปของผู้ตรวจ</h3>
+<div class="box">${esc(meta.concl||'(ยังไม่ได้บันทึกข้อสรุป — กรอกในแท็บ Dashboard ของแอป แล้วสร้างรายงานใหม่)')}</div>
+<h3>ข้อเสนอแนะ</h3>
+${recos.length?`<ul class="rc">${recos.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`
+ :`<div class="box">(ยังไม่ได้บันทึกข้อเสนอแนะ)</div>`}
+
+<div class="sig">
+  <div><div class="line"></div>Lead Auditor / ผู้ตรวจ<br>(${esc(meta.auditor||'.............................')})<br>วันที่ ${esc(today)}</div>
+  <div><div class="line"></div>Compliance Monitoring Manager<br>(.............................)<br>วันที่ ......../......../........</div>
+  <div><div class="line"></div>Accountable Manager<br>(.............................)<br>วันที่ ......../......../........</div>
+</div>
+<footer>D-0507 Internal Audit System · รอบตรวจ ${esc(AUDIT_ID)} · สร้างเมื่อ ${new Date().toISOString().slice(0,16).replace('T',' ')} · เอกสารควบคุมเมื่อพิมพ์จากระบบเท่านั้น</footer>
+</div></body></html>`;
+  dl(`D-0507_Audit_Summary_${stamp()}.html`, html, 'text/html;charset=utf-8');
+}
 function importJSON(inp){
   const f=inp.files[0]; if(!f) return;
   const r=new FileReader();
@@ -1377,7 +1538,7 @@ async function flush(){
   if(!fbReady||!fbUser) return;
   if(pendingMeta){
     pendingMeta=false;
-    FB.db.collection('audits').doc(AUDIT_ID).set({meta:{auditor:meta.auditor,date:meta.date,scope:meta.scope},
+    FB.db.collection('audits').doc(AUDIT_ID).set({meta:{auditor:meta.auditor,date:meta.date,scope:meta.scope,auditee:meta.auditee||'',concl:meta.concl||'',reco:meta.reco||''},
       t:firebase.firestore.FieldValue.serverTimestamp(), u:fbUser.email||''},{merge:true}).catch(console.error);
   }
   if(!pending.size) return;
