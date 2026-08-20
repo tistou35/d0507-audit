@@ -83,6 +83,8 @@ URL: Portal ที่ root, งาน IAC ที่ `/iac/` (AUDIT_ID เดิ�
 - **GAP Report → กระโดดกลับไปที่ข้อตรวจ (25 JUL 2026):** แต่ละ finding กดที่รหัสข้อ `[TM-0231]` หรือปุ่ม "↪ ไปที่ข้อตรวจนี้" → สลับแท็บโมดูล, เปิด Part ที่ข้อนั้นอยู่, ล้างตัวกรองที่อาจซ่อนข้อ, เลื่อนไปหยุดใต้ header sticky พอดี และไฮไลต์เหลืองกระพริบ 2 วิ (fn `gotoItem` ใช้ it._m/it._pi) — ทดสอบแล้วจาก GAP ไป OMM-0016 ถูกต้อง
 - ⚠️ **เหตุการณ์ซ้ำ:** `build.py` ถูก session อื่นเขียนทับด้วยเวอร์ชันเก่า (Portal เหลือ 6 KB ไม่มี Gantt/ACM/multi-ack) — กู้จาก git commit 1b41fd0 แล้ว · **ตรวจทุกครั้งหลัง build: `index.html` ต้อง ~41 KB ขึ้นไป ถ้าเหลือหลักหน่วย KB แปลว่า build.py โดนทับ ให้ `git show <commit>:build.py > build.py`**
 
+- **รายงานสรุปผู้บริหาร Audit Summary Report (25 JUL 2026):** ปุ่ม "📊 รายงานสรุป (Summary Report)" ในแท็บ GAP Report และ CAR (fn `exportSummary`) — หน้าปกพร้อมเลขรอบตรวจ/ผู้ตรวจ/ขอบเขต, KPI 6 การ์ด (คืบหน้า %, S, GAP + Level 1 + ที่ยังไม่ออก CAR, N/A, CAR คงค้าง, CAR เกินกำหนด), วงแหวน 3 วง, แถบสัดส่วน S/GAP/NA รายโมดูล + ตารางสรุป, จัดอันดับหมวดที่พบ GAP มากสุด 8 อันดับ, ตารางสรุป findings, ทะเบียน CAR, ข้อสรุป+ข้อเสนอแนะ (กรอกที่ Dashboard → meta.concl/meta.reco sync Firestore), ลายเซ็น 3 ฝ่าย, ปุ่มพิมพ์ PDF · ของเดิม "📋 รายงานฉบับเต็ม + รูป" (exportReport) ยังอยู่ครบ
+
 ## งานค้าง
 
 1. แก้ reference 16 จุดใน PEL-TO-CK-061/062 ที่เลข section เลื่อน (แอปแสดง ⚠ ในกล่อง "คู่มือ:" ของข้อนั้น ๆ)
