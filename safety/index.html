@@ -820,14 +820,17 @@ function carSelAll(on){ carListFiltered().forEach(it=>{ on?carSel.add(it.id):car
 function bulkEditGo(){
   const ids=[...carSel]; if(!ids.length){ alert('ติ๊กเลือก CAR ที่ต้องการแก้ก่อน'); return; }
   const g=id=>{const el=document.getElementById(id); return el?el.value.trim():'';};
-  const idate=g('be_idate'), due=g('be_due'), as=g('be_as'), ae=g('be_ae'), pos=g('be_pos'), lvl=g('be_lvl');
-  if(!idate&&!due&&!as&&!ae&&!pos&&!lvl){ alert('กรอกช่องที่ต้องการแก้อย่างน้อย 1 ช่อง — ช่องที่เว้นว่างจะไม่ถูกแก้'); return; }
+  const idate=g('be_idate'), due=g('be_due'), as=g('be_as'), ae=g('be_ae'), pos=g('be_pos'), lvl=g('be_lvl'),
+        cadate=g('be_cadate'), vdate=g('be_vdate');
+  if(!idate&&!due&&!as&&!ae&&!pos&&!lvl&&!cadate&&!vdate){ alert('กรอกช่องที่ต้องการแก้อย่างน้อย 1 ช่อง — ช่องที่เว้นว่างจะไม่ถูกแก้'); return; }
   const chg=[]; if(idate)chg.push('วันที่มอบหมาย → '+idate); if(due)chg.push('กำหนดเสร็จ → '+due);
   if(as)chg.push('ผู้รับผิดชอบ → '+as); if(ae)chg.push('อีเมล → '+ae); if(pos)chg.push('ตำแหน่ง → '+pos);
-  if(lvl)chg.push('Finding level → '+lvl);
+  if(lvl)chg.push('Finding level → '+lvl); if(cadate)chg.push('วันที่ส่งตอบกลับ → '+cadate); if(vdate)chg.push('วันที่ตรวจรับ/ปิด → '+vdate);
   if(!confirm('แก้ไข '+ids.length+' CAR ที่เลือก:\n• '+chg.join('\n• ')+'\n\nยืนยัน?')) return;
   ids.forEach(id=>{ const c=carOf(id); if(!c) return;
     if(idate) c.idate=idate; if(due) c.due=due; if(as) c.as=as; if(ae) c.ae=ae; if(pos) c.pos=pos; if(lvl) c.lvl=lvl;
+    if(cadate){ c.cadate=cadate; if(c.sg&&c.sg.resp) c.sg.resp.dt=cadate; }
+    if(vdate){ c.vdate=vdate; if(c.sg&&c.sg.aud) c.sg.aud.dt=vdate; }
     logCar(c,'แก้ไขข้อมูล (bulk): '+chg.join(' · ')+(uName()?' · โดย '+uName():''));
     mark(id); });
   carSel.clear(); render(); syncStatus('✏️ แก้ไขแล้ว '+ids.length+' CAR','var(--green)');
@@ -851,14 +854,22 @@ function bulkReport(){
   const need=ids.filter(id=>{const c=carOf(id); return !(c.sg&&c.sg.resp);});
   if(need.length) openSig(ids,'resp',fin); else fin();
 }
-function bulkAccept(){
-  const ids=[...carSel].filter(id=>{const c=carOf(id); return c&&c.cast==='R';});
-  if(!ids.length){ alert('ติ๊กเลือก CAR สถานะ "รอตรวจรับ" ก่อน'); return; }
+function bulkAccept(all){
+  let ids;
+  if(all){ ids=carListFiltered().filter(it=>carOf(it.id).cast!=='V').map(it=>it.id); }
+  else   { ids=[...carSel].filter(id=>{const c=carOf(id); return c&&c.cast!=='V';}); }
+  if(!ids.length){ alert(all?'ไม่มี CAR ที่ยังไม่ปิดในรายการที่กรองอยู่':'ติ๊กเลือก CAR ที่ต้องการตรวจรับก่อน'); return; }
+  const notSent=ids.filter(id=>carOf(id).cast!=='R').length;
+  const noAns=ids.filter(id=>{const c=carOf(id); return !(c.rc||'').trim()||!(c.ca||'').trim();});
   const w=document.createElement('div'); w.className='sigwrap'; w.id='bawrap';
   w.innerHTML=`<div class="sigbox">
-    <b style="color:var(--navy)">✔ ตรวจรับและปิด CAR รวม (${ids.length} ใบ)</b>
+    <b style="color:var(--navy)">✔ ตรวจรับและปิด CAR ${all?'ทั้งหมด':'ที่เลือก'} (${ids.length} ใบ)</b>
+    ${noAns.length?`<div class="banner-x" style="background:#FDECEC;border:1px solid #E4A6A6;color:#8f1414;border-radius:8px;padding:7px 10px;margin-top:8px;font-size:12px">⚠ มี ${noAns.length} ใบที่ยังไม่ได้กรอก Part 3–4 (${noAns.slice(0,3).map(id=>carOf(id).no).join(', ')}${noAns.length>3?' …':''}) — ปิดไปจะเป็นเอกสารที่ไม่มีคำตอบการแก้ไข</div>`:''}
+    ${notSent?`<div style="color:#9C6500;font-size:12px;margin-top:6px">หมายเหตุ: ${notSent} ใบยังไม่ได้กดส่งตอบกลับในระบบ — ระบบจะบันทึกว่าตรวจรับตามเอกสารที่ลงนามไว้แล้ว</div>`:''}
     <div class="ca-lb">Verification evidence — หลักฐานทวนสอบ (ใช้กับใบที่ยังไม่ได้กรอก · ใบที่กรอกรายใบไว้แล้วคงของเดิม)</div>
-    <textarea class="ca-in" id="ba_ev" placeholder="เช่น ตรวจคู่มือฉบับแก้ไข rev ใหม่ครบทุกรายการแล้ว"></textarea>
+    <textarea class="ca-in" id="ba_ev" placeholder="เช่น ตรวจคู่มือฉบับแก้ไข rev ใหม่ครบทุกรายการแล้ว / ตรวจรับตามแบบฟอร์ม CAR ที่ลงนามแล้ว"></textarea>
+    <div style="margin-top:8px">วันที่ตรวจรับ / Close date: <input type="date" id="ba_date" class="ca-sm" value="${today()}">
+      <span style="color:#7a8798;font-size:11.5px">— ปรับย้อนหลังได้ให้ตรงกับวันที่ลงนามในเอกสารกระดาษ</span></div>
     <div style="margin-top:10px;text-align:right">
       <button class="carbtn" onclick="document.getElementById('bawrap').remove()">ยกเลิก</button>
       <button class="carbtn v" onclick="bulkAcceptGo('${ids.join(',')}')">ต่อไป → ลงชื่อ Auditor (ครั้งเดียว)</button>
@@ -868,15 +879,18 @@ function bulkAccept(){
 function bulkAcceptGo(idstr){
   const ids=idstr.split(',');
   const ev=(document.getElementById('ba_ev').value||'').trim();
+  const vd=(document.getElementById('ba_date').value||'').trim()||today();
   const missing=ids.filter(id=>{const c=carOf(id); return !((c.vev||'').trim()||ev);});
   if(missing.length){ alert('กรอก Verification evidence ในช่องด้านบน (หรือกรอกรายใบ) ก่อนปิด CAR: '+missing.map(id=>(carOf(id).no||id)).join(', ')); return; }
   document.getElementById('bawrap').remove();
   openSig(ids,'aud',()=>{
     ids.forEach(id=>{ const c=carOf(id);
       if(!(c.vev||'').trim()) c.vev=ev;
-      c.cast='V'; c.vdate=today(); c.vby=(c.sg&&c.sg.aud&&c.sg.aud.n)||uName()||'';
-      logCar(c,'Accepted (ตรวจรับรวม) — ปิด CAR โดย '+(c.vby||'ผู้ตรวจ')); mark(id); });
-    carSel.clear(); render(); syncStatus('✔ ตรวจรับผ่าน — ปิดแล้ว '+ids.length+' CAR','var(--green)');
+      if(c.cast!=='R'&&!c.cadate) c.cadate=c.cadone||vd;
+      c.cast='V'; c.vdate=vd; c.vby=(c.sg&&c.sg.aud&&c.sg.aud.n)||uName()||'';
+      if(c.sg&&c.sg.aud) c.sg.aud.dt=vd;
+      logCar(c,'Accepted (ตรวจรับรวม) — ปิด CAR วันที่ '+vd+' โดย '+(c.vby||'ผู้ตรวจ')); mark(id); });
+    carSel.clear(); render(); syncStatus('✔ ตรวจรับผ่าน — ปิดแล้ว '+ids.length+' CAR ('+vd+')','var(--green)');
   });
 }
 function sigSlot(it, role, canSign){
@@ -951,7 +965,9 @@ function carBoxHTML(it){
           <div style="margin-top:4px">New due date — กำหนดเสร็จใหม่: <input type="date" class="ca-sm" id="rjd_${it.id}" value="${esc(c.due||'')}"></div>
           <button class="carbtn x" style="margin-top:5px" onclick="carRejectGo('${it.id}')">ยืนยันตีกลับ → ผู้รับผิดชอบแก้ไขใหม่</button>
         </div>`:''}
-      ${c.cast==='V'?`<div style="margin-top:4px;color:var(--green)"><b>☑ Accepted — CAR closed</b> · Close date: ${esc(c.vdate||'')} · โดย ${esc(c.vby||'-')}${c.vev?`<br>Verification evidence: ${esc(c.vev)}`:''}</div>`:''}
+      ${c.cast==='V'?`<div style="margin-top:4px;color:var(--green)"><b>☑ Accepted — CAR closed</b> · โดย ${esc(c.vby||'-')}
+        <div style="margin-top:3px;color:#445">Close date: <input type="date" class="ca-sm" value="${escAttr(c.vdate||'')}" onchange="setCarF('${it.id}','vdate',this.value);if(carOf('${it.id}').sg&&carOf('${it.id}').sg.aud){carOf('${it.id}').sg.aud.dt=this.value;mark('${it.id}');}"> <span style="font-size:11px;color:#7a8798">แก้ให้ตรงกับวันที่ลงนามในเอกสารกระดาษได้</span></div>
+        ${c.vev?`<div>Verification evidence: ${esc(c.vev)}</div>`:''}</div>`:''}
       ${(c.cast==='A'||c.cast==='X')?`<div style="color:#98a4b4;font-size:12px;margin-top:3px">จะเปิดให้กรอกเมื่อผู้รับผิดชอบส่งตอบกลับ (Part 3–5) แล้ว</div>`:''}
     </div></div>
 
@@ -1095,6 +1111,7 @@ function renderCar(){
   <div class="note" style="margin-bottom:8px"><b>ทำหลายใบพร้อมกัน</b> — ติ๊กเลือกในตาราง (เลือกแล้ว <b id="carselcnt">${carSel.size}</b> ใบ) แล้วกด:
     <button class="carbtn" onclick="bulkReport()">📤 ส่งตอบกลับที่เลือก — เซ็นผู้รับผิดชอบครั้งเดียว</button>
     <button class="carbtn v" onclick="bulkAccept()">✔ ตรวจรับที่เลือก — เซ็น Auditor ครั้งเดียว</button>
+    <button class="carbtn v" style="background:var(--green);color:#fff" onclick="bulkAccept(true)">✔✔ Accept all — ปิดทุกใบที่ยังไม่ปิด</button>
     <button class="carbtn" onclick="bulkSign('resp')">✍ ผู้รับผิดชอบเซ็นที่เลือก</button>
     <button class="carbtn" onclick="bulkSign('aud')">✍ Auditor เซ็นที่เลือก</button>
     <button class="carbtn" onclick="bulkSign('cmm')">✍ CMM เซ็นที่เลือก</button>
@@ -1107,6 +1124,8 @@ function renderCar(){
         <label>วันที่มอบหมาย (Date issued): <input type="date" id="be_idate" class="ca-sm"></label>
         <label>กำหนดเสร็จ (Due date): <input type="date" id="be_due" class="ca-sm"></label>
         <label>Finding level: <select id="be_lvl" class="ca-sm"><option value="">— ไม่เปลี่ยน —</option><option value="2">Level 2</option><option value="1">Level 1</option></select></label>
+        <label>วันที่ส่งตอบกลับ: <input type="date" id="be_cadate" class="ca-sm"></label>
+        <label>วันที่ตรวจรับ/ปิด: <input type="date" id="be_vdate" class="ca-sm"></label>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px">
         <label>ผู้รับผิดชอบ: <input id="be_as" class="ca-sm" placeholder="ชื่อ-นามสกุล"></label>
