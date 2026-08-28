@@ -836,7 +836,7 @@ function carSelTgl(id,on){ if(on) carSel.add(id); else carSel.delete(id);
   const n=document.getElementById('carselcnt'); if(n) n.textContent=carSel.size; }
 function bulkSign(role){
   const ids=[...carSel]; if(!ids.length){ alert('ติ๊กเลือก CAR ในตารางก่อน'); return; }
-  openSig(ids, role);
+  openSig(ids, role, ()=>{ render(); syncStatus('✍ ลงลายเซ็นแล้ว '+ids.length+' CAR','var(--green)'); });
 }
 function bulkReport(){
   const ids=[...carSel].filter(id=>{const c=carOf(id); return c&&(c.cast==='A'||c.cast==='X');});
@@ -1095,7 +1095,10 @@ function renderCar(){
   <div class="note" style="margin-bottom:8px"><b>ทำหลายใบพร้อมกัน</b> — ติ๊กเลือกในตาราง (เลือกแล้ว <b id="carselcnt">${carSel.size}</b> ใบ) แล้วกด:
     <button class="carbtn" onclick="bulkReport()">📤 ส่งตอบกลับที่เลือก — เซ็นผู้รับผิดชอบครั้งเดียว</button>
     <button class="carbtn v" onclick="bulkAccept()">✔ ตรวจรับที่เลือก — เซ็น Auditor ครั้งเดียว</button>
-    <button class="carbtn" onclick="bulkSign('cmm')">✍ CMM เซ็นที่เลือก</button></div>
+    <button class="carbtn" onclick="bulkSign('resp')">✍ ผู้รับผิดชอบเซ็นที่เลือก</button>
+    <button class="carbtn" onclick="bulkSign('aud')">✍ Auditor เซ็นที่เลือก</button>
+    <button class="carbtn" onclick="bulkSign('cmm')">✍ CMM เซ็นที่เลือก</button>
+    <div style="color:#7a8798;font-size:11.5px;margin-top:4px">ปุ่มเซ็นด้านบน = ลงลายเซ็นครั้งเดียวใช้กับทุกใบที่เลือก โดยไม่เปลี่ยนสถานะ · ใช้เมื่อต้องการเซ็นไว้ก่อนแล้วค่อยส่ง/ตรวจรับ</div></div>
 
   <details class="mref" style="margin-bottom:10px"${carSel.size?' open':''}><summary>✏️ แก้ไขหลายใบพร้อมกัน (Bulk edit) — วันที่มอบหมาย / กำหนดเสร็จ / ผู้รับผิดชอบ</summary>
     <div style="padding:8px 4px;font-size:12.5px">
@@ -1112,7 +1115,7 @@ function renderCar(){
         <button class="carbtn v" onclick="bulkEditGo()">💾 บันทึกการแก้ไขที่เลือก</button>
       </div>
     </div></details>
-  <table class="cartab"><tr><th style="width:34px"></th><th>CAR No.</th><th>Finding</th><th>ผู้รับผิดชอบ</th><th>มอบหมาย</th><th>กำหนดเสร็จ</th><th>สถานะ</th><th>ลายเซ็น</th></tr>`;
+  <table class="cartab"><tr><th style="width:34px;text-align:center"><input type="checkbox" style="width:19px;height:19px" title="เลือก/ยกเลิกทั้งหมดที่แสดง" ${shown.length&&shown.every(it=>carSel.has(it.id))?'checked':''} onchange="carSelAll(this.checked)"></th><th>CAR No.</th><th>Finding</th><th>ผู้รับผิดชอบ</th><th>มอบหมาย</th><th>กำหนดเสร็จ</th><th>สถานะ</th><th>ลายเซ็น</th></tr>`;
   shown.sort((a,b)=>(carOf(a.id).no||'').localeCompare(carOf(b.id).no||''));
   shown.forEach(it=>{const c=carOf(it.id);
     const sgs=['resp','aud','cmm'].map(r=>c.sg&&c.sg[r]?'✔':'—').join(' / ');
