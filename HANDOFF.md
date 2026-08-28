@@ -184,3 +184,4 @@ URL: Portal ที่ root, งาน IAC ที่ `/iac/` (AUDIT_ID เดิ�
 - Bulk edit เพิ่ม `be_cadate` (วันที่ส่งตอบกลับ) และ `be_vdate` (วันที่ตรวจรับ/ปิด) — เว้นว่าง = ไม่เปลี่ยน ตามเดิม
 - กล่อง CAR ที่ปิดแล้วมีช่อง date แก้ Close date รายใบได้
 - verify: node --check ผ่าน · portal index.html 41,756 B · deploy match 983,425 B · ทดสอบ `bulkAccept(true)` ด้วย stub 3 ใบ → เลือกมา 2 ใบถูกต้อง เตือนครบ วันที่ default = วันนี้
+- **แก้เพิ่ม (28 AUG):** Part 6 Verification evidence เป็นช่องไม่บังคับแล้ว — ทั้งรายใบ (`carAccept` ตัดการบล็อก) และรวม (`bulkAcceptGo` ตัดการตรวจ) · ลายเซ็น Auditor ยังบังคับเหมือนเดิม · Part 6 รายใบเปิดใช้ได้ตั้งแต่สถานะ 'รอแก้ไข' (A) ไม่ต้องรอกดส่งตอบกลับ พร้อมช่อง Close date รายใบ
