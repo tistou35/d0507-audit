@@ -176,3 +176,11 @@ URL: Portal ที่ root, งาน IAC ที่ `/iac/` (AUDIT_ID เดิ�
 3. `formpacks/<formCode>/<rev>/form.json` — โครง schema ฟอร์ม (ยังไม่สร้าง)
 4. DOCX export ด้วย docxtemplater โดยใช้ `.docx` ในโฟลเดอร์ root เป็นแม่แบบ
 5. **ยังไม่ push** — build แล้วในเครื่องเท่านั้น ยังไม่ deploy ขึ้น GitHub Pages
+
+## 28 AUG 2026 — CAR: Accept all + แก้วันที่ตรวจรับได้
+- ปุ่ม **✔✔ Accept all — ปิดทุกใบที่ยังไม่ปิด** ในแถบ CAR: ตรวจรับทุกใบที่แสดงอยู่ตามตัวกรองปัจจุบัน (`carListFiltered()`) ที่ `cast!=='V'`
+- `bulkAccept(all)` เดิมรับเฉพาะ `cast==='R'` → ตอนนี้รับทุกใบที่ยังไม่ปิด (เอกสารกระดาษลงนามไปแล้วแต่ในระบบยังไม่ได้กดส่ง) พร้อมเตือน 2 บรรทัด: ใบที่ยังไม่กรอก Part 3–4 และจำนวนใบที่ยังไม่ได้กดส่งตอบกลับ
+- ช่อง **วันที่ตรวจรับ / Close date** (`#ba_date`) ในกล่อง accept → ใช้แทน `today()` สำหรับ `c.vdate` และตั้ง `c.sg.aud.dt` ตามด้วย · ใบที่ยังไม่ได้ส่งตอบกลับจะเติม `c.cadate` ให้ด้วย
+- Bulk edit เพิ่ม `be_cadate` (วันที่ส่งตอบกลับ) และ `be_vdate` (วันที่ตรวจรับ/ปิด) — เว้นว่าง = ไม่เปลี่ยน ตามเดิม
+- กล่อง CAR ที่ปิดแล้วมีช่อง date แก้ Close date รายใบได้
+- verify: node --check ผ่าน · portal index.html 41,756 B · deploy match 983,425 B · ทดสอบ `bulkAccept(true)` ด้วย stub 3 ใบ → เลือกมา 2 ใบถูกต้อง เตือนครบ วันที่ default = วันนี้
