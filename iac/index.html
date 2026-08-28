@@ -686,7 +686,7 @@ function assignSelected(sendMail){
     const s=(state[id]=state[id]||{});
     const c=(s.car=s.car||{});
     if(!c.no) c.no=nextCarNo();
-    c.as=name; c.ae=email; c.due=due; c.cast='A'; c.iby=uName()||meta.auditor||'';
+    c.as=name; c.ae=email; c.due=due; c.cast='A'; c.iby=uName()||meta.auditor||''; if(!c.idate) c.idate=today();
     logCar(c,`มอบหมายให้ ${name}${due?` กำหนดเสร็จ ${due}`:''}${c.iby?` · โดย ${c.iby}`:''}`);
     assigned.push(id);
   });
@@ -806,6 +806,32 @@ function sigSave(){
 }
 // ---- Bulk actions (เลือกหลาย CAR ทำครั้งเดียว) ----
 const carSel=new Set();
+const carFil={as:'',st:''};
+function setCarFil(k,v){ carFil[k]=v; carSel.clear(); render(); }
+function carListFiltered(){
+  return ALL.filter(it=>{const c=carOf(it.id); if(!c||!c.no) return false;
+    if(carFil.as && (c.as||'')!==carFil.as) return false;
+    if(carFil.st){ if(carFil.st==='open'){ if(c.cast==='V') return false; }
+      else if(carFil.st==='late'){ if(!isOverdue(c)) return false; }
+      else if((c.cast||'')!==carFil.st) return false; }
+    return true;});
+}
+function carSelAll(on){ carListFiltered().forEach(it=>{ on?carSel.add(it.id):carSel.delete(it.id); }); render(); }
+function bulkEditGo(){
+  const ids=[...carSel]; if(!ids.length){ alert('ติ๊กเลือก CAR ที่ต้องการแก้ก่อน'); return; }
+  const g=id=>{const el=document.getElementById(id); return el?el.value.trim():'';};
+  const idate=g('be_idate'), due=g('be_due'), as=g('be_as'), ae=g('be_ae'), pos=g('be_pos'), lvl=g('be_lvl');
+  if(!idate&&!due&&!as&&!ae&&!pos&&!lvl){ alert('กรอกช่องที่ต้องการแก้อย่างน้อย 1 ช่อง — ช่องที่เว้นว่างจะไม่ถูกแก้'); return; }
+  const chg=[]; if(idate)chg.push('วันที่มอบหมาย → '+idate); if(due)chg.push('กำหนดเสร็จ → '+due);
+  if(as)chg.push('ผู้รับผิดชอบ → '+as); if(ae)chg.push('อีเมล → '+ae); if(pos)chg.push('ตำแหน่ง → '+pos);
+  if(lvl)chg.push('Finding level → '+lvl);
+  if(!confirm('แก้ไข '+ids.length+' CAR ที่เลือก:\n• '+chg.join('\n• ')+'\n\nยืนยัน?')) return;
+  ids.forEach(id=>{ const c=carOf(id); if(!c) return;
+    if(idate) c.idate=idate; if(due) c.due=due; if(as) c.as=as; if(ae) c.ae=ae; if(pos) c.pos=pos; if(lvl) c.lvl=lvl;
+    logCar(c,'แก้ไขข้อมูล (bulk): '+chg.join(' · ')+(uName()?' · โดย '+uName():''));
+    mark(id); });
+  carSel.clear(); render(); syncStatus('✏️ แก้ไขแล้ว '+ids.length+' CAR','var(--green)');
+}
 function carSelTgl(id,on){ if(on) carSel.add(id); else carSel.delete(id);
   const n=document.getElementById('carselcnt'); if(n) n.textContent=carSel.size; }
 function bulkSign(role){
@@ -970,7 +996,7 @@ function downloadCarForms(all){
 
       <div class="ph1">PART 1&nbsp; CAR INFORMATION<span class="th">&nbsp;&nbsp; ข้อมูลทั่วไป</span></div>
       <table>
-        <tr><td class="l">CAR No.</td><td><b>${esc(c.no||'')}</b></td><td class="l">Date issued</td><td>${esc(meta.date||today())}</td></tr>
+        <tr><td class="l">CAR No.</td><td><b>${esc(c.no||'')}</b></td><td class="l">Date issued</td><td>${esc(c.idate||meta.date||today())}</td></tr>
         <tr><td class="l">Audit ref.</td><td>D-0507-IAC-001 / Item ID: ${esc(id)}</td><td class="l">Source</td><td>Internal Audit – GAP Analysis (TCAR-ORA)</td></tr>
         <tr><td class="l">Regulatory ref.</td><td>TCAR PEL Part ORA: ${esc(it.rr||'-')}</td><td class="l">Finding level</td><td>${ck(c.lvl==='1')} Level 1 &nbsp;&nbsp; ${ck(c.lvl!=='1')} Level 2</td></tr>
         <tr><td class="l">Assigned to</td><td>${esc(c.as||'')}</td><td class="l">Position</td><td>${esc(c.pos||'')}</td></tr>
@@ -1041,6 +1067,9 @@ function renderCar(){
   const by={A:0,R:0,V:0,X:0};
   cars.forEach(it=>{const c=carOf(it.id); by[c.cast]=(by[c.cast]||0)+1;});
   const od=cars.filter(it=>isOverdue(carOf(it.id))).length;
+  const asCount={}; cars.forEach(it=>{const n=carOf(it.id).as||'(ไม่ระบุ)'; asCount[n]=(asCount[n]||0)+1;});
+  const assignees=Object.entries(asCount).sort((a,b)=>b[1]-a[1]);
+  const shown=carListFiltered();
   let h=`<div class="toolbar">
     <button class="abtn" onclick="exportSummary()">📊 รายงานสรุป (Summary Report)</button>
     <button class="abtn" onclick="downloadCarForms()">📄 CAR Form — เฉพาะที่เลือก</button>
@@ -1054,22 +1083,48 @@ function renderCar(){
     <div class="dcard"><h3>ปิดแล้ว</h3><div class="dnum" style="color:var(--green)">${by.V||0}</div></div>
     <div class="dcard"><h3>เกินกำหนด</h3><div class="dnum" style="color:var(--red)">${od}</div></div>
   </div>
+  <div class="note" style="margin-bottom:8px"><b>ตัวกรอง</b> —
+    ผู้รับผิดชอบ: <select class="ca-sm" onchange="setCarFil('as',this.value)">
+      <option value="">ทุกคน (${cars.length} ใบ)</option>
+      ${assignees.map(([n,k])=>`<option value="${escAttr(n)}"${carFil.as===n?' selected':''}>${esc(n)} (${k})</option>`).join('')}</select>
+    &nbsp; สถานะ: <select class="ca-sm" onchange="setCarFil('st',this.value)">
+      ${[['','ทุกสถานะ'],['open','ยังไม่ปิด'],['late','เกินกำหนด'],['A','รอแก้ไข'],['R','รอตรวจรับ'],['X','ตีกลับ'],['V','ปิดแล้ว']].map(([k,l])=>`<option value="${k}"${carFil.st===k?' selected':''}>${l}</option>`).join('')}</select>
+    &nbsp; <button class="carbtn" onclick="carSelAll(true)">☑ เลือกทั้งหมดที่กรอง (${shown.length})</button>
+    <button class="carbtn" onclick="carSelAll(false)">☐ ล้างที่เลือก</button></div>
+
   <div class="note" style="margin-bottom:8px"><b>ทำหลายใบพร้อมกัน</b> — ติ๊กเลือกในตาราง (เลือกแล้ว <b id="carselcnt">${carSel.size}</b> ใบ) แล้วกด:
     <button class="carbtn" onclick="bulkReport()">📤 ส่งตอบกลับที่เลือก — เซ็นผู้รับผิดชอบครั้งเดียว</button>
     <button class="carbtn v" onclick="bulkAccept()">✔ ตรวจรับที่เลือก — เซ็น Auditor ครั้งเดียว</button>
     <button class="carbtn" onclick="bulkSign('cmm')">✍ CMM เซ็นที่เลือก</button></div>
-  <table class="cartab"><tr><th style="width:34px"></th><th>CAR No.</th><th>Finding</th><th>ผู้รับผิดชอบ</th><th>กำหนดเสร็จ</th><th>สถานะ</th><th>ลายเซ็น</th></tr>`;
-  cars.sort((a,b)=>(carOf(a.id).no||'').localeCompare(carOf(b.id).no||''));
-  cars.forEach(it=>{const c=carOf(it.id);
+
+  <details class="mref" style="margin-bottom:10px"${carSel.size?' open':''}><summary>✏️ แก้ไขหลายใบพร้อมกัน (Bulk edit) — วันที่มอบหมาย / กำหนดเสร็จ / ผู้รับผิดชอบ</summary>
+    <div style="padding:8px 4px;font-size:12.5px">
+      <div style="color:#7a8798;margin-bottom:6px">กรอกเฉพาะช่องที่ต้องการแก้ — ช่องที่เว้นว่างจะไม่ถูกเปลี่ยน · ใช้ปรับให้ตรงกับเอกสารกระดาษที่มอบหมายไปแล้ว</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <label>วันที่มอบหมาย (Date issued): <input type="date" id="be_idate" class="ca-sm"></label>
+        <label>กำหนดเสร็จ (Due date): <input type="date" id="be_due" class="ca-sm"></label>
+        <label>Finding level: <select id="be_lvl" class="ca-sm"><option value="">— ไม่เปลี่ยน —</option><option value="2">Level 2</option><option value="1">Level 1</option></select></label>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px">
+        <label>ผู้รับผิดชอบ: <input id="be_as" class="ca-sm" placeholder="ชื่อ-นามสกุล"></label>
+        <label>อีเมล: <input id="be_ae" class="ca-sm" placeholder="อีเมล"></label>
+        <label>ตำแหน่ง: <input id="be_pos" class="ca-sm" placeholder="Position"></label>
+        <button class="carbtn v" onclick="bulkEditGo()">💾 บันทึกการแก้ไขที่เลือก</button>
+      </div>
+    </div></details>
+  <table class="cartab"><tr><th style="width:34px"></th><th>CAR No.</th><th>Finding</th><th>ผู้รับผิดชอบ</th><th>มอบหมาย</th><th>กำหนดเสร็จ</th><th>สถานะ</th><th>ลายเซ็น</th></tr>`;
+  shown.sort((a,b)=>(carOf(a.id).no||'').localeCompare(carOf(b.id).no||''));
+  shown.forEach(it=>{const c=carOf(it.id);
     const sgs=['resp','aud','cmm'].map(r=>c.sg&&c.sg[r]?'✔':'—').join(' / ');
     h+=`<tr><td style="text-align:center"><input type="checkbox" style="width:20px;height:20px" onchange="carSelTgl('${it.id}',this.checked)" ${carSel.has(it.id)?'checked':''}></td>
       <td><b>${esc(c.no)}</b></td><td>[${it.id}] ${esc(it.d.slice(0,90))}${it.d.length>90?'…':''}</td>
-      <td>${esc(c.as||'-')}</td><td class="${isOverdue(c)?'overdue':''}">${esc(c.due||'-')}${isOverdue(c)?' ⚠':''}</td>
+      <td>${esc(c.as||'-')}</td><td>${esc(c.idate||'-')}</td><td class="${isOverdue(c)?'overdue':''}">${esc(c.due||'-')}${isOverdue(c)?' ⚠':''}</td>
       <td><span class="carpill ${c.cast||''}">${carStatusTxt(c)}</span></td>
       <td style="white-space:nowrap;font-size:11px" title="ผู้รับผิดชอบ / Auditor / CMM">${sgs}</td></tr>`;
   });
   h+='</table><div style="color:#7a8798;font-size:11px;margin-top:4px">คอลัมน์ลายเซ็น: ผู้รับผิดชอบ / Auditor / CMM</div>';
   if(!cars.length) h+='<p style="color:#889;margin-top:10px">ยังไม่มี CAR — ไปที่แท็บ GAP Report เลือก Finding แล้วกดมอบหมาย</p>';
+  else if(!shown.length) h+='<p style="color:#889;margin-top:10px">ไม่มี CAR ตรงตัวกรองที่เลือก</p>';
   return h;
 }
 function exportCarCSV(){
