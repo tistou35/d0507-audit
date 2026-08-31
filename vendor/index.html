@@ -63,6 +63,8 @@ main{padding:12px; max-width:1080px; margin:0 auto; padding-bottom:80px;}
 .refin{flex:1 1 200px; min-height:38px; border:1px solid #c8d2e0; border-radius:7px; padding:6px 9px; font-size:13px; font-family:inherit; color:var(--navy); background:#fff;}
 .rmk{width:100%; margin-top:7px; border:1.5px solid #d3dce8; background:#fbfcfe; border-radius:7px; padding:7px 9px; font-size:13px; font-family:inherit; min-height:44px;}
 .item.stU .rmk{border-color:var(--red); background:#fff8f8;}
+.rmk.fxk{border-left:4px solid #1A6B1A; background:#f7fcf7;}   /* ช่องแนวทางแก้ไข — เขียว แยกจากช่องหลักฐาน */
+.item.stU .rmk.fxk{border-color:#1A6B1A; background:#f7fcf7;}  /* ข้อที่เป็น GAP ก็คงสีเขียวไว้ ไม่ทับด้วยแดง */
 .thd{margin:0 0 6px; color:#556; font-size:13px; line-height:1.45;}
 details.mref{margin:0 0 8px; border:1px solid #c9dcf2; border-radius:7px; background:#f4f8fd; font-size:12.5px;}
 details.mref summary{padding:7px 10px; color:var(--blue); font-weight:bold; cursor:pointer; min-height:36px; display:flex; align-items:center; gap:6px; list-style:none;}
@@ -229,7 +231,9 @@ const ALL = []; // flat items
 MODS.forEach(m=>m.parts.forEach((p,pi)=>p.secs.forEach(s=>s.groups.forEach(g=>g.items.forEach(it=>{
   it._m=m.c; it._p=p.t; it._pi=pi; it._s=s.t; it._g=g; ALL.push(it);
 })))));
-const state = {};   // id -> {st:'S'|'U'|'NA', rm:'', ref:''}
+const state = {};   // id -> {st:'S'|'U'|'NA', rm:'', fx:'', ref:''}
+// rm = หลักฐาน/ข้อเท็จจริงที่ผู้ตรวจพบ (ออกหน้า CAR เป็น Objective evidence)
+// fx = แนวทางแก้ไขที่เสนอ — แยกช่องเพราะเอาวิธีแก้ไปปนช่องหลักฐานในเอกสารควบคุมไม่ได้
 let dirty=false;
 const meta = {auditor:'', date: new Date().toISOString().slice(0,10), scope:'', note:'', auditee:'', concl:'', reco:''};
 // ---- sync bookkeeping (no-op when FIREBASE_CONFIG is null) ----
@@ -256,6 +260,7 @@ function rollup(it){
   return 'S';
 }
 function setRm(id,v){ (state[id]||(state[id]={})).rm=v; mark(id); }
+function setFx(id,v){ (state[id]||(state[id]={})).fx=v; mark(id); }
 let LIB=[], LIBEDIT=false;
 function renderLib(){
   const el=document.getElementById('libbox'); if(!el) return;
@@ -425,6 +430,8 @@ function itemHTML(it){
       ${photoRowHTML(it)}
       <textarea class="rmk" placeholder="Inspector comment — Finding: ไม่มีในคู่มือ/ไม่ได้ปฏิบัติ + รายละเอียด · ถ้า N.A/ไม่ตรวจ ให้ระบุเหตุผล"
         onchange="setRm('${it.id}',this.value)">${esc(s.rm||'')}</textarea>
+      <textarea class="rmk fxk" placeholder="แนวทางแก้ไข / Corrective action (proposed) — เสนอวิธีปิดข้อบกพร่อง ใครทำ ที่ไหน"
+        onchange="setFx('${it.id}',this.value)">${esc(s.fx||'')}</textarea>
     </div>`;
   }
   return `<div class="item ${it.hd?'hdRow':''} ${isU?'stU':''}" id="it_${it.id}" data-id="${it.id}">
@@ -445,6 +452,8 @@ function itemHTML(it){
     ${photoRowHTML(it)}
     <textarea class="rmk" placeholder="Inspector comment — Finding/ข้อสังเกต · ถ้า N.A หรือไม่ตรวจข้อนี้ ให้ระบุเหตุผล"
       onchange="setRm('${it.id}',this.value)">${esc(s.rm||'')}</textarea>
+    <textarea class="rmk fxk" placeholder="แนวทางแก้ไข / Corrective action (proposed) — เสนอวิธีปิดข้อบกพร่อง ใครทำ ที่ไหน"
+      onchange="setFx('${it.id}',this.value)">${esc(s.fx||'')}</textarea>
   </div>`;
 }
 function refreshItem(id){
@@ -702,6 +711,7 @@ function mailBody(ids, name, due){
     const it=ALL.find(x=>x.id===id); const c=carOf(id)||{};
     L.push(`• ${c.no||''} [${id}] ${it.d.slice(0,140)}`);
     L.push(`  ประเภท: ${gapType(it)}${(st(id)||{}).rm?` | รายละเอียด: ${(st(id)||{}).rm.slice(0,120)}`:''}`);
+    if((st(id)||{}).fx) L.push(`  แนวทางแก้ไขที่เสนอ: ${(st(id)||{}).fx.slice(0,160)}`);
     L.push(`  กำหนดเสร็จ: ${c.due||due||'-'}`);
     L.push('');
   });
@@ -1022,6 +1032,7 @@ function downloadCarForms(all){
 
       <div class="ph1">PART 2&nbsp; FINDING / NONCONFORMITY<span class="th">&nbsp;&nbsp; ข้อบกพร่องที่พบ</span> <span class="fill">(Auditor กรอก — ระบุข้อเท็จจริง หลักฐาน และข้อกำหนดที่เกี่ยวข้อง)</span></div>
       <div class="box">${esc(it.d)}${it.th?`\n${esc(it.th)}`:''}${s.rm?`\n\nObjective evidence / รายละเอียด: ${esc(s.rm)}`:''}${effRef(it)?`\nอ้างอิงคู่มือ: ${esc(effRef(it))}`:''}</div>
+      ${s.fx?`<div class="box" style="margin-top:6px"><b>Proposed corrective action / แนวทางแก้ไขที่เสนอ (Auditor):</b>\n${esc(s.fx)}</div>`:''}
       ${(s.ph||[]).length?`<div class="phx">${s.ph.map(p=>`<img src="${p.d||p.u}">`).join('')}</div>`:''}
 
       <div class="ph1">PART 3&nbsp; ROOT CAUSE ANALYSIS<span class="th">&nbsp;&nbsp; การวิเคราะห์สาเหตุราก</span> <span class="fill">(ผู้รับผิดชอบกรอก)</span></div>
@@ -1203,6 +1214,7 @@ function renderGap(){
       <div class="w" style="color:var(--red);font-weight:bold">${esc(gapType(it))}</div>
       <div class="w">${esc(it._m)} · ${esc(it._p)}${it._s?' · '+esc(it._s):''}${it.rr?' · <b>'+esc(it.rr)+'</b>':''}${effRef(it)?' · Ref/Evidence: '+esc(effRef(it)):''}</div>
       ${s.rm?`<div class="w" style="color:var(--red)">Remark: ${esc(s.rm)}</div>`:''}
+      ${s.fx?`<div class="w" style="color:#1A6B1A">แนวทางแก้ไข: ${esc(s.fx)}</div>`:''}
       ${ph.length?`<div class="photorow">${ph.map((p,i)=>`<span class="thumb"><img src="${p.d||p.u}" onclick="viewPhoto('${it.id}',${i})"></span>`).join('')}</div>`:''}
       <button class="gotobtn" onclick="gotoItem('${it.id}')">↪ ไปที่ข้อตรวจนี้ (${esc(it._m)})</button>
       ${carBoxHTML(it)}
@@ -1222,13 +1234,13 @@ function dl(name, text, type){
   setTimeout(()=>URL.revokeObjectURL(a.href),5000);
 }
 function exportCSV(){
-  const rows=[["Item ID","Module","Part","Section","No.","Subject","Description","Regulatory Ref","Manual Ref / Evidence","Prev ATO","Status Documented","Status Implemented","GAP Type","Sub-checks","Photos","Remark","CAR No.","CAR Assignee","CAR Due","CAR Status"]];
+  const rows=[["Item ID","Module","Part","Section","No.","Subject","Description","Regulatory Ref","Manual Ref / Evidence","Prev ATO","Status Documented","Status Implemented","GAP Type","Sub-checks","Photos","Remark","Corrective action (proposed)","CAR No.","CAR Assignee","CAR Due","CAR Status"]];
   ALL.forEach(it=>{
     const s=st(it.id)||{};
     const scN=it.chk?`${Object.values(s.sc||{}).filter(Boolean).length}/${it.chk.length}`:'';
     const c=s.car||{};
     rows.push([it.id,it._m,it._p,it._s||'',it._g.n||'',it._g.subj||'',it.d,it.rr||'',effRef(it),it.prev||'',
-               s.st||'', it.dual?(s.st2||''):'', gapType(it), scN, (s.ph||[]).length||'', s.rm||'',
+               s.st||'', it.dual?(s.st2||''):'', gapType(it), scN, (s.ph||[]).length||'', s.rm||'', s.fx||'',
                c.no||'', c.as||'', c.due||'', c.no?carStatusTxt(c):'']);
   });
   const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
@@ -1271,6 +1283,7 @@ function exportReport(){
       <p class="gt">${esc(gapType(it))}</p>
       <p class="w">ที่มา: ${esc(it._m)} · ${esc(it._p)}${it._s?' · '+esc(it._s):''}${effRef(it)?`<br>หลักฐาน/อ้างอิง: ${esc(effRef(it))}`:''}</p>
       ${s.rm?`<p class="w"><b>รายละเอียด:</b> ${esc(s.rm)}</p>`:''}
+      ${s.fx?`<p class="w" style="color:#1A6B1A"><b>แนวทางแก้ไขที่เสนอ:</b> ${esc(s.fx)}</p>`:''}
       ${scRows?`<ul class="sc">${scRows}</ul>`:''}
       ${(s.ph||[]).length?`<div class="ph">${s.ph.map(p=>`<figure><img src="${p.d||p.u}"><figcaption>${it.id} · ${p.t||''}</figcaption></figure>`).join('')}</div>`:''}
       ${s.car&&s.car.no?`<p class="w"><b>${esc(s.car.no)}</b> · ผู้รับผิดชอบ: ${esc(s.car.as||'-')} · กำหนดเสร็จ: ${esc(s.car.due||'-')} · สถานะ: ${carStatusTxt(s.car)}${s.car.ca?`<br>Corrective action: ${esc(s.car.ca)}`:''}</p>`
@@ -1376,7 +1389,7 @@ function exportSummary(){
   const findRows=gaps.map((it,i)=>{
     const s=st(it.id)||{}; const c=s.car||{};
     return `<tr><td class="n">${i+1}</td><td><b>${esc(it.id)}</b></td>
-      <td>${esc(it.d.slice(0,110))}${it.d.length>110?'…':''}${s.rm?`<div class="rm">${esc(s.rm.slice(0,140))}</div>`:''}</td>
+      <td>${esc(it.d.slice(0,110))}${it.d.length>110?'…':''}${s.rm?`<div class="rm">${esc(s.rm.slice(0,140))}</div>`:''}${s.fx?`<div class="rm" style="color:#1A6B1A">แก้: ${esc(s.fx.slice(0,140))}</div>`:''}</td>
       <td>${esc(it._m)}<div class="sm">${esc(it._s||it._p)}</div></td>
       <td>${esc(it.rr||'-')}</td><td class="gapn">${esc(gapType(it).split('–')[0])}</td>
       <td>${c.no?esc(c.no)+'<div class="sm">'+esc(carStatusTxt(c))+'</div>':'<span class="gapn">ยังไม่ออก CAR</span>'}</td></tr>`;
