@@ -186,3 +186,12 @@ URL: Portal ที่ root, งาน IAC ที่ `/iac/` (AUDIT_ID เดิ�
 - verify: node --check ผ่าน · portal index.html 41,756 B · deploy match 983,425 B · ทดสอบ `bulkAccept(true)` ด้วย stub 3 ใบ → เลือกมา 2 ใบถูกต้อง เตือนครบ วันที่ default = วันนี้
 - **แก้เพิ่ม (28 AUG):** Part 6 Verification evidence เป็นช่องไม่บังคับแล้ว — ทั้งรายใบ (`carAccept` ตัดการบล็อก) และรวม (`bulkAcceptGo` ตัดการตรวจ) · ลายเซ็น Auditor ยังบังคับเหมือนเดิม · Part 6 รายใบเปิดใช้ได้ตั้งแต่สถานะ 'รอแก้ไข' (A) ไม่ต้องรอกดส่งตอบกลับ พร้อมช่อง Close date รายใบ
 - **Summary report — กราฟหายตอนพิมพ์ PDF (แก้ 28 AUG):** เดิมโดนัทวาดด้วย `conic-gradient` และแถบรายโมดูล/legend เป็น `background` ของ `<div>` ซึ่งเบราว์เซอร์ตัดพื้นหลังทิ้งตอนพิมพ์ (ค่า default ของ Background graphics = off) → PDF ออกมาเป็นวงว่าง · เปลี่ยนเป็น **inline SVG** ทั้งหมด (โดนัทใช้ stroke-dasharray · แถบใช้ `<rect>`) และใส่ `print-color-adjust:exact` ให้ปก/หัวตาราง/การ์ด KPI ติดไปด้วย · verify: เรนเดอร์จริงบนหน้าเว็บ — โดนัท 3 วงมีสี แถบ 4 โมดูลกว้างตามสัดส่วน legend ครบ 4 สี
+
+## 25 SEP 2026 — safety pack v2026-rev01: เพิ่มโมดูล SMS 67 ข้อ (สำหรับ AP-2026-02)
+- ที่มา: `D0507_Internal_Audit_Checklist_SMS_TCAR-ORA_Rev01_GAP2024.xlsx` ชีต `Checklist` (67 แถว) — ประยุกต์จาก CAAT PEL-TO-CK-102 Rev.02, เอกสาร D0507-IAC-SMS-01 Rev.01
+- การแมปคอลัมน์ตามที่ผู้ควบคุมเอกสารสั่ง: **I → Item_EN (คำถาม)** · **J → Evidence (ref, ขึ้นเป็น placeholder ในช่องหลักฐาน)** · **K → HowToVerify + SubChecklist (แยกด้วย ;)** · F → RegRef (chip ORA/AMC/GM) · B → RefKey (SAQ) และ ItemID `SMS-<SAQ>` · H → Item_TH · L, M, E ต่อท้ายใน how (ผู้ถูกตรวจ · หมายเหตุบริบท · Phase)
+- Part แบ่งตาม Section: SMS-P Personnel 5 · SMS-D Documentation 23 · SMS-R Records 15 · SMS-F Facilities 14 · SMS-S D-0507 Supplement 10 · group = Element
+- Dual = N (ต้นฉบับมีช่อง Result เดียว) ต่างจากโมดูล SAF เดิมที่เป็น 2 มิติ — โมดูล SAF 26 ข้อคงไว้ครบ รวม 93 ข้อ
+- pack ใหม่ `packs/safety/v2026-rev01/` (build.py เลือกเวอร์ชันล่าสุดตามชื่อ จึงมาแทน v2026 อัตโนมัติ · ข้อมูลรอบเก่าไม่กระทบเพราะผูกกับ item id)
+- verify: xlsx2pack 93 items / 2 modules · node --check ผ่านทุกแอป · deploy ตรงขนาด 258,832 B · เปิดจริงที่ `?audit=safety-2026-02` เห็น 5 Part ครบ คำถาม chip ORA + SMS-P1 กล่องวิธีตรวจ รายการตรวจย่อย 4 ข้อ และช่องหลักฐานขึ้น OMM/SMM ref ตาม Col J
+- ⚠️ ระหว่างทำมี session อื่น push ฟีเจอร์ "แยกช่องแนวทางแก้ไข (fx)" เข้า template.html — rebase แล้ว build ใหม่ ได้ทั้งสองอย่างในไฟล์เดียวกัน
