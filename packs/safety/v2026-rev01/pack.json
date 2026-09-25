@@ -1,0 +1,13 @@
+{
+  "project": "safety",
+  "version": "v2026-rev01",
+  "outdir": "safety",
+  "name": "School Safety Audit (SMS)",
+  "desc": "ตรวจความปลอดภัยทั้งโรงเรียน — D-0507-SAC-001 (2 มิติ Documented/Implemented) + ชุดคำถาม SMS ตาม CAAT PEL-TO-CK-102 (D0507-IAC-SMS-01 Rev.01)",
+  "doc_code": "D-0507-SAC-001",
+  "ptitle": "D-0507 School Safety Audit Checklist",
+  "htitle": "D-0507 FLIGHT TRAINING – SCHOOL SAFETY AUDIT (SMS)",
+  "hsub": "School Safety Audit ↔ OMM · SMM · OMA · TM · TCAR-ORA · ICAO Doc 9859 &nbsp;|&nbsp; D-0507-SAC-001 ISSUE 01/REV 00 + D0507-IAC-SMS-01 Rev.01 &nbsp;|&nbsp; v2026-rev01",
+  "audit_id": "safety-2026",
+  "car_prefix": "CAR-SAF"
+}
