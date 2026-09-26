@@ -1582,8 +1582,8 @@ function showLogin(){
     <p style="color:#667;font-size:13px;margin:0 0 16px">เข้าสู่ระบบเพื่อใช้งานร่วมกับทีม (ข้อมูล sync อัตโนมัติ)</p>
     <button class="abtn" style="width:100%;margin-bottom:14px" onclick="fbGoogle()">🔵 เข้าสู่ระบบด้วย Google</button>
     <div style="border-top:1px solid #e2e8f0;margin:10px 0;text-align:center;color:#99a;font-size:11px;line-height:0"><span style="background:#fff;padding:0 8px">หรือ</span></div>
-    <input id="li_em" type="email" placeholder="อีเมล" style="width:100%;min-height:44px;border:1px solid #c8d2e0;border-radius:8px;padding:8px 12px;margin:8px 0;box-sizing:border-box">
-    <input id="li_pw" type="password" placeholder="รหัสผ่าน" style="width:100%;min-height:44px;border:1px solid #c8d2e0;border-radius:8px;padding:8px 12px;margin:0 0 12px;box-sizing:border-box">
+    <input id="li_em" type="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="อีเมล เช่น somchai@gmail.com" style="width:100%;min-height:44px;border:1px solid #c8d2e0;border-radius:8px;padding:8px 12px;margin:8px 0;box-sizing:border-box">
+    <input id="li_pw" type="password" autocomplete="current-password" placeholder="รหัสผ่าน (สมัครใหม่: อย่างน้อย 6 ตัวอักษร)" style="width:100%;min-height:44px;border:1px solid #c8d2e0;border-radius:8px;padding:8px 12px;margin:0 0 12px;box-sizing:border-box">
     <div style="display:flex;gap:8px">
       <button class="abtn sec2" style="flex:1" onclick="fbEmail(false)">เข้าสู่ระบบ</button>
       <button class="fbtn" style="flex:1" onclick="fbEmail(true)">สมัครใหม่</button>
@@ -1592,10 +1592,38 @@ function showLogin(){
   </div>`;
   document.body.appendChild(ov);
 }
-function fbErr(e){ const el=document.getElementById('li_err'); if(el) el.textContent=e.message||e; }
+const AUTH_MSG={
+  'auth/invalid-email':'รูปแบบอีเมลไม่ถูกต้อง — ต้องเป็นแบบ ชื่อ@โดเมน เช่น somchai@gmail.com',
+  'auth/missing-email':'ยังไม่ได้กรอกอีเมล',
+  'auth/email-already-in-use':'อีเมลนี้สมัครไว้แล้ว — กดปุ่ม "เข้าสู่ระบบ" แทน (ถ้าเคยสมัครด้วย Google ให้ใช้ปุ่ม Google)',
+  'auth/weak-password':'รหัสผ่านสั้นเกินไป — ต้องอย่างน้อย 6 ตัวอักษร',
+  'auth/missing-password':'ยังไม่ได้กรอกรหัสผ่าน',
+  'auth/wrong-password':'รหัสผ่านไม่ถูกต้อง',
+  'auth/invalid-credential':'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
+  'auth/user-not-found':'ยังไม่มีบัญชีนี้ — กดปุ่ม "สมัครใหม่" ก่อน',
+  'auth/too-many-requests':'ลองผิดหลายครั้งเกินไป — รอสักครู่แล้วลองใหม่',
+  'auth/network-request-failed':'เชื่อมต่อเครือข่ายไม่ได้ — ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่',
+  'auth/operation-not-allowed':'ระบบยังไม่ได้เปิดให้สมัครด้วยอีเมล/รหัสผ่าน — แจ้งผู้ดูแลให้เปิด Email/Password ใน Firebase Authentication'
+};
+function fbErr(e){ const el=document.getElementById('li_err'); if(!el) return;
+  const code=(e&&e.code)||''; el.innerHTML=(AUTH_MSG[code]||((e&&e.message)||e))+(code?'<br><span style="color:#8a93a0">('+code+')</span>':''); }
+function liErr(html){ const el=document.getElementById('li_err'); if(el) el.innerHTML=html; }
 function fbGoogle(){ firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(fbErr); }
 function fbEmail(create){
-  const em=document.getElementById('li_em').value.trim(), pw=document.getElementById('li_pw').value;
+  const box=document.getElementById('li_em');
+  // เก็บกวาดก่อน: ช่องว่าง (รวม non-breaking space) และอักขระมองไม่เห็นที่ติดมาจากการคัดลอก
+  const raw=box.value;
+  const em=raw.replace(/[\s ​-‍﻿]/g,'').toLowerCase();
+  if(em!==raw) box.value=em;
+  const pw=document.getElementById('li_pw').value;
+  if(!em){ liErr('ยังไม่ได้กรอกอีเมล — พิมพ์อีเมลในช่องแรก เช่น somchai@gmail.com'); box.focus(); return; }
+  if(/[฀-๿]/.test(em)){
+    liErr('อีเมลมีตัวอักษรไทยปนอยู่ — สลับแป้นพิมพ์เป็นภาษาอังกฤษแล้วพิมพ์ใหม่<br><span style="color:#8a93a0">ที่พิมพ์ไว้: '+em.replace(/[<>&]/g,'')+'</span>'); box.focus(); return; }
+  if(!/^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$/.test(em)){
+    liErr('รูปแบบอีเมลไม่ถูกต้อง — ต้องมี @ และชื่อโดเมน เช่น somchai@gmail.com<br><span style="color:#8a93a0">ที่พิมพ์ไว้: '+em.replace(/[<>&]/g,'')+'</span>'); box.focus(); return; }
+  if(!pw){ liErr('ยังไม่ได้กรอกรหัสผ่าน'); document.getElementById('li_pw').focus(); return; }
+  if(create&&pw.length<6){ liErr('รหัสผ่านต้องยาวอย่างน้อย 6 ตัวอักษร (ตอนนี้ '+pw.length+' ตัว)'); document.getElementById('li_pw').focus(); return; }
+  liErr('⏳ กำลังดำเนินการ…');
   (create?firebase.auth().createUserWithEmailAndPassword(em,pw):firebase.auth().signInWithEmailAndPassword(em,pw)).catch(fbErr);
 }
 function itemsCol(){ return FB.db.collection('audits').doc(AUDIT_ID).collection('items'); }

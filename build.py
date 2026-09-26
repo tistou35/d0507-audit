@@ -148,7 +148,7 @@ footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
   <div id="loginui" class="hide" style="display:none">
     <b style="color:var(--navy);font-size:16px">เข้าสู่ระบบ Audit Portal</b>
     <button onclick="loginGoogle()">🔵 เข้าสู่ระบบด้วย Google</button>
-    <input id="lp_em" type="email" placeholder="อีเมล">
+    <input id="lp_em" type="email" placeholder="อีเมล" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false">
     <input id="lp_pw" type="password" placeholder="รหัสผ่าน">
     <button class="alt" onclick="loginEmail()">เข้าสู่ระบบด้วยอีเมล</button>
     <button class="alt" onclick="signupEmail()">สมัครใหม่ (ครั้งแรกของอีเมลนี้)</button>
@@ -194,8 +194,25 @@ let USER=null, SUMS={}, PLAN=[], PLANYEAR=(new Date()).getFullYear(), planUnsub=
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const today=()=>new Date().toISOString().slice(0,10);
 function loginGoogle(){ firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert(e.message)); }
-function loginEmail(){ firebase.auth().signInWithEmailAndPassword(document.getElementById('lp_em').value.trim(),document.getElementById('lp_pw').value).catch(e=>alert(e.message)); }
-function signupEmail(){ firebase.auth().createUserWithEmailAndPassword(document.getElementById('lp_em').value.trim(),document.getElementById('lp_pw').value).catch(e=>alert(e.message)); }
+const AUTH_MSG={'auth/invalid-email':'รูปแบบอีเมลไม่ถูกต้อง — ต้องเป็นแบบ ชื่อ@โดเมน เช่น somchai@gmail.com',
+ 'auth/missing-email':'ยังไม่ได้กรอกอีเมล','auth/email-already-in-use':'อีเมลนี้สมัครไว้แล้ว — กดเข้าสู่ระบบแทน',
+ 'auth/weak-password':'รหัสผ่านสั้นเกินไป — ต้องอย่างน้อย 6 ตัวอักษร','auth/missing-password':'ยังไม่ได้กรอกรหัสผ่าน',
+ 'auth/wrong-password':'รหัสผ่านไม่ถูกต้อง','auth/invalid-credential':'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
+ 'auth/user-not-found':'ยังไม่มีบัญชีนี้ — กดสมัครใหม่ก่อน','auth/too-many-requests':'ลองผิดหลายครั้งเกินไป — รอสักครู่',
+ 'auth/network-request-failed':'เชื่อมต่อเครือข่ายไม่ได้','auth/operation-not-allowed':'ระบบยังไม่ได้เปิดสมัครด้วยอีเมล/รหัสผ่าน — แจ้งผู้ดูแล'};
+function authErr(e){ const c=(e&&e.code)||''; alert((AUTH_MSG[c]||(e&&e.message)||e)+(c?'\n('+c+')':'')); }
+function cleanEmail(){ const b=document.getElementById('lp_em'); const em=b.value.replace(/[\s ​-‍﻿]/g,'').toLowerCase(); b.value=em; return em; }
+function checkLogin(create){
+  const em=cleanEmail(), pw=document.getElementById('lp_pw').value;
+  if(!em){ alert('ยังไม่ได้กรอกอีเมล เช่น somchai@gmail.com'); return null; }
+  if(/[฀-๿]/.test(em)){ alert('อีเมลมีตัวอักษรไทยปนอยู่ — สลับแป้นพิมพ์เป็นภาษาอังกฤษ\nที่พิมพ์ไว้: '+em); return null; }
+  if(!/^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$/.test(em)){ alert('รูปแบบอีเมลไม่ถูกต้อง — ต้องมี @ และชื่อโดเมน เช่น somchai@gmail.com\nที่พิมพ์ไว้: '+em); return null; }
+  if(!pw){ alert('ยังไม่ได้กรอกรหัสผ่าน'); return null; }
+  if(create&&pw.length<6){ alert('รหัสผ่านต้องยาวอย่างน้อย 6 ตัวอักษร (ตอนนี้ '+pw.length+' ตัว)'); return null; }
+  return {em:em,pw:pw};
+}
+function loginEmail(){ const v=checkLogin(false); if(!v) return; firebase.auth().signInWithEmailAndPassword(v.em,v.pw).catch(authErr); }
+function signupEmail(){ const v=checkLogin(true); if(!v) return; firebase.auth().createUserWithEmailAndPassword(v.em,v.pw).catch(authErr); }
 firebase.auth().onAuthStateChanged(u=>{
   USER=u;
   document.getElementById('loginui').style.display=u?'none':'block';
