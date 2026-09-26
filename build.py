@@ -167,6 +167,8 @@ footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
       <button class="pbtn g" onclick="savePlan()">💾 บันทึกแผน</button>
       &nbsp;·&nbsp; ACM ผู้อนุมัติแผน: <input id="acmemail" placeholder="อีเมล Accountable Executive Manager" style="min-height:36px;border:1px solid #c8d2e0;border-radius:7px;padding:4px 8px;width:250px" onchange="ACM=this.value.trim().toLowerCase()">
       <button class="pbtn g" onclick="approveAll()">🖋 ACM อนุมัติทั้งแผนปีนี้</button>
+      <div style="margin-top:6px">SM ผู้ปิดงานตรวจด้านนิรภัย: <input id="smemail" placeholder="อีเมล Safety Manager" style="min-height:36px;border:1px solid #c8d2e0;border-radius:7px;padding:4px 8px;width:250px" onchange="SM=this.value.trim().toLowerCase()">
+        <span style="font-size:12px;color:#667">— รอบของ School Safety Audit (SMS) และ Safety Surveillance ปิดงานได้เฉพาะบัญชีนี้</span></div>
     </div>
     <h3 class="sec" style="margin-top:20px">🗓 ปฏิทินการตรวจ 12 เดือน (Gantt)</h3>
     <div class="gwrap" id="gwrap"><div class="gantt" id="gantt"></div></div>
@@ -188,7 +190,7 @@ const CFG=@@FBCFG@@;
 const PACKS=@@PACKS@@;
 firebase.initializeApp(CFG);
 const db=firebase.firestore();
-let USER=null, SUMS={}, PLAN=[], PLANYEAR=(new Date()).getFullYear(), planUnsub=null, ACM='';
+let USER=null, SUMS={}, PLAN=[], PLANYEAR=(new Date()).getFullYear(), planUnsub=null, ACM='', SM='';
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const today=()=>new Date().toISOString().slice(0,10);
 function loginGoogle(){ firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert(e.message)); }
@@ -265,7 +267,9 @@ function loadPlan(){
     document.getElementById('permerr')?.remove();
     PLAN=(d.exists&&d.data().rows)||[];
     ACM=(d.exists&&d.data().acm)||'';
+    SM=(d.exists&&d.data().sm)||'';
     const ai=document.getElementById('acmemail'); if(ai&&document.activeElement!==ai) ai.value=ACM;
+    const si=document.getElementById('smemail'); if(si&&document.activeElement!==si) si.value=SM;
     PLAN.forEach(r=>{ if(!r.ref) r.ref=roundRef(); });   // แถวเก่าก่อนมีระบบ ref
     renderPlan();
   },e=>{
@@ -304,7 +308,8 @@ function renderPlan(){
       <td><input value="${esc(r.auditee||'')}" placeholder="หน่วย/บริษัทที่รับการตรวจ" onchange="PLAN[${i}].auditee=this.value">
         <input value="${esc(ackList(r).join(', '))}" placeholder="อีเมลผู้ต้องรับทราบ — หลายคนคั่นด้วย ," style="margin-top:3px" onchange="PLAN[${i}].ackList=this.value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);renderPlan()">
         ${ackList(r).length?`<span class="pill ${ackDone(r)?'done':'soon'}" style="margin-top:3px">รับทราบ ${ackCount(r)[0]}/${ackCount(r)[1]}</span>`:''}</td>
-      <td><span class="pill ${cls}">${txt}</span><br><label style="font-size:11px;color:#667"><input type="checkbox" ${r.done?'checked':''} onchange="PLAN[${i}].done=this.checked;renderPlan()"> ปิดงานแล้ว</label></td>
+      <td><span class="pill ${cls}">${txt}</span><br><label style="font-size:11px;color:#667"><input type="checkbox" ${r.done?'checked':''} onchange="closeRound(${i},this.checked)"> ปิดงานแล้ว</label>
+        ${r.cl?`<div style="font-size:11px;color:var(--green)">🔒 ${esc(r.cl.n)} · ${esc(r.cl.dt)}</div>`:(isSafetyProj(r.proj)?`<div style="font-size:11px;color:#9C6500">ปิดได้เฉพาะ SM${SM?' ('+esc(SM)+')':' — ยังไม่ได้กำหนดอีเมล SM'}</div>`:'')}</td>
       <td><button class="pbtn" onclick="notiLetter(${i})">📄</button><button class="pbtn" onclick="notiMail(${i})">✉</button><button class="pbtn" onclick="notiIcs(${i})">📅</button><br>
         ${['lead','cmm'].map(ro=>{const g=r.sg&&r.sg[ro];
           return `<button class="sgb${g?' ok':''}" onclick="openSigP(${i},'${ro}')">${g?'✔':'✍'} ${ro==='lead'?'Lead':'CMM'}</button>`;}).join('')}
@@ -362,7 +367,7 @@ function addRow(proj){ PLAN.push({proj:proj||PACKS[0].proj,ref:roundRef(),label:
 function planRound(proj){ addRow(proj); document.getElementById('plantab').scrollIntoView({behavior:'smooth'}); }
 function savePlan(){
   PLAN.forEach(r=>{ if(!r.ref) r.ref=roundRef(); });
-  db.collection('plans').doc(String(PLANYEAR)).set({rows:PLAN,acm:ACM,u:USER?USER.email:'',t:firebase.firestore.FieldValue.serverTimestamp()})
+  db.collection('plans').doc(String(PLANYEAR)).set({rows:PLAN,acm:ACM,sm:SM,u:USER?USER.email:'',t:firebase.firestore.FieldValue.serverTimestamp()})
     .then(()=>{ const el=document.getElementById('plansaved'); el.textContent='☁ บันทึกแล้ว '+new Date().toTimeString().slice(0,5); setTimeout(()=>el.textContent='',4000); })
     .catch(e=>alert('บันทึกไม่สำเร็จ: '+e.message));
 }
@@ -402,6 +407,27 @@ function openSigP(i,role){
   cv.onpointermove=e=>{if(!drawing)return; const p=pos(e); ctx.lineTo(p[0],p[1]); ctx.stroke(); e.preventDefault();};
   cv.onpointerup=cv.onpointercancel=()=>{drawing=false;};
   SIGP={i,role,cv,ctx,hasInk:()=>drew,reset:()=>{drew=false;}};
+}
+function isSafetyProj(proj){ return proj==='safety'||proj==='surveillance'; }
+function isSM(){ if(!USER) return false; if(!SM) return false; return (USER.email||'').toLowerCase()===SM; }
+function closeRound(i,on){
+  const r=PLAN[i]; if(!r) return;
+  if(isSafetyProj(r.proj)){
+    if(!SM){ alert('ยังไม่ได้กำหนดอีเมล Safety Manager (SM) ในช่องใต้ตาราง — งานตรวจด้านนิรภัยต้องให้ SM เป็นผู้ปิด'); renderPlan(); return; }
+    if(!isSM()){ alert('รอบนี้เป็นงานตรวจด้านนิรภัย — ปิดงานได้เฉพาะ Safety Manager ('+SM+')\nบัญชีที่ใช้อยู่: '+((USER&&USER.email)||'-')); renderPlan(); return; }
+  }
+  if(on){
+    if(!r.appr){ alert('รอบนี้ยังไม่ได้รับอนุมัติจาก ACM — ปิดงานไม่ได้'); renderPlan(); return; }
+    const p=PACKS.find(x=>x.proj===r.proj), sum=SUMS[rid(r)]||{};
+    const openCar=(sum.carOpen||0), left=(sum.total||0)-(sum.done||0);
+    let w=[]; if(left>0) w.push('ยังตรวจไม่ครบ '+left+' ข้อ'); if(openCar>0) w.push('CAR ค้าง '+openCar+' ใบ');
+    if(!confirm('ปิดงานตรวจ '+(r.ref||'')+' — '+((p&&p.name)||r.proj)+'\n'+(w.length?'⚠ '+w.join(' · ')+'\n\n':'')+'ผู้ปิดงาน: '+((USER&&USER.displayName)||(USER&&USER.email)||'-')+' วันที่ '+today()+'\nยืนยันหรือไม่?')){ renderPlan(); return; }
+    r.done=true; r.cl={n:(USER.displayName||USER.email),by:(USER.email||'').toLowerCase(),dt:today()};
+  } else {
+    if(!confirm('เปิดงานตรวจนี้กลับมาแก้ไข (ยกเลิกการปิดงาน)?')){ renderPlan(); return; }
+    r.done=false; r.cl=null;
+  }
+  renderPlan(); savePlan();
 }
 function isACM(){ if(!USER) return false; if(!ACM) return true; return (USER.email||'').toLowerCase()===ACM; }
 function approveRow(i){

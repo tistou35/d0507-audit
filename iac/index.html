@@ -188,6 +188,7 @@ body.viewonly .toolbar{display:none;}
   <div class="sub">GAP Analysis: OMM · OMA · TM/PPL(A) + On-Site Implementation ↔ TCAR PEL Part ORA (Rev 00, 30 OCT 2024) &nbsp;|&nbsp; D-0507-IAC-001 &nbsp;|&nbsp; ตรวจเอกสาร + ตรวจสถานที่และการปฏิบัติจริง</div>
   <nav class="tabs" id="tabs"></nav>
   <div id="libbox"></div>
+  <div id="alertbar" style="display:none"></div>
 </header>
 <main id="main"></main>
 <footer class="app">
@@ -221,6 +222,10 @@ const PROJ='iac';                    // ?view=1 = เปิดดูรายก
 const CAR_PREFIX = 'CAR';
 // ═══════════════════════════════════════════
 if(VIEW_ONLY){ document.body.classList.add('viewonly'); }
+function alertBar(html,bg){ const el=document.getElementById('alertbar'); if(!el) return;
+  el.style.display='block'; el.style.cssText='display:block;background:'+(bg||'#FDECEC')+';border-top:1px solid rgba(0,0,0,.12);padding:7px 14px;font-size:13px;color:#1A1A2A;line-height:1.5';
+  el.innerHTML=html; }
+function goEdit(){ const u=new URL(location.href); u.searchParams.delete('view'); location.href=u.toString(); }
 if(_Q.get('audit')||VIEW_ONLY){
   const sb=document.querySelector('header .sub');
   if(sb) sb.innerHTML+= (VIEW_ONLY?' &nbsp;|&nbsp; <b style="color:#FFD966">👁 โหมดเปิดดูรายการตรวจ (read-only)</b>':' &nbsp;|&nbsp; <b style="color:#9fd3a8">รอบตรวจ: '+AUDIT_ID.replace(/[<>"']/g,'')+'</b>');
@@ -1557,8 +1562,11 @@ async function initFirebase(){
       document.getElementById('loginov')?.remove();
       document.getElementById('fbout')?.classList.toggle('hide',!u);
       if(u){ startSync(); }
-      else if(VIEW_ONLY){ fbReady=false; syncStatus('👁 โหมดเปิดดูรายการตรวจ — ไม่บันทึกข้อมูล','var(--blue)'); }
-      else { fbReady=false; syncStatus('○ ยังไม่ได้เข้าสู่ระบบ','#C00000'); showLogin(); }
+      else if(VIEW_ONLY){ fbReady=false; syncStatus('👁 โหมดเปิดดูรายการตรวจ — ไม่บันทึกข้อมูล','var(--blue)');
+        alertBar('👁 <b>ตอนนี้เป็นโหมดเปิดดูอย่างเดียว</b> — พิมพ์หรือติ๊กอะไรไม่ได้ และระบบไม่บันทึก (ลิงก์มี <code>?view=1</code>) '
+          +'<button onclick="goEdit()" style="margin-left:8px;background:var(--navy);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12.5px;font-weight:bold;cursor:pointer">✏ เข้าโหมดกรอกข้อมูล</button>','#FFF4CE'); }
+      else { fbReady=false; syncStatus('○ ยังไม่ได้เข้าสู่ระบบ','#C00000'); showLogin();
+        alertBar('🔒 <b>ยังไม่ได้เข้าสู่ระบบ</b> — ต้องเข้าสู่ระบบก่อนจึงจะกรอกและบันทึกได้ ถ้าไม่เห็นกล่องเข้าสู่ระบบ ให้รีเฟรชหน้านี้','#FFF4CE'); }
     });
   }catch(e){ syncStatus('⚠ เชื่อมต่อไม่ได้ — โหมดออฟไลน์','#C00000'); console.error(e); }
 }
@@ -1597,6 +1605,7 @@ function cleanForWrite(s){
 function startSync(){
   fbReady=true;
   syncStatus('☁ '+(fbUser.email||'signed in'),'var(--green)');
+  { const el=document.getElementById('alertbar'); if(el) el.style.display='none'; }
   // meta
   FB.db.collection('audits').doc(AUDIT_ID).onSnapshot(d=>{
     if(pendingMeta||!d.exists) return;
@@ -1617,7 +1626,10 @@ function startSync(){
       refreshItem(id);
     });
     if(changed){ refreshCounts(); if(['gap','car','dash'].includes(curTab)) render(); }
-  },e=>{ syncStatus('⚠ sync error','#C00000'); console.error(e); });
+  },e=>{ console.error(e);
+    if(e&&e.code==='permission-denied'){ syncStatus('⛔ ไม่มีสิทธิ์อ่านรอบตรวจนี้','#C00000');
+      alertBar('⛔ <b>บัญชีนี้ไม่มีสิทธิ์เข้าถึงข้อมูลรอบตรวจ '+AUDIT_ID+'</b> — แจ้งผู้ดูแลให้เพิ่มอีเมล <b>'+((fbUser&&fbUser.email)||'-')+'</b> ใน Firestore Security Rules','#FDECEC');
+    } else syncStatus('⚠ sync error','#C00000'); });
   // flusher
   FB.timer && clearInterval(FB.timer);
   FB.timer=setInterval(flush, 2500);
@@ -1649,7 +1661,14 @@ async function flush(){
       t:firebase.firestore.FieldValue.serverTimestamp(), u:fbUser.email||''}, {merge:false});
   });
   try{ await batch.commit(); syncStatus('☁ บันทึกแล้ว '+new Date().toTimeString().slice(0,5)+' · '+(fbUser.email||''),'var(--green)'); pushSummary(); }
-  catch(e){ ids.forEach(id=>pending.add(id)); syncStatus('⚠ บันทึกไม่สำเร็จ — จะลองใหม่','#C00000'); console.error(e); }
+  catch(e){ ids.forEach(id=>pending.add(id)); console.error(e);
+    if(e&&e.code==='permission-denied'){
+      syncStatus('⛔ ไม่มีสิทธิ์บันทึก','#C00000');
+      alertBar('⛔ <b>บันทึกไม่ได้ — บัญชีนี้ไม่มีสิทธิ์เขียนข้อมูลรอบตรวจนี้</b><br>'
+        +'บัญชีที่ใช้อยู่: <b>'+((fbUser&&fbUser.email)||'-')+'</b> · รอบตรวจ: <b>'+AUDIT_ID+'</b><br>'
+        +'สิ่งที่พิมพ์ไว้ยังอยู่ในเครื่องและยังไม่ถูกส่งขึ้นระบบ — แจ้งผู้ดูแลให้เพิ่มอีเมลนี้ใน Firestore Security Rules ก่อนปิดหน้านี้ '
+        +'(กด 💾 บันทึกความคืบหน้า (JSON) ไว้ก่อนได้)','#FDECEC');
+    } else syncStatus('⚠ บันทึกไม่สำเร็จ — จะลองใหม่','#C00000'); }
 }
 async function uploadPhoto(id, idx){
   try{
