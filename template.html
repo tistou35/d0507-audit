@@ -60,7 +60,9 @@ main{padding:12px; max-width:1080px; margin:0 auto; padding-bottom:80px;}
 .stbtn.S.on{background:var(--green); border-color:var(--green); color:#fff;}
 .stbtn.U.on{background:var(--red); border-color:var(--red); color:#fff;}
 .stbtn.NA.on{background:#667; border-color:#667; color:#fff;}
-.refin{flex:1 1 200px; min-height:38px; border:1px solid #c8d2e0; border-radius:7px; padding:6px 9px; font-size:13px; font-family:inherit; color:var(--navy); background:#fff;}
+.refin{flex:1 1 200px; min-height:38px; border:1px solid #c8d2e0; border-radius:7px; padding:6px 9px; font-size:13px; font-family:inherit; color:#111418; background:#fff;}
+input, textarea, select{color:#111418;}                    /* ข้อความที่ผู้ใช้กรอก = ดำ */
+input::placeholder, textarea::placeholder{color:#9aa4b2; opacity:1; font-style:italic;}  /* ข้อความแนะนำ+ตัวอย่าง = เทา */
 .rmk{width:100%; margin-top:7px; border:1.5px solid #d3dce8; background:#fbfcfe; border-radius:7px; padding:7px 9px; font-size:13px; font-family:inherit; min-height:44px;}
 .item.stU .rmk{border-color:var(--red); background:#fff8f8;}
 .rmk.fxk{border-left:4px solid #1A6B1A; background:#f7fcf7;}   /* ช่องแนวทางแก้ไข — เขียว แยกจากช่องหลักฐาน */
@@ -431,13 +433,13 @@ function itemHTML(it){
       <div class="dualrow"><span class="dlab">⚙️ ปฏิบัติจริง<br>Implemented</span>${btnRow(it,'st2',s)}
         <span class="dhint">ทำจริง มีหลักฐาน?</span></div>
       <div class="ctr">
-        <input class="refin" placeholder="Evidence / หลักฐานที่พบ + อ้างอิงคู่มือ (${escAttr(it.ref||'')})" value="${escAttr(effRef(it)===it.ref?'':effRef(it))}"
+        <input class="refin" placeholder="กรอกหลักฐานที่พบที่นี่ — ชื่อเอกสาร/เลขที่/หน้า/วันที่ · ตัวอย่าง: OMM ข้อ 4.5.2 หน้า 12 · หนังสือแต่งตั้ง SM ที่ D-0507/A015-69 ลว. 12 พ.ค. 69${it.ref?' · อ้างอิงที่คาดไว้: '+escAttr(it.ref):''}" value="${escAttr(effRef(it)===it.ref?'':effRef(it))}"
           onchange="setRef('${it.id}',this.value)">
       </div>
       ${photoRowHTML(it)}
-      <textarea class="rmk" placeholder="Inspector comment — Finding: ไม่มีในคู่มือ/ไม่ได้ปฏิบัติ + รายละเอียด · ถ้า N.A/ไม่ตรวจ ให้ระบุเหตุผล"
+      <textarea class="rmk" placeholder="กรอกสิ่งที่ตรวจพบที่นี่ · ตัวอย่าง: คู่มือไม่ได้ระบุความถี่การประชุม SRB / ระบุไว้แต่ 6 เดือนที่ผ่านมาไม่มีบันทึกการประชุม · ถ้าให้ N/A ให้เขียนเหตุผล เช่น องค์กรไม่มีอากาศยานประเภทนี้"
         onchange="setRm('${it.id}',this.value)">${esc(s.rm||'')}</textarea>
-      <textarea class="rmk fxk" placeholder="แนวทางแก้ไข / Corrective action (proposed) — เสนอวิธีปิดข้อบกพร่อง ใครทำ ที่ไหน"
+      <textarea class="rmk fxk" placeholder="กรอกแนวทางแก้ไขที่เสนอที่นี่ · ตัวอย่าง: แก้ OMM ข้อ 4.5.6 ให้ระบุความถี่ประชุมค่าเดียวให้ตรงกับ SMM · ผู้รับผิดชอบ CMM · ภายใน 30 วัน"
         onchange="setFx('${it.id}',this.value)">${esc(s.fx||'')}</textarea>
     </div>`;
   }
@@ -453,13 +455,13 @@ function itemHTML(it){
     ${chkHTML(it)}
     <div class="ctr">
       ${btnRow(it,'st',s)}
-      <input class="refin" placeholder="Reference (Section/Page/Topic)" value="${escAttr(effRef(it))}"
+      <input class="refin" placeholder="กรอกหลักฐานที่พบที่นี่ — ชื่อเอกสาร/เลขที่/หน้า/วันที่ · ตัวอย่าง: OMM ข้อ 4.5.2 หน้า 12 · หนังสือแต่งตั้ง SM ที่ D-0507/A015-69 ลว. 12 พ.ค. 69" value="${escAttr(effRef(it))}"
         onchange="setRef('${it.id}',this.value)">
     </div>
     ${photoRowHTML(it)}
-    <textarea class="rmk" placeholder="Inspector comment — Finding/ข้อสังเกต · ถ้า N.A หรือไม่ตรวจข้อนี้ ให้ระบุเหตุผล"
+    <textarea class="rmk" placeholder="กรอกสิ่งที่ตรวจพบที่นี่ · ตัวอย่าง: คู่มือไม่ได้ระบุความถี่การประชุม SRB / ระบุไว้แต่ 6 เดือนที่ผ่านมาไม่มีบันทึกการประชุม · ถ้าให้ N/A ให้เขียนเหตุผล เช่น องค์กรไม่มีอากาศยานประเภทนี้"
       onchange="setRm('${it.id}',this.value)">${esc(s.rm||'')}</textarea>
-    <textarea class="rmk fxk" placeholder="แนวทางแก้ไข / Corrective action (proposed) — เสนอวิธีปิดข้อบกพร่อง ใครทำ ที่ไหน"
+    <textarea class="rmk fxk" placeholder="กรอกแนวทางแก้ไขที่เสนอที่นี่ · ตัวอย่าง: แก้ OMM ข้อ 4.5.6 ให้ระบุความถี่ประชุมค่าเดียวให้ตรงกับ SMM · ผู้รับผิดชอบ CMM · ภายใน 30 วัน"
       onchange="setFx('${it.id}',this.value)">${esc(s.fx||'')}</textarea>
   </div>`;
 }
@@ -628,14 +630,14 @@ function renderDash(){
   let h=`<div class="audmeta">
     <div><label>Auditor / ผู้ตรวจ</label><input value="${escAttr(meta.auditor)}" onchange="meta.auditor=this.value;markMeta()"></div>
     <div><label>Audit Date / วันที่ตรวจ</label><input type="date" value="${escAttr(meta.date)}" onchange="meta.date=this.value;markMeta()"></div>
-    <div><label>Scope / ขอบเขตรอบนี้</label><input placeholder="เช่น Full GAP ก่อนยื่น กพท." value="${escAttr(meta.scope)}" onchange="meta.scope=this.value;markMeta()"></div>
-    <div><label>Auditee / หน่วยรับการตรวจ</label><input placeholder="เช่น ทุกหน่วยงาน / แผนกปฏิบัติการบิน" value="${escAttr(meta.auditee||'')}" onchange="meta.auditee=this.value;markMeta()"></div>
+    <div><label>Scope / ขอบเขตรอบนี้</label><input placeholder="กรอกขอบเขตการตรวจที่นี่ · ตัวอย่าง: ตรวจ SMS ทั้งระบบก่อนยื่น กพท. · ไม่รวมงานซ่อมบำรุง" value="${escAttr(meta.scope)}" onchange="meta.scope=this.value;markMeta()"></div>
+    <div><label>Auditee / หน่วยรับการตรวจ</label><input placeholder="กรอกหน่วยที่รับการตรวจที่นี่ · ตัวอย่าง: ฝ่ายนิรภัยการบิน และฝ่ายปฏิบัติการบิน" value="${escAttr(meta.auditee||'')}" onchange="meta.auditee=this.value;markMeta()"></div>
   </div>
   <div class="audmeta" style="grid-template-columns:1fr 1fr">
     <div><label>ข้อสรุปของผู้ตรวจ / Auditor conclusion (ใช้ในรายงานสรุป)</label>
-      <textarea style="width:100%;min-height:66px;border:1px solid #c8d2e0;border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13.5px" placeholder="สรุปภาพรวมผลการตรวจรอบนี้" onchange="meta.concl=this.value;markMeta()">${esc(meta.concl||'')}</textarea></div>
+      <textarea style="width:100%;min-height:66px;border:1px solid #c8d2e0;border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13.5px" placeholder="กรอกข้อสรุปของผู้ตรวจที่นี่ · ตัวอย่าง: ระบบ SMS ใช้งานได้ตามที่กำหนดไว้ในคู่มือ พบข้อบกพร่องระดับ 2 จำนวน 3 ข้อ เป็นเรื่องความครบถ้วนของบันทึก ไม่กระทบความปลอดภัยในการปฏิบัติการบิน" onchange="meta.concl=this.value;markMeta()">${esc(meta.concl||'')}</textarea></div>
     <div><label>ข้อเสนอแนะ / Recommendations (บรรทัดละ 1 ข้อ)</label>
-      <textarea style="width:100%;min-height:66px;border:1px solid #c8d2e0;border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13.5px" placeholder="ข้อเสนอแนะเพื่อการปรับปรุง — บรรทัดละ 1 ข้อ" onchange="meta.reco=this.value;markMeta()">${esc(meta.reco||'')}</textarea></div>
+      <textarea style="width:100%;min-height:66px;border:1px solid #c8d2e0;border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13.5px" placeholder="กรอกข้อเสนอแนะที่นี่ บรรทัดละ 1 ข้อ · ตัวอย่าง: ทบทวนความถี่การประชุม SRB ให้ตรงกันทั้ง OMM และ SMM" onchange="meta.reco=this.value;markMeta()">${esc(meta.reco||'')}</textarea></div>
   </div>`;
   h+='<div class="dash">';
   MODS.forEach(m=>{
@@ -953,12 +955,12 @@ function carBoxHTML(it){
       <b>การตอบกลับของผู้รับผิดชอบ</b> (Part 3–5)${c.cast==='X'&&c.rejn?`<div style="color:var(--red);font-size:12px">ถูกตีกลับ: ${esc(c.rejn)} — แก้ไขแล้วส่งใหม่</div>`:''}
       ${ed?`
         <div class="ca-lb">① Root Cause Analysis — สาเหตุราก (Part 3, 5-Why)</div>
-        <textarea class="ca-in" placeholder="ทำไมข้อบกพร่องนี้จึงเกิดขึ้น — วิเคราะห์จนถึงสาเหตุราก" onchange="setCarF('${it.id}','rc',this.value)">${esc(c.rc||'')}</textarea>
+        <textarea class="ca-in" placeholder="กรอกสาเหตุรากที่นี่ · ตัวอย่าง: ขั้นตอนทบทวนคู่มือไม่มีการตรวจไขว้ระหว่าง OMM กับ SMM จึงแก้เล่มเดียวแล้วอีกเล่มค้างของเดิม" onchange="setCarF('${it.id}','rc',this.value)">${esc(c.rc||'')}</textarea>
         <div class="ca-lb">② Corrective Action — การแก้ไข + วันที่แล้วเสร็จ (Part 4)</div>
-        <textarea class="ca-in" placeholder="การดำเนินการแก้ไขข้อบกพร่องนี้" onchange="setCarF('${it.id}','ca',this.value)">${esc(c.ca||'')}</textarea>
+        <textarea class="ca-in" placeholder="กรอกสิ่งที่ลงมือแก้ไขที่นี่ · ตัวอย่าง: 1) แก้ข้อความ OMM ข้อ 4.5.6 ให้ตรงกับ SMM 2) เสนอ ACM อนุมัติ 3) แจกจ่ายฉบับแก้ไขให้ผู้ถือคู่มือ" onchange="setCarF('${it.id}','ca',this.value)">${esc(c.ca||'')}</textarea>
         <div style="margin-top:3px">วันที่แล้วเสร็จ: <input type="date" class="ca-sm" value="${esc(c.cadone||'')}" onchange="setCarF('${it.id}','cadone',this.value)"></div>
         <div class="ca-lb">③ Preventive Action — การป้องกันการเกิดซ้ำ (Part 5)</div>
-        <textarea class="ca-in" placeholder="มาตรการป้องกันไม่ให้เกิดข้อบกพร่องซ้ำ" onchange="setCarF('${it.id}','pa',this.value)">${esc(c.pa||'')}</textarea>
+        <textarea class="ca-in" placeholder="กรอกมาตรการป้องกันการเกิดซ้ำที่นี่ · ตัวอย่าง: เพิ่มขั้นตอนตรวจไขว้ OMM ↔ SMM ในแบบฟอร์มขอแก้ไขเอกสาร (DRF) ทุกครั้ง" onchange="setCarF('${it.id}','pa',this.value)">${esc(c.pa||'')}</textarea>
         <button class="carbtn" onclick="carReport('${it.id}')">📤 ส่งตอบกลับ (Part 3–5) → รอตรวจรับ</button>`
       :respDone?`
         <div style="margin-top:4px"><b>① Root cause:</b> ${esc(c.rc||'-')}</div>
