@@ -455,8 +455,8 @@ function itemHTML(it){
     ${chkHTML(it)}
     <div class="ctr">
       ${btnRow(it,'st',s)}
-      <input class="refin" placeholder="กรอกหลักฐานที่พบที่นี่ — ชื่อเอกสาร/เลขที่/หน้า/วันที่ · ตัวอย่าง: OMM ข้อ 4.5.2 หน้า 12 · หนังสือแต่งตั้ง SM ที่ D-0507/A015-69 ลว. 12 พ.ค. 69" value="${escAttr(effRef(it))}"
-        onchange="setRef('${it.id}',this.value)">
+      <input class="refin" placeholder="กรอกหลักฐานที่พบที่นี่ — ชื่อเอกสาร/เลขที่/หน้า/วันที่ · ตัวอย่าง: OMM ข้อ 4.5.2 หน้า 12 · หนังสือแต่งตั้ง SM ที่ D-0507/A015-69 ลว. 12 พ.ค. 69${it.ref?' · อ้างอิงที่คาดไว้: '+escAttr(it.ref):''}"
+        value="${escAttr(effRef(it)===it.ref?'':effRef(it))}" onchange="setRef('${it.id}',this.value)">
     </div>
     ${photoRowHTML(it)}
     <textarea class="rmk" placeholder="กรอกสิ่งที่ตรวจพบที่นี่ · ตัวอย่าง: คู่มือไม่ได้ระบุความถี่การประชุม SRB / ระบุไว้แต่ 6 เดือนที่ผ่านมาไม่มีบันทึกการประชุม · ถ้าให้ N/A ให้เขียนเหตุผล เช่น องค์กรไม่มีอากาศยานประเภทนี้"
