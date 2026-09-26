@@ -226,6 +226,8 @@ function alertBar(html,bg){ const el=document.getElementById('alertbar'); if(!el
   el.style.display='block'; el.style.cssText='display:block;background:'+(bg||'#FDECEC')+';border-top:1px solid rgba(0,0,0,.12);padding:7px 14px;font-size:13px;color:#1A1A2A;line-height:1.5';
   el.innerHTML=html; }
 function goEdit(){ const u=new URL(location.href); u.searchParams.delete('view'); location.href=u.toString(); }
+if(VIEW_ONLY) setTimeout(()=>alertBar('👁 <b>ตอนนี้เป็นโหมดเปิดดูอย่างเดียว</b> — พิมพ์ ติ๊ก หรือแนบรูปไม่ได้ และระบบไม่บันทึก เพราะลิงก์ที่เปิดมามี <code>?view=1</code> '
+  +'<button onclick="goEdit()" style="margin-left:8px;background:var(--navy);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12.5px;font-weight:bold;cursor:pointer">✏ เข้าโหมดกรอกข้อมูล</button>','#FFF4CE'),0);
 if(_Q.get('audit')||VIEW_ONLY){
   const sb=document.querySelector('header .sub');
   if(sb) sb.innerHTML+= (VIEW_ONLY?' &nbsp;|&nbsp; <b style="color:#FFD966">👁 โหมดเปิดดูรายการตรวจ (read-only)</b>':' &nbsp;|&nbsp; <b style="color:#9fd3a8">รอบตรวจ: '+AUDIT_ID.replace(/[<>"']/g,'')+'</b>');
@@ -1562,9 +1564,7 @@ async function initFirebase(){
       document.getElementById('loginov')?.remove();
       document.getElementById('fbout')?.classList.toggle('hide',!u);
       if(u){ startSync(); }
-      else if(VIEW_ONLY){ fbReady=false; syncStatus('👁 โหมดเปิดดูรายการตรวจ — ไม่บันทึกข้อมูล','var(--blue)');
-        alertBar('👁 <b>ตอนนี้เป็นโหมดเปิดดูอย่างเดียว</b> — พิมพ์หรือติ๊กอะไรไม่ได้ และระบบไม่บันทึก (ลิงก์มี <code>?view=1</code>) '
-          +'<button onclick="goEdit()" style="margin-left:8px;background:var(--navy);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12.5px;font-weight:bold;cursor:pointer">✏ เข้าโหมดกรอกข้อมูล</button>','#FFF4CE'); }
+      else if(VIEW_ONLY){ fbReady=false; syncStatus('👁 โหมดเปิดดูรายการตรวจ — ไม่บันทึกข้อมูล','var(--blue)'); }
       else { fbReady=false; syncStatus('○ ยังไม่ได้เข้าสู่ระบบ','#C00000'); showLogin();
         alertBar('🔒 <b>ยังไม่ได้เข้าสู่ระบบ</b> — ต้องเข้าสู่ระบบก่อนจึงจะกรอกและบันทึกได้ ถ้าไม่เห็นกล่องเข้าสู่ระบบ ให้รีเฟรชหน้านี้','#FFF4CE'); }
     });
@@ -1605,7 +1605,7 @@ function cleanForWrite(s){
 function startSync(){
   fbReady=true;
   syncStatus('☁ '+(fbUser.email||'signed in'),'var(--green)');
-  { const el=document.getElementById('alertbar'); if(el) el.style.display='none'; }
+  { const el=document.getElementById('alertbar'); if(el&&!VIEW_ONLY) el.style.display='none'; }
   // meta
   FB.db.collection('audits').doc(AUDIT_ID).onSnapshot(d=>{
     if(pendingMeta||!d.exists) return;
