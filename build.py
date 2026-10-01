@@ -164,6 +164,7 @@ footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
     <table class="plan" id="plantab"></table>
     <div style="margin-top:8px">
       <button class="pbtn" onclick="addRow()">➕ เพิ่มรายการตรวจ</button>
+      <button class="pbtn" onclick="makeOutline()">🧭 สร้างแผนโครงร่างตามรอบ OMM</button>
       <button class="pbtn g" onclick="savePlan()">💾 บันทึกแผน</button>
       &nbsp;·&nbsp; ACM ผู้อนุมัติแผน: <input id="acmemail" placeholder="อีเมล Accountable Executive Manager" style="min-height:36px;border:1px solid #c8d2e0;border-radius:7px;padding:4px 8px;width:250px" onchange="ACM=this.value.trim().toLowerCase()">
       <button class="pbtn g" onclick="approveAll()">🖋 ACM อนุมัติทั้งแผนปีนี้</button>
@@ -223,7 +224,7 @@ firebase.auth().onAuthStateChanged(u=>{
 function renderCards(){
   const el=document.getElementById('cards'); if(!el) return;
   const rounds=PLAN.map((r,i)=>({r,i})).filter(({r})=>{
-    if(r.done||!r.start) return false;
+    if(r.ms||r.done||!r.start) return false;
     const d=(new Date(r.start)-new Date(today()))/86400000;
     return d<=30;                              // ภายใน 30 วัน รวมที่เริ่มแล้ว/เลยกำหนด
   });
@@ -315,9 +316,10 @@ function renderPlan(){
     const [cls,txt]=rowStatus(r);
     h+=`<tr>
       <td><span style="font-size:11px;font-weight:bold;color:var(--blue)">${esc(r.ref||'')}</span>
-        <select onchange="PLAN[${i}].proj=this.value;PLAN[${i}].appr=null;renderPlan()">${PACKS.map(p=>`<option value="${p.proj}"${r.proj===p.proj?' selected':''}>${esc(p.name)}</option>`).join('')}</select>
+        ${r.ms?`<div style="font-size:12.5px;font-weight:bold;color:var(--navy);padding:3px 0">🏁 ${esc(r.ms)}</div><div style="font-size:11px;color:#8792a2">หมุดหมายตามแผน — ไม่ใช่รอบตรวจ</div>`
+          :`<select onchange="PLAN[${i}].proj=this.value;PLAN[${i}].appr=null;renderPlan()">${PACKS.map(p=>`<option value="${p.proj}"${r.proj===p.proj?' selected':''}>${esc(p.name)}</option>`).join('')}</select>`}
         ${r.appr?`<span class="pill done" title="โดย ${esc(r.appr.n)} (${esc(r.appr.scope||'')}) ${esc(r.appr.dt)}">🖋 อนุมัติแล้ว ${esc(r.appr.dt)}</span>`:`<span class="pill soon">⏳ รอ ACM อนุมัติ</span> <button class="pbtn" onclick="approveRow(${i})">🖋 อนุมัติ</button>`}
-        ${r.start?(r.appr?`<a class="pbtn" style="display:inline-block;text-decoration:none;margin-top:4px" href="${(PACKS.find(x=>x.proj===r.proj)||{}).outdir}/?audit=${encodeURIComponent(rid(r))}">${r.done?'📖 ดูผลรอบนี้':'▶ เปิดงานตรวจ'}</a>`:`<span class="pbtn" style="opacity:.5;cursor:not-allowed">▶ เปิดได้เมื่ออนุมัติ</span>`):''}</td>
+        ${r.ms?'':r.start?(r.appr?`<a class="pbtn" style="display:inline-block;text-decoration:none;margin-top:4px" href="${(PACKS.find(x=>x.proj===r.proj)||{}).outdir}/?audit=${encodeURIComponent(rid(r))}">${r.done?'📖 ดูผลรอบนี้':'▶ เปิดงานตรวจ'}</a>`:`<span class="pbtn" style="opacity:.5;cursor:not-allowed">▶ เปิดได้เมื่ออนุมัติ</span>`):''}</td>
       <td><input value="${esc(r.label||'')}" placeholder="เช่น Q4 รอบหลัก" onchange="PLAN[${i}].label=this.value"></td>
       <td><input type="date" value="${esc(r.start||'')}" onchange="PLAN[${i}].start=this.value;PLAN[${i}].appr=null;renderPlan()"></td>
       <td><input type="date" value="${esc(r.end||'')}" onchange="PLAN[${i}].end=this.value;PLAN[${i}].appr=null;renderPlan()"></td>
@@ -327,13 +329,13 @@ function renderPlan(){
         ${ackList(r).length?`<span class="pill ${ackDone(r)?'done':'soon'}" style="margin-top:3px">รับทราบ ${ackCount(r)[0]}/${ackCount(r)[1]}</span>`:''}</td>
       <td><span class="pill ${cls}">${txt}</span><br><label style="font-size:11px;color:#667"><input type="checkbox" ${r.done?'checked':''} onchange="closeRound(${i},this.checked)"> ปิดงานแล้ว</label>
         ${r.cl?`<div style="font-size:11px;color:var(--green)">🔒 ${esc(r.cl.n)} · ${esc(r.cl.dt)}</div>`:(isSafetyProj(r.proj)?`<div style="font-size:11px;color:#9C6500">ปิดได้เฉพาะ SM${SM?' ('+esc(SM)+')':' — ยังไม่ได้กำหนดอีเมล SM'}</div>`:'')}</td>
-      <td><button class="pbtn" onclick="notiLetter(${i})">📄</button><button class="pbtn" onclick="notiMail(${i})">✉</button><button class="pbtn" onclick="notiIcs(${i})">📅</button><br>
+      <td>${r.ms?`<button class="pbtn" onclick="notiIcs(${i})">📅 ลงปฏิทิน</button>`:`<button class="pbtn" onclick="notiLetter(${i})">📄</button><button class="pbtn" onclick="notiMail(${i})">✉</button><button class="pbtn" onclick="notiIcs(${i})">📅</button><br>
         ${['lead','cmm'].map(ro=>{const g=r.sg&&r.sg[ro];
           return `<button class="sgb${g?' ok':''}" onclick="openSigP(${i},'${ro}')">${g?'✔':'✍'} ${ro==='lead'?'Lead':'CMM'}</button>`;}).join('')}
-        <button class="sgb${ackDone(r)?' ok':''}" onclick="openAckSig(${i})">${ackDone(r)?'✔':'✍'} รับทราบ ${ackList(r).length?ackCount(r)[0]+'/'+ackCount(r)[1]:''}</button></td>
+        <button class="sgb${ackDone(r)?' ok':''}" onclick="openAckSig(${i})">${ackDone(r)?'✔':'✍'} รับทราบ ${ackList(r).length?ackCount(r)[0]+'/'+ackCount(r)[1]:''}</button>`}</td>
       <td><button class="pbtn x" onclick="if(confirm('ลบรายการนี้?')){PLAN.splice(${i},1);renderPlan();}">✕</button></td></tr>`;
   });
-  if(!PLAN.length) h+=`<tr><td colspan="9" style="color:#889;text-align:center;padding:14px">ยังไม่มีแผนของปี ${PLANYEAR} — กด "เพิ่มรายการตรวจ"</td></tr>`;
+  if(!PLAN.length) h+=`<tr><td colspan="9" style="color:#889;text-align:center;padding:14px">ยังไม่มีแผนของปี ${PLANYEAR} — กด "🧭 สร้างแผนโครงร่างตามรอบ OMM" เพื่อวางโครงทั้งปีในครั้งเดียว หรือ "➕ เพิ่มรายการตรวจ" ทีละรอบ</td></tr>`;
   t.innerHTML=h;
   renderBanners();
   renderGantt();
@@ -368,9 +370,9 @@ function renderGantt(){
     const [cls,txt]=rowStatus(r);
     const a=doy(r.start), b=doy(r.end||r.start);
     const left=a*PX, wdt=Math.max((b-a+1)*PX, 26);
-    rowsH+=`<div class="grow"><div class="glab"><b>${esc(p.name||r.proj)}</b>${esc(r.label||'')}</div>
+    rowsH+=`<div class="grow"><div class="glab"><b>${esc(r.ms?'🏁 '+r.ms:(p.name||r.proj))}</b>${esc(r.label||'')}</div>
       <div class="gtl" style="width:${W}px">${grid}${todayLine}
-        <div class="gbar ${cls}" style="left:${left}px;width:${wdt}px" title="${esc((p.name||r.proj)+' '+(r.label||''))} · ${esc(r.start)} → ${esc(r.end||r.start)} · ${txt} · Lead: ${esc(r.lead||'-')}">${esc((r.ref?r.ref+" · ":"")+(r.label||p.proj||""))}</div>
+        <div class="gbar ${cls}" style="left:${left}px;width:${wdt}px" title="${esc((r.ms||p.name||r.proj)+' '+(r.label||''))} · ${esc(r.start)} → ${esc(r.end||r.start)} · ${txt} · Lead: ${esc(r.lead||'-')}">${esc((r.ref?r.ref+" · ":"")+(r.label||p.proj||""))}</div>
       </div></div>`;
   });
   if(!withDates.length) rowsH+=`<div class="grow"><div style="padding:14px;color:#889;font-size:12.5px">ยังไม่มีรายการที่กำหนดวันเริ่ม — กำหนดวันในตารางด้านบนแล้วแท่งจะปรากฏที่นี่</div></div>`;
@@ -381,6 +383,46 @@ function renderGantt(){
   if(wrap&&tNow.getFullYear()===y) wrap.scrollLeft=Math.max(0,doy(today())*PX-wrap.clientWidth/2+190);
 }
 function addRow(proj){ PLAN.push({proj:proj||PACKS[0].proj,ref:roundRef(),label:'',start:'',end:'',lead:'',auditee:'',done:false}); renderPlan(); }
+// โครงร่างแผนประจำปีตามรอบที่คู่มือกำหนด — OMM "Compliance Monitoring Schedule"
+// (แบ่งสี่ส่วน OMM · OMA · TM · SITE) + "Quality Audit Schedule" (ทุกหัวข้อไม่เกิน 12 เดือน)
+// + รอบติดตามประสิทธิผลการแก้ไข + Management Evaluation ประจำปี
+function outlineRows(y){
+  const wd=(m,d)=>{                                  // เลี่ยงวันเสาร์-อาทิตย์
+    const t=new Date(Date.UTC(y,m-1,d)), w=t.getUTCDay();
+    if(w===6) t.setUTCDate(t.getUTCDate()+2); else if(w===0) t.setUTCDate(t.getUTCDate()+1);
+    return t.toISOString().slice(0,10);
+  };
+  const R=(proj,label,sm,sd,em,ed)=>({proj,label,start:wd(sm,sd),end:wd(em,ed),lead:'',auditee:'',done:false});
+  const M=(ms,label,m,d)=>({proj:'',ms,label,start:wd(m,d),end:wd(m,d),lead:'',auditee:'',done:false});
+  return [
+    R('iac','ส่วนที่ 1/4 · OMM — องค์กรและการบริหารจัดการ',2,8,2,12),
+    R('surveillance','Spot Check ครั้งที่ 1/4',3,17,3,17),
+    R('iac','Follow-up 1/2 — ติดตามประสิทธิผลการแก้ไข (CAR ค้าง)',3,23,3,24),
+    R('iac','ส่วนที่ 2/4 · OMA — การปฏิบัติการบิน',5,10,5,14),
+    R('safety','School Safety Audit (SMS) ประจำปี',6,7,6,9),
+    R('surveillance','Spot Check ครั้งที่ 2/4',6,16,6,16),
+    R('iac','ส่วนที่ 3/4 · TM / PPL(A) — หลักสูตรและการฝึก',8,9,8,13),
+    R('vendor','Vendor / Contracted Services ประจำปี',8,24,8,25),
+    R('surveillance','Spot Check ครั้งที่ 3/4',9,15,9,15),
+    R('iac','Follow-up 2/2 — ติดตามประสิทธิผลการแก้ไข (CAR ค้าง)',9,21,9,22),
+    M('Management Evaluation Meeting · D-0507-MER-001','ทบทวนผลการตรวจปี '+y+' และกำหนดแผนปี '+(y+1),10,19),
+    R('iac','ส่วนที่ 4/4 · SITE — การนำไปปฏิบัติจริง ณ สถานที่',11,8,11,12),
+    R('aerodrome','Aerodrome Certification Readiness ประจำปี',11,23,11,24),
+    R('surveillance','Spot Check ครั้งที่ 4/4',12,8,12,8),
+    M('ACM อนุมัติแผนการตรวจประจำปี '+(y+1),'ต้องอนุมัติก่อนปี '+(y+1)+' เริ่ม',12,15),
+    M('สรุปรอบ 24 เดือน '+(y-1)+'–'+y,'ยืนยันว่าทุกข้อกำหนดได้รับการตรวจครบภายในรอบ',12,20)
+  ];
+}
+function makeOutline(){
+  const rows=outlineRows(PLANYEAR);
+  const have=PLAN.length;
+  if(have&&!confirm('แผนปี '+PLANYEAR+' มีอยู่แล้ว '+have+' รายการ — เพิ่มโครงร่าง '+rows.length+' รายการต่อท้าย?\n(ถ้าไม่ต้องการซ้ำ ให้ลบรายการเดิมก่อน)')) return;
+  if(!have&&!confirm('วางโครงร่างแผนปี '+PLANYEAR+' จำนวน '+rows.length+' รายการ\n\nสี่ส่วนตาม Compliance Monitoring Schedule (OMM · OMA · TM · SITE) · SMS · Vendor · Aerodrome · Spot Check 4 ครั้ง · Follow-up 2 ครั้ง · Management Evaluation\n\nวันที่เป็นค่าตั้งต้น แก้ได้ทุกแถว · ทุกรายการยังไม่อนุมัติ รอ ACM')) return;
+  rows.forEach(r=>{ r.ref=roundRef(); PLAN.push(r); });
+  renderPlan();
+  document.getElementById('plantab').scrollIntoView({behavior:'smooth'});
+  alert('วางโครงร่างแล้ว '+rows.length+' รายการ — ตรวจวันที่และผู้ตรวจ แล้วกด "💾 บันทึกแผน"\nทุกรายการยังขึ้น "⏳ รอ ACM อนุมัติ" จนกด "🖋 ACM อนุมัติทั้งแผนปีนี้"');
+}
 function planRound(proj){ addRow(proj); document.getElementById('plantab').scrollIntoView({behavior:'smooth'}); }
 function savePlan(){
   PLAN.forEach(r=>{ if(!r.ref) r.ref=roundRef(); });
@@ -438,7 +480,7 @@ function closeRound(i,on){
     const p=PACKS.find(x=>x.proj===r.proj), sum=SUMS[rid(r)]||{};
     const openCar=(sum.carOpen||0), left=(sum.total||0)-(sum.done||0);
     let w=[]; if(left>0) w.push('ยังตรวจไม่ครบ '+left+' ข้อ'); if(openCar>0) w.push('CAR ค้าง '+openCar+' ใบ');
-    if(!confirm('ปิดงานตรวจ '+(r.ref||'')+' — '+((p&&p.name)||r.proj)+'\n'+(w.length?'⚠ '+w.join(' · ')+'\n\n':'')+'ผู้ปิดงาน: '+((USER&&USER.displayName)||(USER&&USER.email)||'-')+' วันที่ '+today()+'\nยืนยันหรือไม่?')){ renderPlan(); return; }
+    if(!confirm('ปิดงานตรวจ '+(r.ref||'')+' — '+(r.ms||(p&&p.name)||r.proj)+'\n'+(w.length?'⚠ '+w.join(' · ')+'\n\n':'')+'ผู้ปิดงาน: '+((USER&&USER.displayName)||(USER&&USER.email)||'-')+' วันที่ '+today()+'\nยืนยันหรือไม่?')){ renderPlan(); return; }
     r.done=true; r.cl={n:(USER.displayName||USER.email),by:(USER.email||'').toLowerCase(),dt:today()};
   } else {
     if(!confirm('เปิดงานตรวจนี้กลับมาแก้ไข (ยกเลิกการปิดงาน)?')){ renderPlan(); return; }
@@ -568,12 +610,12 @@ function notiIcs(i){
   const d1=r.start.replace(/-/g,''); 
   const d2=new Date(new Date(r.end||r.start).getTime()+86400000).toISOString().slice(0,10).replace(/-/g,'');
   const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//D-0507//Audit//TH','BEGIN:VEVENT',
-   `UID:${r.proj}-${d1}@d0507-audit`,`DTSTART;VALUE=DATE:${d1}`,`DTEND;VALUE=DATE:${d2}`,
-   `SUMMARY:Audit: ${(p.name||r.proj)} ${(r.label||'')}`,
-   `DESCRIPTION:Lead: ${(r.lead||'-')} · ${(p.code||'')}`,'END:VEVENT','END:VCALENDAR'].join('\r\n');
+   `UID:${r.proj||'ms'}-${d1}@d0507-audit`,`DTSTART;VALUE=DATE:${d1}`,`DTEND;VALUE=DATE:${d2}`,
+   `SUMMARY:${r.ms?r.ms:'Audit: '+(p.name||r.proj)} ${(r.label||'')}`,
+   `DESCRIPTION:${r.ms?(r.ref||''):'Lead: '+(r.lead||'-')+' · '+(p.code||'')}`,'END:VEVENT','END:VCALENDAR'].join('\r\n');
   const a=document.createElement('a');
   a.href='data:text/calendar;charset=utf-8,'+encodeURIComponent(ics);
-  a.download=`Audit_${r.proj}_${r.start}.ics`; a.click();
+  a.download=`${r.ms?'Milestone':'Audit'}_${r.proj||(r.ref||'ms')}_${r.start}.ics`; a.click();
 }
 </script></body></html>'''
 
