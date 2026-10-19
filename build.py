@@ -682,7 +682,7 @@ function exportPlanPdf(){
   <div class="meta"><span><b>รายการทั้งหมด</b> ${PLAN.length} (รอบตรวจ ${nAud} · หมุดหมาย ${nMs})</span>
     <span><b>เสร็จสิ้น</b> ${nDone}</span><span><b>ACM อนุมัติแล้ว</b> ${appr.length}/${PLAN.length}</span>
     <span><b>ACM ผู้อนุมัติแผน</b> ${esc(ACM||'—')}</span></div>
-  ${allAppr?'':`<div class="warn">ฉบับร่าง — ยังมี ${PLAN.length-appr.length} รายการที่ ACM ยังไม่อนุมัติ · แผนใช้ได้เมื่อ ACM อนุมัติครบทุกรายการ</div>`}
+  ${(allAppr||!PLAN.length)?'':`<div class="warn">ฉบับร่าง — ยังมี ${PLAN.length-appr.length} รายการที่ ACM ยังไม่อนุมัติ · แผนใช้ได้เมื่อ ACM อนุมัติครบทุกรายการ</div>`}
   <table class="pl"><thead><tr><th style="width:3%">#</th><th style="width:7%">Ref</th><th style="width:17%">งานตรวจ / หมุดหมาย</th><th>รอบ / ขอบเขต</th>
     <th style="width:7.5%">เริ่ม</th><th style="width:7.5%">สิ้นสุด</th><th style="width:3.5%">วัน</th><th style="width:9%">Lead Auditor</th>
     <th style="width:10%">ผู้รับการตรวจ</th><th style="width:9%">สถานะ</th><th style="width:10%">ACM อนุมัติ</th></tr></thead><tbody>${tb}</tbody></table>
