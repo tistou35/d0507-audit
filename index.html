@@ -95,7 +95,9 @@ footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
       <button class="pbtn g" onclick="savePlan()">💾 บันทึกแผน</button>
       <button class="pbtn" onclick="exportPlanPdf()">🖨 Export PDF (A4 แนวนอน)</button>
       &nbsp;·&nbsp; ACM ผู้อนุมัติแผน: <input id="acmemail" placeholder="อีเมล Accountable Executive Manager" style="min-height:36px;border:1px solid #c8d2e0;border-radius:7px;padding:4px 8px;width:250px" onchange="ACM=this.value.trim().toLowerCase()">
+      <button class="pbtn" onclick="prepSign()">✍ CMM ลงนามจัดทำแผน</button>
       <button class="pbtn g" onclick="approveAll()">🖋 ACM อนุมัติทั้งแผนปีนี้</button>
+      <div id="prepstat" style="margin-top:6px;font-size:12px;color:#556"></div>
       <div style="margin-top:6px">SM ผู้ปิดงานตรวจด้านนิรภัย: <input id="smemail" placeholder="อีเมล Safety Manager" style="min-height:36px;border:1px solid #c8d2e0;border-radius:7px;padding:4px 8px;width:250px" onchange="SM=this.value.trim().toLowerCase()">
         <span style="font-size:12px;color:#667">— รอบของ School Safety Audit (SMS) และ Safety Surveillance ปิดงานได้เฉพาะบัญชีนี้</span></div>
     </div>
@@ -126,7 +128,7 @@ const CFG={
 const PACKS=[{"proj": "aerodrome", "outdir": "aerodrome", "name": "Aerodrome Certification Readiness", "desc": "ตรวจความพร้อมรับการรับรองสนามบิน · ICAO Annex 14 / Doc 9774 · DRAFT รอ review", "code": "D-0507-IAC-003 (DRAFT)", "ver": "v2026", "aid": "aerodrome-2026", "total": 81}, {"proj": "iac", "outdir": "iac", "name": "Internal Audit — GAP Analysis (TCAR-ORA)", "desc": "OMM · OMA · TM/PPL(A) + On-Site Implementation · 2,081 รายการตรวจ", "code": "D-0507-IAC-001", "ver": "v2026", "aid": "audit-2026", "total": 2081}, {"proj": "safety", "outdir": "safety", "name": "School Safety Audit (SMS)", "desc": "ตรวจความปลอดภัยทั้งโรงเรียน — D-0507-SAC-001 (2 มิติ Documented/Implemented) + ชุดคำถาม SMS ตาม CAAT PEL-TO-CK-102 (D0507-IAC-SMS-01 Rev.01)", "code": "D-0507-SAC-001", "ver": "v2026-rev01", "aid": "safety-2026", "total": 93}, {"proj": "surveillance", "outdir": "surveillance", "name": "Safety Surveillance (Spot Check)", "desc": "เฝ้าระวังความปลอดภัยแบบตรวจจุดตามฟอร์ม D-0507-SSC-001 · ระบุกิจกรรม/สถานที่ในช่อง Scope", "code": "D-0507-SSC-001", "ver": "v2026", "aid": "surveil-2026", "total": 29}, {"proj": "vendor", "outdir": "vendor", "name": "Vendor / Contracted Services Audit", "desc": "ตรวจผู้ให้บริการภายนอก/กิจกรรมจ้างช่วง ตามฟอร์ม D-0507-VAC-001 (ORA.GEN.205)", "code": "D-0507-VAC-001", "ver": "v2026", "aid": "vendor-2026", "total": 25}];
 firebase.initializeApp(CFG);
 const db=firebase.firestore();
-let SIGP_PEND=null, USER=null, SUMS={}, PLAN=[], PLANYEAR=(new Date()).getFullYear(), planUnsub=null, ACM='', SM='';
+let PREP=null, SIGP_PEND=null, USER=null, SUMS={}, PLAN=[], PLANYEAR=(new Date()).getFullYear(), planUnsub=null, ACM='', SM='';
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const today=()=>new Date().toISOString().slice(0,10);
 function loginGoogle(){ firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert(e.message)); }
@@ -221,6 +223,7 @@ function loadPlan(){
     PLAN=(d.exists&&d.data().rows)||[];
     ACM=(d.exists&&d.data().acm)||'';
     SM=(d.exists&&d.data().sm)||'';
+    PREP=(d.exists&&d.data().prep)||null;            // CMM ลงนามจัดทำแผน (ระดับแผน)
     const ai=document.getElementById('acmemail'); if(ai&&document.activeElement!==ai) ai.value=ACM;
     const si=document.getElementById('smemail'); if(si&&document.activeElement!==si) si.value=SM;
     PLAN.forEach(r=>{ if(!r.ref) r.ref=roundRef(); });   // แถวเก่าก่อนมีระบบ ref
@@ -238,6 +241,7 @@ function loadPlan(){
 function tlIssues(r){
   const out=[], a=r.appr&&r.appr.dt, lt=letterDt(r), sg=r.sg||{}, ack=ackSigs(r).map(x=>x.dt).filter(Boolean);
   if(a&&r.start&&a>r.start) out.push('ACM อนุมัติ ('+a+') หลังวันเริ่ม');
+  if(a&&r.task==null&&PREP&&PREP.dt&&a<PREP.dt) out.push('ACM อนุมัติ ('+a+') ก่อน CMM จัดทำแผน ('+PREP.dt+')');
   ['lead','cmm'].forEach(ro=>{ const d=sg[ro]&&sg[ro].dt; if(!d) return;
     if(a&&d<a) out.push((ro==='lead'?'Lead':'CMM')+' ลงนาม ('+d+') ก่อน ACM อนุมัติ');
     if(r.start&&d>r.start) out.push((ro==='lead'?'Lead':'CMM')+' ลงนาม ('+d+') หลังวันเริ่ม'); });
@@ -298,6 +302,7 @@ function renderPlan(){
   });
   if(!PLAN.length) h+=`<tr><td colspan="9" style="color:#889;text-align:center;padding:14px">ยังไม่มีแผนของปี ${PLANYEAR} — กด "🧭 สร้างแผนโครงร่างตามรอบ OMM" เพื่อวางโครงทั้งปีในครั้งเดียว หรือ "➕ เพิ่มรายการตรวจ" ทีละรอบ · งานที่ไม่ใช่รอบตรวจใช้ "☑ เพิ่มงานอื่น ๆ (Task)"</td></tr>`;
   t.innerHTML=h;
+  renderPrep();
   renderBanners();
   renderGantt();
   renderCards();
@@ -400,7 +405,7 @@ function makeOutline(){
 function planRound(proj){ addRow(proj); document.getElementById('plantab').scrollIntoView({behavior:'smooth'}); }
 function savePlan(){
   PLAN.forEach(r=>{ if(!r.ref) r.ref=roundRef(); });
-  db.collection('plans').doc(String(PLANYEAR)).set({rows:PLAN,acm:ACM,sm:SM,u:USER?USER.email:'',t:firebase.firestore.FieldValue.serverTimestamp()})
+  db.collection('plans').doc(String(PLANYEAR)).set({rows:PLAN,acm:ACM,sm:SM,prep:PREP||null,u:USER?USER.email:'',t:firebase.firestore.FieldValue.serverTimestamp()})
     .then(()=>{ const el=document.getElementById('plansaved'); el.textContent='☁ บันทึกแล้ว '+new Date().toTimeString().slice(0,5); setTimeout(()=>el.textContent='',4000); })
     .catch(e=>alert('บันทึกไม่สำเร็จ: '+e.message));
 }
@@ -416,7 +421,7 @@ function renderBanners(){
   B.innerHTML=h;
 }
 let SIGP=null;
-const SIGP_ROLES={lead:'Lead Auditor',cmm:'Compliance Monitoring Manager',ackp:'ลงนามรับทราบการตรวจ (Acknowledgement)',acm:'Accountable Manager — อนุมัติรอบตรวจ',acmall:'Accountable Manager — อนุมัติแผนการตรวจประจำปี'};
+const SIGP_ROLES={lead:'Lead Auditor',cmm:'Compliance Monitoring Manager',ackp:'ลงนามรับทราบการตรวจ (Acknowledgement)',acm:'Accountable Manager — อนุมัติรอบตรวจ',acmall:'Accountable Manager — อนุมัติแผนการตรวจประจำปี',prep:'Compliance Monitoring Manager — จัดทำแผนการตรวจประจำปี'};
 // ---------- วันที่ลงนาม / ปิดงาน ให้ตรงลำดับเวลา ----------
 // ลำดับที่ต้องเป็น: ACM อนุมัติ ≤ Lead/CMM ออกหนังสือแจ้ง ≤ ผู้รับการตรวจรับทราบ ≤ วันเริ่มตรวจ ≤ วันสิ้นสุด ≤ ปิดงาน ≤ วันนี้
 // ลงย้อนหลังได้ แต่เก็บวันที่บันทึกจริงไว้ใน at เสมอ (แยกวันที่ลงนามออกจากวันที่บันทึก — หลักเดียวกับ D-0507-FCV-001)
@@ -431,12 +436,17 @@ function sigLimits(role,i){
   const T=today(), r=PLAN[i]||{}, sg=r.sg||{};
   const ahead=(st,n)=>st?(T<=st?T:dWk(dAdd(st,-n))):T;          // ค่าแนะนำ: วันนี้ ถ้ายังไม่ถึงวันเริ่ม — ไม่งั้นก่อนวันเริ่ม n วัน
   let L;
-  if(role==='acmall'){
+  if(role==='prep'){
+    const need=PLAN.filter(x=>x.task==null);
+    const st=dMin(...need.map(x=>x.start)), ap=dMin(...need.map(x=>x.appr&&x.appr.dt));
+    const mx=dMin(T,st,ap), pv=PREP&&PREP.dt;
+    L={min:'',max:mx,def:(pv&&(!mx||pv<=mx))?pv:(mx===T?T:dWk(dAdd(mx,-3))),why:'ต้องจัดทำก่อน ACM อนุมัติ'+(ap?' ('+ap+')':'')+' และก่อนรายการแรกในแผน'+(st?' ('+st+')':'')};
+  } else if(role==='acmall'){
     const st=dMin(...(SIGP_PEND||[]).map(k=>PLAN[k]&&PLAN[k].start));
-    L={min:'',max:dMin(T,st),def:ahead(st,14),why:st?'ต้องไม่หลังวันเริ่มของรายการแรกในแผน ('+st+')':''};
+    L={min:(PREP&&PREP.dt)||'',max:dMin(T,st),def:ahead(st,14),why:(st?'ต้องไม่หลังวันเริ่มของรายการแรกในแผน ('+st+')':'')+(PREP?' · ไม่ก่อน CMM จัดทำแผน ('+PREP.dt+')':'')};
   } else if(role==='acm'){
     const mx=dMin(T,r.start,letterDt(r)), pa=r.appr&&r.appr.dt;
-    L={min:'',max:mx,def:(pa&&(!mx||pa<=mx))?pa:dMin(ahead(r.start,14),letterDt(r)?dWk(dAdd(letterDt(r),-3)):''),why:'ต้องอนุมัติก่อนวันเริ่มตรวจ'+(letterDt(r)?' และก่อนวันที่ลงนามหนังสือแจ้ง ('+letterDt(r)+')':'')};
+    L={min:(PREP&&PREP.dt)||'',max:mx,def:(pa&&(!mx||pa<=mx))?pa:dMin(ahead(r.start,14),letterDt(r)?dWk(dAdd(letterDt(r),-3)):''),why:'ต้องอนุมัติก่อนวันเริ่มตรวจ'+(letterDt(r)?' และก่อนวันที่ลงนามหนังสือแจ้ง ('+letterDt(r)+')':'')};
   } else if(role==='lead'||role==='cmm'){
     const ack=dMin(...ackSigs(r).map(a=>a.dt));
     L={min:(r.appr&&r.appr.dt)||'',max:dMin(T,r.start,ack),def:(sg[role]&&sg[role].dt)||ahead(r.start,7),why:'หลัง ACM อนุมัติ'+(r.appr?' ('+r.appr.dt+')':'')+' และก่อนวันเริ่มตรวจ'+(ack?' / ก่อนผู้รับการตรวจรับทราบ ('+ack+')':'')};
@@ -479,11 +489,12 @@ function openCloseBox(i,role,title,warn){
 }
 function openSigP(i,role){
   const r=PLAN[i]||{}; const acmRole=role==='acm'||role==='acmall';
-  const prev=role==='acm'?(r.appr&&r.appr.d?r.appr:null):acmRole?null:(r.sg&&r.sg[role]);
+  const prev=role==='prep'?PREP:role==='acm'?(r.appr&&r.appr.d?r.appr:null):acmRole?null:(r.sg&&r.sg[role]);
   const me=(USER&&(USER.displayName||USER.email))||'';
-  const names={lead:r.lead||'',cmm:'',ackp:me,acm:me,acmall:me};
+  const names={lead:r.lead||'',cmm:'',ackp:me,acm:me,acmall:me,prep:me};
   const what=role==='acm'?`<div style="font-size:12px;color:#556;margin-top:4px">${esc(r.ref||'')} · ${esc(r.ms||((PACKS.find(x=>x.proj===r.proj)||{}).name)||r.proj||'')} ${esc(r.label||'')}</div>`
-    :role==='acmall'?`<div style="font-size:12px;color:#556;margin-top:4px">แผนการตรวจประจำปี ${PLANYEAR} · ลงนามอนุมัติ ${(SIGP_PEND||[]).length} รายการ</div>`:'';
+    :role==='acmall'?`<div style="font-size:12px;color:#556;margin-top:4px">แผนการตรวจประจำปี ${PLANYEAR} · ลงนามอนุมัติ ${(SIGP_PEND||[]).length} รายการ</div>`
+    :role==='prep'?`<div style="font-size:12px;color:#556;margin-top:4px">แผนการตรวจประจำปี ${PLANYEAR} · ${PLAN.length} รายการ · ลงนามในช่อง "จัดทำโดย" ของเอกสารแผน</div>`:'';
   const L=sigLimits(role,i);
   const w=document.createElement('div'); w.className='sigwrap'; w.id='sigpwrap';
   w.innerHTML=`<div class="sigbox">
@@ -528,6 +539,19 @@ function closeRound(i,on){
   renderPlan(); savePlan();
 }
 function isACM(){ if(!USER) return false; if(!ACM) return true; return (USER.email||'').toLowerCase()===ACM; }
+function prepSign(){
+  if(!USER){ alert('เข้าสู่ระบบก่อน'); return; }
+  if(!PLAN.length){ alert('ยังไม่มีรายการในแผนปี '+PLANYEAR); return; }
+  if(PREP&&!confirm('CMM ลงนามจัดทำแผนปี '+PLANYEAR+' ไว้แล้ว ('+PREP.n+' · '+PREP.dt+')\nลงนามใหม่ — แก้ชื่อ ลายเซ็น หรือวันที่?')) return;
+  openSigP(-1,'prep');
+}
+function renderPrep(){
+  const el=document.getElementById('prepstat'); if(!el) return;
+  const need=PLAN.filter(x=>x.task==null), ap=dMin(...need.map(x=>x.appr&&x.appr.dt));
+  const bad=PREP&&ap&&ap<PREP.dt;
+  el.innerHTML=PREP?`จัดทำโดย CMM: <img src="${PREP.d}" alt="" style="height:24px;vertical-align:middle;cursor:pointer" title="กดเพื่อลงนามใหม่" onclick="prepSign()"> <b>${esc(PREP.n)}</b> · ${esc(PREP.dt)}${bad?` <span style="color:var(--red)">⚠ ลำดับวันที่: ACM อนุมัติ (${esc(ap)}) ก่อน CMM จัดทำแผน</span>`:''}`
+    :(PLAN.length?'<span style="color:#9C6500">ยังไม่มีลายเซ็น CMM ผู้จัดทำแผน — ช่อง "จัดทำโดย" ในเอกสารแผนจะว่าง</span>':'');
+}
 function approveRow(i){
   if(!USER){ alert('เข้าสู่ระบบก่อน'); return; }
   if(!isACM()){ alert('เฉพาะ ACM ('+ACM+') เท่านั้นที่อนุมัติได้'); return; }
@@ -570,7 +594,9 @@ function sigPSave(){
   const {i,role}=SIGP;
   const dt=(document.getElementById('sgp_dt')||{}).value||'', de=dtCheck(dt,SIGP.L); if(de){ alert(de); return; }
   const at=today();
-  if(role==='acm'||role==='acmall'){
+  if(role==='prep'){
+    PREP={n:n,by:(USER&&USER.email||'').toLowerCase(),dt:dt,at:at,d:SIGP.cv.toDataURL('image/png')};
+  } else if(role==='acm'||role==='acmall'){
     const a={n:n,by:(USER&&USER.email||'').toLowerCase(),dt:dt,at:at,scope:role==='acm'?'รายครั้ง':'แผนประจำปี',d:SIGP.cv.toDataURL('image/png')};
     (role==='acm'?[i]:(SIGP_PEND||[])).forEach(k=>{ if(PLAN[k]) PLAN[k].appr={...a}; });
     SIGP_PEND=null;
@@ -741,7 +767,7 @@ function exportPlanPdf(){
   <div class="gantt"><div class="gr gh"><div class="gl">Ref · งานตรวจ</div><div class="gt">${gm}</div></div>${gr}</div>
   <div class="lg"><span style="background:#8fa3bd"></span>วางแผนแล้ว<span style="background:#E39B17"></span>ใกล้ถึงกำหนด<span style="background:#2E75B6"></span>กำลังตรวจ<span style="background:#C00000"></span>เลยกำหนด<span style="background:#1E7B34"></span>เสร็จสิ้น<span style="background:#1F3864;width:7px;height:7px;transform:rotate(45deg)"></span>หมุดหมาย · ☑ = งาน (Task)</div>`:''}
   <table class="sig"><tr><td class="h">จัดทำโดย — Compliance Monitoring Manager</td><td class="h">อนุมัติโดย — Accountable Manager</td></tr>
-  <tr><td>.......................................................<br>( ....................................................... )<br>วันที่ ...... / ...... / ......</td>
+  <tr><td>${PREP&&PREP.d?`<img src="${PREP.d}" alt="" style="height:52px"><br>( ${esc(PREP.n)} )<br>วันที่ ${fd(PREP.dt)}`:`.......................................................<br>( ....................................................... )<br>วันที่ ...... / ...... / ......`}</td>
   <td>${allAppr&&acmSig?`<img src="${acmSig.d}" alt="" style="height:52px"><br>( ${esc(acmSig.n)} )<br>วันที่ ${fd(acmSig.dt)}${bk(acmSig)?`<div class="sub">${bk(acmSig).replace(/^ · /,'')}</div>`:''}${unsignedN?`<div class="sub">อีก ${unsignedN} รายการอนุมัติในระบบโดยไม่มีลายเซ็น</div>`:''}`:allAppr?`อนุมัติในระบบ Audit Portal (ยังไม่มีลายเซ็น)<br>${apprTxt}`:`.......................................................<br>( ....................................................... )<br>วันที่ ...... / ...... / ......`}</td></tr></table>
   <div class="ft"><span>D-0507 Flight Training Co., Ltd. · Annual Audit Plan ${y}</span><span>ข้อมูลตามที่แสดงใน Audit Portal ขณะพิมพ์ — รวมการแก้ไขที่ยังไม่ได้กดบันทึก (ถ้ามี)</span></div>
   </body></html>`);
