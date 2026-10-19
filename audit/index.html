@@ -125,7 +125,7 @@ const CFG={
 const PACKS=[{"proj": "aerodrome", "outdir": "aerodrome", "name": "Aerodrome Certification Readiness", "desc": "ตรวจความพร้อมรับการรับรองสนามบิน · ICAO Annex 14 / Doc 9774 · DRAFT รอ review", "code": "D-0507-IAC-003 (DRAFT)", "ver": "v2026", "aid": "aerodrome-2026", "total": 81}, {"proj": "iac", "outdir": "iac", "name": "Internal Audit — GAP Analysis (TCAR-ORA)", "desc": "OMM · OMA · TM/PPL(A) + On-Site Implementation · 2,081 รายการตรวจ", "code": "D-0507-IAC-001", "ver": "v2026", "aid": "audit-2026", "total": 2081}, {"proj": "safety", "outdir": "safety", "name": "School Safety Audit (SMS)", "desc": "ตรวจความปลอดภัยทั้งโรงเรียน — D-0507-SAC-001 (2 มิติ Documented/Implemented) + ชุดคำถาม SMS ตาม CAAT PEL-TO-CK-102 (D0507-IAC-SMS-01 Rev.01)", "code": "D-0507-SAC-001", "ver": "v2026-rev01", "aid": "safety-2026", "total": 93}, {"proj": "surveillance", "outdir": "surveillance", "name": "Safety Surveillance (Spot Check)", "desc": "เฝ้าระวังความปลอดภัยแบบตรวจจุดตามฟอร์ม D-0507-SSC-001 · ระบุกิจกรรม/สถานที่ในช่อง Scope", "code": "D-0507-SSC-001", "ver": "v2026", "aid": "surveil-2026", "total": 29}, {"proj": "vendor", "outdir": "vendor", "name": "Vendor / Contracted Services Audit", "desc": "ตรวจผู้ให้บริการภายนอก/กิจกรรมจ้างช่วง ตามฟอร์ม D-0507-VAC-001 (ORA.GEN.205)", "code": "D-0507-VAC-001", "ver": "v2026", "aid": "vendor-2026", "total": 25}];
 firebase.initializeApp(CFG);
 const db=firebase.firestore();
-let USER=null, SUMS={}, PLAN=[], PLANYEAR=(new Date()).getFullYear(), planUnsub=null, ACM='', SM='';
+let SIGP_PEND=null, USER=null, SUMS={}, PLAN=[], PLANYEAR=(new Date()).getFullYear(), planUnsub=null, ACM='', SM='';
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const today=()=>new Date().toISOString().slice(0,10);
 function loginGoogle(){ firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert(e.message)); }
@@ -252,7 +252,7 @@ function renderPlan(){
       <td><span style="font-size:11px;font-weight:bold;color:var(--blue)">${esc(r.ref||'')}</span>
         ${r.ms?`<div style="font-size:12.5px;font-weight:bold;color:var(--navy);padding:3px 0">🏁 ${esc(r.ms)}</div><div style="font-size:11px;color:#8792a2">หมุดหมายตามแผน — ไม่ใช่รอบตรวจ</div>`
           :`<select onchange="PLAN[${i}].proj=this.value;PLAN[${i}].appr=null;renderPlan()">${PACKS.map(p=>`<option value="${p.proj}"${r.proj===p.proj?' selected':''}>${esc(p.name)}</option>`).join('')}</select>`}
-        ${r.appr?`<span class="pill done" title="โดย ${esc(r.appr.n)} (${esc(r.appr.scope||'')}) ${esc(r.appr.dt)}">🖋 อนุมัติแล้ว ${esc(r.appr.dt)}</span>`:`<span class="pill soon">⏳ รอ ACM อนุมัติ</span> <button class="pbtn" onclick="approveRow(${i})">🖋 อนุมัติ</button>`}
+        ${r.appr?`<span class="pill done" title="โดย ${esc(r.appr.n)} (${esc(r.appr.scope||'')}) ${esc(r.appr.dt)}">🖋 อนุมัติแล้ว ${esc(r.appr.dt)}</span>${r.appr.d?`<div style="font-size:10.5px;color:#556;margin-top:2px"><img src="${r.appr.d}" alt="" style="height:22px;vertical-align:middle"> ${esc(r.appr.n)}</div>`:` <button class="sgb" onclick="approveRow(${i})" title="อนุมัติไว้ก่อนมีช่องลงนาม">✍ ACM ลงนาม</button>`}`:`<span class="pill soon">⏳ รอ ACM อนุมัติ</span> <button class="pbtn" onclick="approveRow(${i})">🖋 อนุมัติ</button>`}
         ${r.ms?'':r.start?(r.appr?`<a class="pbtn" style="display:inline-block;text-decoration:none;margin-top:4px" href="../${(PACKS.find(x=>x.proj===r.proj)||{}).outdir}/?audit=${encodeURIComponent(rid(r))}">${r.done?'📖 ดูผลรอบนี้':'▶ เปิดงานตรวจ'}</a>`:`<span class="pbtn" style="opacity:.5;cursor:not-allowed">▶ เปิดได้เมื่ออนุมัติ</span>`):''}</td>
       <td><input value="${esc(r.label||'')}" placeholder="เช่น Q4 รอบหลัก" onchange="PLAN[${i}].label=this.value"></td>
       <td><input type="date" value="${esc(r.start||'')}" onchange="PLAN[${i}].start=this.value;PLAN[${i}].appr=null;renderPlan()"></td>
@@ -376,13 +376,17 @@ function renderBanners(){
   B.innerHTML=h;
 }
 let SIGP=null;
-const SIGP_ROLES={lead:'Lead Auditor',cmm:'Compliance Monitoring Manager',ackp:'ลงนามรับทราบการตรวจ (Acknowledgement)'};
+const SIGP_ROLES={lead:'Lead Auditor',cmm:'Compliance Monitoring Manager',ackp:'ลงนามรับทราบการตรวจ (Acknowledgement)',acm:'Accountable Manager — อนุมัติรอบตรวจ',acmall:'Accountable Manager — อนุมัติแผนการตรวจประจำปี'};
 function openSigP(i,role){
-  const r=PLAN[i]; const prev=r.sg&&r.sg[role];
-  const names={lead:r.lead||'',cmm:'',ackp:(USER&&(USER.displayName||USER.email))||''};
+  const r=PLAN[i]||{}; const acmRole=role==='acm'||role==='acmall';
+  const prev=role==='acm'?(r.appr&&r.appr.d?r.appr:null):acmRole?null:(r.sg&&r.sg[role]);
+  const me=(USER&&(USER.displayName||USER.email))||'';
+  const names={lead:r.lead||'',cmm:'',ackp:me,acm:me,acmall:me};
+  const what=role==='acm'?`<div style="font-size:12px;color:#556;margin-top:4px">${esc(r.ref||'')} · ${esc(r.ms||((PACKS.find(x=>x.proj===r.proj)||{}).name)||r.proj||'')} ${esc(r.label||'')}</div>`
+    :role==='acmall'?`<div style="font-size:12px;color:#556;margin-top:4px">แผนการตรวจประจำปี ${PLANYEAR} · ลงนามอนุมัติ ${(SIGP_PEND||[]).length} รายการ</div>`:'';
   const w=document.createElement('div'); w.className='sigwrap'; w.id='sigpwrap';
   w.innerHTML=`<div class="sigbox">
-    <b style="color:var(--navy)">✍ ลงนาม — ${SIGP_ROLES[role]}</b>
+    <b style="color:var(--navy)">✍ ลงนาม — ${SIGP_ROLES[role]}</b>${what}
     <div style="margin:8px 0">ชื่อ-นามสกุล: <input id="sgp_n" value="${esc((prev&&prev.n)||names[role]||(USER?(USER.displayName||USER.email):''))}"></div>
     <canvas id="sgp_c" width="540" height="170"></canvas>
     <div style="color:#7a8798;font-size:11px;margin-top:3px">เซ็นในกรอบด้วยนิ้ว / Apple Pencil / เมาส์</div>
@@ -427,18 +431,18 @@ function approveRow(i){
   if(!USER){ alert('เข้าสู่ระบบก่อน'); return; }
   if(!isACM()){ alert('เฉพาะ ACM ('+ACM+') เท่านั้นที่อนุมัติได้'); return; }
   if(!ACM&&!confirm('ยังไม่ได้กำหนดอีเมล ACM ในช่องท้ายตาราง — ยืนยันอนุมัติในนามผู้ใช้ปัจจุบัน?')) return;
-  const r=PLAN[i];
-  r.appr={n:(USER.displayName||USER.email),by:(USER.email||'').toLowerCase(),dt:today(),scope:'รายครั้ง'};
-  savePlan(); renderPlan();
+  openSigP(i,'acm');
 }
 function approveAll(){
   if(!USER){ alert('เข้าสู่ระบบก่อน'); return; }
   if(!isACM()){ alert('เฉพาะ ACM ('+ACM+') เท่านั้นที่อนุมัติได้'); return; }
-  const pend=PLAN.filter(r=>!r.appr);
-  if(!pend.length){ alert('ทุกรายการในแผนปี '+PLANYEAR+' อนุมัติแล้ว'); return; }
-  if(!confirm('ACM อนุมัติแผนประจำปี '+PLANYEAR+' — รายการที่ยังไม่อนุมัติทั้งหมด '+pend.length+' รายการ?')) return;
-  pend.forEach(r=>{ r.appr={n:(USER.displayName||USER.email),by:(USER.email||'').toLowerCase(),dt:today(),scope:'แผนประจำปี'}; });
-  savePlan(); renderPlan();
+  // รายการที่ยังไม่อนุมัติ + ที่อนุมัติแล้วแต่ยังไม่มีลายเซ็น (อนุมัติก่อนมีช่องเซ็น 19 OCT 2026)
+  const pend=PLAN.map((r,k)=>k).filter(k=>!PLAN[k].appr||!PLAN[k].appr.d);
+  if(!PLAN.length){ alert('ยังไม่มีรายการในแผนปี '+PLANYEAR); return; }
+  if(!pend.length){ alert('ทุกรายการในแผนปี '+PLANYEAR+' อนุมัติและลงนามแล้ว'); return; }
+  const unsigned=pend.filter(k=>PLAN[k].appr).length;
+  if(!confirm('ACM ลงนามอนุมัติแผนประจำปี '+PLANYEAR+' — '+pend.length+' รายการ'+(unsigned?'\n(ในจำนวนนี้ '+unsigned+' รายการอนุมัติไว้แล้วแต่ยังไม่มีลายเซ็น)':'')+'\n\nขั้นต่อไป: กรอกชื่อและเซ็นในกรอบ')) return;
+  SIGP_PEND=pend; openSigP(-1,'acmall');
 }
 function openAckSig(i){
   const r=PLAN[i];
@@ -460,7 +464,11 @@ function sigPSave(){
   if(!n){ alert('กรอกชื่อผู้ลงนาม'); return; }
   if(!SIGP.hasInk()){ alert('ยังไม่ได้เซ็นในกรอบ'); return; }
   const {i,role}=SIGP;
-  if(role==='ackp'){
+  if(role==='acm'||role==='acmall'){
+    const a={n:n,by:(USER&&USER.email||'').toLowerCase(),dt:today(),scope:role==='acm'?'รายครั้ง':'แผนประจำปี',d:SIGP.cv.toDataURL('image/png')};
+    (role==='acm'?[i]:(SIGP_PEND||[])).forEach(k=>{ if(PLAN[k]) PLAN[k].appr={...a}; });
+    SIGP_PEND=null;
+  } else if(role==='ackp'){
     const me=(USER&&USER.email||'').toLowerCase();
     const arr=ackSigs(PLAN[i]).filter(a=>a.email!==me);
     arr.push({email:me, d:SIGP.cv.toDataURL('image/png'), n:n, dt:today()});
@@ -538,6 +546,8 @@ function exportPlanPdf(){
   const appr=PLAN.filter(r=>r.appr), allAppr=PLAN.length&&appr.length===PLAN.length;
   const nAud=PLAN.filter(r=>!r.ms).length, nMs=PLAN.length-nAud, nDone=PLAN.filter(r=>r.done).length;
   const by={}; appr.forEach(r=>{ const k=r.appr.n+'|'+r.appr.dt; by[k]=(by[k]||0)+1; });
+  const sigs=appr.filter(r=>r.appr.d).sort((a,b)=>(b.appr.scope==='แผนประจำปี')-(a.appr.scope==='แผนประจำปี')||String(b.appr.dt).localeCompare(String(a.appr.dt)));
+  const acmSig=sigs[0]&&sigs[0].appr, unsignedN=appr.length-sigs.length;
   const apprTxt=Object.keys(by).map(k=>{const [n,dt]=k.split('|'); return esc(n)+' · '+fd(dt)+' ('+by[k]+' รายการ)';}).join('<br>');
   const now=new Date(), stamp=String(now.getDate()).padStart(2,'0')+' '+MON[now.getMonth()]+' '+now.getFullYear()+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
 
@@ -550,7 +560,7 @@ function exportPlanPdf(){
       <td>${esc(r.label||'')}</td><td class="nw">${fd(r.start)}</td><td class="nw">${fd(r.end||r.start)}</td><td class="c">${nd}</td>
       <td>${esc(r.lead||'')}</td><td>${esc(r.auditee||'')}</td>
       <td><span class="pill ${cls}">${esc(txt)}</span></td>
-      <td>${r.appr?`✔ ${esc(r.appr.n)}<div class="sub">${fd(r.appr.dt)}</div>`:'<span class="pend">รอ ACM อนุมัติ</span>'}</td></tr>`;
+      <td>${r.appr?`${r.appr.d?`<img src="${r.appr.d}" alt="" style="height:20px;display:block">`:'✔ '}${esc(r.appr.n)}<div class="sub">${fd(r.appr.dt)}</div>`:'<span class="pend">รอ ACM อนุมัติ</span>'}</td></tr>`;
   });
   if(!rows.length) tb='<tr><td colspan="11" class="c" style="padding:14px;color:#889">ยังไม่มีรายการในแผนปี '+y+'</td></tr>';
 
@@ -587,7 +597,7 @@ function exportPlanPdf(){
   .pill.plan{background:#e7ecf3;color:#456}.pill.run{background:#dbe9ff;color:#1d5eb8}.pill.soon{background:#FFF0D5;color:#9C6500}
   .pill.late{background:#FBE0E0;color:#C00000}.pill.done{background:#DFF2E3;color:#1E7B34}
   h2{font-size:12.5px;color:#1F3864;margin:12px 0 5px;break-after:avoid;page-break-after:avoid}
-  .gantt{border:0.8px solid #8a96a8}
+  .gantt{border:0.8px solid #8a96a8;break-inside:avoid;page-break-inside:avoid}
   .gr{display:flex;border-top:0.5px solid #dde4ee;break-inside:avoid;page-break-inside:avoid}
   .gr:first-child{border-top:none}
   .gl{flex:0 0 31%;padding:2px 5px;font-size:9px;line-height:1.25;border-right:0.8px solid #8a96a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -624,7 +634,7 @@ function exportPlanPdf(){
   <div class="lg"><span style="background:#8fa3bd"></span>วางแผนแล้ว<span style="background:#E39B17"></span>ใกล้ถึงกำหนด<span style="background:#2E75B6"></span>กำลังตรวจ<span style="background:#C00000"></span>เลยกำหนด<span style="background:#1E7B34"></span>เสร็จสิ้น<span style="background:#1F3864;width:7px;height:7px;transform:rotate(45deg)"></span>หมุดหมาย</div>`:''}
   <table class="sig"><tr><td class="h">จัดทำโดย — Compliance Monitoring Manager</td><td class="h">อนุมัติโดย — Accountable Manager</td></tr>
   <tr><td>.......................................................<br>( ....................................................... )<br>วันที่ ...... / ...... / ......</td>
-  <td>${allAppr?`อนุมัติในระบบ Audit Portal<br>${apprTxt}`:`.......................................................<br>( ....................................................... )<br>วันที่ ...... / ...... / ......`}</td></tr></table>
+  <td>${allAppr&&acmSig?`<img src="${acmSig.d}" alt="" style="height:52px"><br>( ${esc(acmSig.n)} )<br>วันที่ ${fd(acmSig.dt)}${unsignedN?`<div class="sub">อีก ${unsignedN} รายการอนุมัติในระบบโดยไม่มีลายเซ็น</div>`:''}`:allAppr?`อนุมัติในระบบ Audit Portal (ยังไม่มีลายเซ็น)<br>${apprTxt}`:`.......................................................<br>( ....................................................... )<br>วันที่ ...... / ...... / ......`}</td></tr></table>
   <div class="ft"><span>D-0507 Flight Training Co., Ltd. · Annual Audit Plan ${y}</span><span>ข้อมูลตามที่แสดงใน Audit Portal ขณะพิมพ์ — รวมการแก้ไขที่ยังไม่ได้กดบันทึก (ถ้ามี)</span></div>
   </body></html>`);
   w.document.close();
