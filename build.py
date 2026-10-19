@@ -164,6 +164,7 @@ footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
     <table class="plan" id="plantab"></table>
     <div style="margin-top:8px">
       <button class="pbtn" onclick="addRow()">➕ เพิ่มรายการตรวจ</button>
+      <button class="pbtn" onclick="addTask()" title="งานที่ไม่ใช่รอบตรวจ เช่น จัดทำแผนตรวจปีถัดไป — ผู้รับผิดชอบปิดงานเอง ไม่ต้องอนุมัติ">☑ เพิ่มงานอื่น ๆ (Task)</button>
       <button class="pbtn" onclick="makeOutline()">🧭 สร้างแผนโครงร่างตามรอบ OMM</button>
       <button class="pbtn g" onclick="savePlan()">💾 บันทึกแผน</button>
       <button class="pbtn" onclick="exportPlanPdf()">🖨 Export PDF (A4 แนวนอน)</button>
@@ -225,7 +226,7 @@ firebase.auth().onAuthStateChanged(u=>{
 function renderCards(){
   const el=document.getElementById('cards'); if(!el) return;
   const rounds=PLAN.map((r,i)=>({r,i})).filter(({r})=>{
-    if(r.ms||r.done||!r.start) return false;
+    if(r.ms||r.task!=null||r.done||!r.start) return false;
     const d=(new Date(r.start)-new Date(today()))/86400000;
     return d<=30;                              // ภายใน 30 วัน รวมที่เริ่มแล้ว/เลยกำหนด
   });
@@ -315,6 +316,19 @@ function renderPlan(){
   let h=`<tr><th style="width:16%">Project</th><th style="width:12%">รอบ/Label</th><th style="width:11%">เริ่ม</th><th style="width:11%">สิ้นสุด</th><th style="width:11%">Lead Auditor</th><th style="width:13%">ผู้รับการตรวจ</th><th>สถานะ</th><th style="width:15%">เอกสารแจ้ง</th><th style="width:4%"></th></tr>`;
   PLAN.forEach((r,i)=>{
     const [cls,txt]=rowStatus(r);
+    if(r.task!=null){ h+=`<tr style="background:#F7FAF8">
+      <td><span style="font-size:11px;font-weight:bold;color:var(--blue)">${esc(r.ref||'')}</span> <span class="pill done" style="background:#E3F1EC;color:#1d6b55">☑ งาน (Task)</span>
+        <input id="task_${i}" value="${esc(r.task||'')}" placeholder="ชื่องาน เช่น จัดทำแผนการตรวจปี ${PLANYEAR+1}" style="margin-top:3px" onchange="PLAN[${i}].task=this.value;renderGantt()">
+        <div style="font-size:11px;color:#8792a2">ไม่ต้องอนุมัติ — ผู้รับผิดชอบติ๊กเสร็จเอง</div></td>
+      <td><input value="${esc(r.label||'')}" placeholder="รายละเอียด" onchange="PLAN[${i}].label=this.value"></td>
+      <td><input type="date" value="${esc(r.start||'')}" onchange="PLAN[${i}].start=this.value;renderPlan()"></td>
+      <td><input type="date" value="${esc(r.end||'')}" title="กำหนดเสร็จ" onchange="PLAN[${i}].end=this.value;renderPlan()"></td>
+      <td><input value="${esc(r.lead||'')}" placeholder="ผู้รับผิดชอบ" onchange="PLAN[${i}].lead=this.value"></td>
+      <td><input value="${esc(r.auditee||'')}" placeholder="หมายเหตุ / ผลลัพธ์" onchange="PLAN[${i}].auditee=this.value"></td>
+      <td><span class="pill ${cls}">${txt}</span><br><label style="font-size:11px;color:#667"><input type="checkbox" ${r.done?'checked':''} onchange="closeTask(${i},this.checked)"> เสร็จแล้ว</label>
+        ${r.cl?`<div style="font-size:11px;color:var(--green)">✔ ${esc(r.cl.n)} · ${esc(r.cl.dt)}</div>`:''}</td>
+      <td><button class="pbtn" onclick="notiIcs(${i})">📅 ลงปฏิทิน</button></td>
+      <td><button class="pbtn x" onclick="if(confirm('ลบรายการนี้?')){PLAN.splice(${i},1);renderPlan();}">✕</button></td></tr>`; return; }
     h+=`<tr>
       <td><span style="font-size:11px;font-weight:bold;color:var(--blue)">${esc(r.ref||'')}</span>
         ${r.ms?`<div style="font-size:12.5px;font-weight:bold;color:var(--navy);padding:3px 0">🏁 ${esc(r.ms)}</div><div style="font-size:11px;color:#8792a2">หมุดหมายตามแผน — ไม่ใช่รอบตรวจ</div>`
@@ -336,7 +350,7 @@ function renderPlan(){
         <button class="sgb${ackDone(r)?' ok':''}" onclick="openAckSig(${i})">${ackDone(r)?'✔':'✍'} รับทราบ ${ackList(r).length?ackCount(r)[0]+'/'+ackCount(r)[1]:''}</button>`}</td>
       <td><button class="pbtn x" onclick="if(confirm('ลบรายการนี้?')){PLAN.splice(${i},1);renderPlan();}">✕</button></td></tr>`;
   });
-  if(!PLAN.length) h+=`<tr><td colspan="9" style="color:#889;text-align:center;padding:14px">ยังไม่มีแผนของปี ${PLANYEAR} — กด "🧭 สร้างแผนโครงร่างตามรอบ OMM" เพื่อวางโครงทั้งปีในครั้งเดียว หรือ "➕ เพิ่มรายการตรวจ" ทีละรอบ</td></tr>`;
+  if(!PLAN.length) h+=`<tr><td colspan="9" style="color:#889;text-align:center;padding:14px">ยังไม่มีแผนของปี ${PLANYEAR} — กด "🧭 สร้างแผนโครงร่างตามรอบ OMM" เพื่อวางโครงทั้งปีในครั้งเดียว หรือ "➕ เพิ่มรายการตรวจ" ทีละรอบ · งานที่ไม่ใช่รอบตรวจใช้ "☑ เพิ่มงานอื่น ๆ (Task)"</td></tr>`;
   t.innerHTML=h;
   renderBanners();
   renderGantt();
@@ -371,9 +385,9 @@ function renderGantt(){
     const [cls,txt]=rowStatus(r);
     const a=doy(r.start), b=doy(r.end||r.start);
     const left=a*PX, wdt=Math.max((b-a+1)*PX, 26);
-    rowsH+=`<div class="grow"><div class="glab"><b>${esc(r.ms?'🏁 '+r.ms:(p.name||r.proj))}</b>${esc(r.label||'')}</div>
+    rowsH+=`<div class="grow"><div class="glab"><b>${esc(rowName(r))}</b>${esc(r.label||'')}</div>
       <div class="gtl" style="width:${W}px">${grid}${todayLine}
-        <div class="gbar ${cls}" style="left:${left}px;width:${wdt}px" title="${esc((r.ms||p.name||r.proj)+' '+(r.label||''))} · ${esc(r.start)} → ${esc(r.end||r.start)} · ${txt} · Lead: ${esc(r.lead||'-')}">${esc((r.ref?r.ref+" · ":"")+(r.label||p.proj||""))}</div>
+        <div class="gbar ${cls}" style="left:${left}px;width:${wdt}px" title="${esc(rowName(r)+' '+(r.label||''))} · ${esc(r.start)} → ${esc(r.end||r.start)} · ${txt} · Lead: ${esc(r.lead||'-')}">${esc((r.ref?r.ref+" · ":"")+(r.label||p.proj||""))}</div>
       </div></div>`;
   });
   if(!withDates.length) rowsH+=`<div class="grow"><div style="padding:14px;color:#889;font-size:12.5px">ยังไม่มีรายการที่กำหนดวันเริ่ม — กำหนดวันในตารางด้านบนแล้วแท่งจะปรากฏที่นี่</div></div>`;
@@ -382,6 +396,19 @@ function renderGantt(){
   // เลื่อนให้เห็นช่วงปัจจุบันพอดี
   const wrap=document.getElementById('gwrap');
   if(wrap&&tNow.getFullYear()===y) wrap.scrollLeft=Math.max(0,doy(today())*PX-wrap.clientWidth/2+190);
+}
+// ชื่อที่ใช้แสดงของแถว — รอบตรวจ / หมุดหมาย (r.ms) / งาน (r.task)
+function rowName(r){ if(r.task!=null) return '☑ '+(r.task||'(ยังไม่ได้ตั้งชื่องาน)'); if(r.ms) return '🏁 '+r.ms;
+  const p=PACKS.find(x=>x.proj===r.proj); return p?p.name:(r.proj||''); }
+// งาน (Task) — to-do ที่จบในคนเดียว: ไม่ต้อง ACM อนุมัติ ไม่มี checklist ไม่มีหนังสือแจ้ง/ลายเซ็น
+function addTask(){ PLAN.push({task:'',proj:'',ref:roundRef(),label:'',start:'',end:'',lead:'',auditee:'',done:false}); renderPlan();
+  setTimeout(()=>{ const el=document.getElementById('task_'+(PLAN.length-1)); if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.focus(); } },50); }
+function closeTask(i,on){
+  const r=PLAN[i]; if(!r) return;
+  if(!USER){ alert('เข้าสู่ระบบก่อน'); renderPlan(); return; }
+  if(on){ r.done=true; r.cl={n:(USER.displayName||USER.email),by:(USER.email||'').toLowerCase(),dt:today()}; }
+  else { if(!confirm('เปิดงานนี้กลับมา (ยกเลิกเสร็จแล้ว)?')){ renderPlan(); return; } r.done=false; r.cl=null; }
+  renderPlan(); savePlan();
 }
 function addRow(proj){ PLAN.push({proj:proj||PACKS[0].proj,ref:roundRef(),label:'',start:'',end:'',lead:'',auditee:'',done:false}); renderPlan(); }
 // โครงร่างแผนประจำปีตามรอบที่คู่มือกำหนด — OMM "Compliance Monitoring Schedule"
@@ -435,8 +462,8 @@ function renderBanners(){
   const B=document.getElementById('banners'); let h='';
   PLAN.forEach(r=>{
     const [cls,txt]=rowStatus(r); const p=PACKS.find(x=>x.proj===r.proj);
-    if(cls==='soon') h+=`<div class="banner warn">🟠 <b>${esc(p?p.name:r.proj)}</b> ${esc(r.label||'')} — ${txt} (เริ่ม ${esc(r.start)}) · Lead: ${esc(r.lead||'-')}</div>`;
-    if(cls==='late') h+=`<div class="banner late">🔴 <b>${esc(p?p.name:r.proj)}</b> ${esc(r.label||'')} — เลยกำหนด (สิ้นสุด ${esc(r.end)}) ยังไม่ปิดงาน</div>`;
+    if(cls==='soon') h+=`<div class="banner warn">🟠 <b>${esc(rowName(r))}</b> ${esc(r.label||'')} — ${txt} (เริ่ม ${esc(r.start)}) · Lead: ${esc(r.lead||'-')}</div>`;
+    if(cls==='late') h+=`<div class="banner late">🔴 <b>${esc(rowName(r))}</b> ${esc(r.label||'')} — เลยกำหนด (สิ้นสุด ${esc(r.end)}) ยังไม่ปิดงาน</div>`;
     if(USER&&!r.done&&ackList(r).includes((USER.email||'').toLowerCase())&&!ackOf(r,USER.email))
       h+=`<div class="banner warn">✍ <b>คุณมีหนังสือแจ้งการตรวจรอลงนามรับทราบ</b> — ${esc(p?p.name:r.proj)} ${esc(r.ref||'')} (${esc(r.start||'')}) · กดปุ่ม "✍ รับทราบ" ในตารางแผน หรือเปิด 📄 ดูรายละเอียดก่อน</div>`;
   });
@@ -504,9 +531,9 @@ function approveAll(){
   if(!USER){ alert('เข้าสู่ระบบก่อน'); return; }
   if(!isACM()){ alert('เฉพาะ ACM ('+ACM+') เท่านั้นที่อนุมัติได้'); return; }
   // รายการที่ยังไม่อนุมัติ + ที่อนุมัติแล้วแต่ยังไม่มีลายเซ็น (อนุมัติก่อนมีช่องเซ็น 19 OCT 2026)
-  const pend=PLAN.map((r,k)=>k).filter(k=>!PLAN[k].appr||!PLAN[k].appr.d);
+  const pend=PLAN.map((r,k)=>k).filter(k=>PLAN[k].task==null&&(!PLAN[k].appr||!PLAN[k].appr.d));
   if(!PLAN.length){ alert('ยังไม่มีรายการในแผนปี '+PLANYEAR); return; }
-  if(!pend.length){ alert('ทุกรายการในแผนปี '+PLANYEAR+' อนุมัติและลงนามแล้ว'); return; }
+  if(!pend.length){ alert('ทุกรายการในแผนปี '+PLANYEAR+' ที่ต้องอนุมัติ อนุมัติและลงนามแล้ว (งาน/Task ไม่ต้องอนุมัติ)'); return; }
   const unsigned=pend.filter(k=>PLAN[k].appr).length;
   if(!confirm('ACM ลงนามอนุมัติแผนประจำปี '+PLANYEAR+' — '+pend.length+' รายการ'+(unsigned?'\n(ในจำนวนนี้ '+unsigned+' รายการอนุมัติไว้แล้วแต่ยังไม่มีลายเซ็น)':'')+'\n\nขั้นต่อไป: กรอกชื่อและเซ็นในกรอบ')) return;
   SIGP_PEND=pend; openSigP(-1,'acmall');
@@ -609,9 +636,10 @@ function exportPlanPdf(){
     return Math.max(0,Math.min(days,(Date.UTC(+m[1],+m[2]-1,+m[3])-jan1)/86400000)); };
   const rows=PLAN.map((r,i)=>({r,i})).sort((a,b)=>(a.r.start||'9999').localeCompare(b.r.start||'9999')||a.i-b.i);
   const nameOf=r=>{ const p=PACKS.find(x=>x.proj===r.proj)||{};
-    return r.ms?{t:'🏁 '+r.ms,s:'หมุดหมายตามแผน — ไม่ใช่รอบตรวจ'}:{t:p.name||r.proj||'—',s:[p.code,p.ver].filter(Boolean).join(' · ')}; };
-  const appr=PLAN.filter(r=>r.appr), allAppr=PLAN.length&&appr.length===PLAN.length;
-  const nAud=PLAN.filter(r=>!r.ms).length, nMs=PLAN.length-nAud, nDone=PLAN.filter(r=>r.done).length;
+    return r.task!=null?{t:rowName(r),s:'งาน — ผู้รับผิดชอบปิดงานเอง ไม่ต้องอนุมัติ'}:r.ms?{t:'🏁 '+r.ms,s:'หมุดหมายตามแผน — ไม่ใช่รอบตรวจ'}:{t:p.name||r.proj||'—',s:[p.code,p.ver].filter(Boolean).join(' · ')}; };
+  const NEED=PLAN.filter(r=>r.task==null);                       // งาน (Task) ไม่ต้องอนุมัติ
+  const appr=NEED.filter(r=>r.appr), allAppr=NEED.length&&appr.length===NEED.length;
+  const nTask=PLAN.length-NEED.length, nMs=NEED.filter(r=>r.ms).length, nAud=NEED.length-nMs, nDone=PLAN.filter(r=>r.done).length;
   const by={}; appr.forEach(r=>{ const k=r.appr.n+'|'+r.appr.dt; by[k]=(by[k]||0)+1; });
   const sigs=appr.filter(r=>r.appr.d).sort((a,b)=>(b.appr.scope==='แผนประจำปี')-(a.appr.scope==='แผนประจำปี')||String(b.appr.dt).localeCompare(String(a.appr.dt)));
   const acmSig=sigs[0]&&sigs[0].appr, unsignedN=appr.length-sigs.length;
@@ -622,12 +650,12 @@ function exportPlanPdf(){
   rows.forEach(({r},k)=>{ const [cls,txt]=rowStatus(r); const nm=nameOf(r);
     const d0=pos(r.start), d1=pos(r.end||r.start);
     const nd=(d0!=null&&d1!=null)?Math.round(d1-d0)+1:'';
-    tb+=`<tr${r.ms?' class="ms"':''}><td class="c">${k+1}</td><td class="nw"><b>${esc(r.ref||'')}</b></td>
+    tb+=`<tr${r.ms?' class="ms"':r.task!=null?' class="tk"':''}><td class="c">${k+1}</td><td class="nw"><b>${esc(r.ref||'')}</b></td>
       <td><b>${esc(nm.t)}</b>${nm.s?`<div class="sub">${esc(nm.s)}</div>`:''}</td>
       <td>${esc(r.label||'')}</td><td class="nw">${fd(r.start)}</td><td class="nw">${fd(r.end||r.start)}</td><td class="c">${nd}</td>
       <td>${esc(r.lead||'')}</td><td>${esc(r.auditee||'')}</td>
       <td><span class="pill ${cls}">${esc(txt)}</span></td>
-      <td>${r.appr?`${r.appr.d?`<img src="${r.appr.d}" alt="" style="height:20px;display:block">`:'✔ '}${esc(r.appr.n)}<div class="sub">${fd(r.appr.dt)}</div>`:'<span class="pend">รอ ACM อนุมัติ</span>'}</td></tr>`;
+      <td>${r.task!=null?(r.cl?`✔ เสร็จ — ${esc(r.cl.n)}<div class="sub">${fd(r.cl.dt)}</div>`:'<span class="sub">ไม่ต้องอนุมัติ</span>'):r.appr?`${r.appr.d?`<img src="${r.appr.d}" alt="" style="height:20px;display:block">`:'✔ '}${esc(r.appr.n)}<div class="sub">${fd(r.appr.dt)}</div>`:'<span class="pend">รอ ACM อนุมัติ</span>'}</td></tr>`;
   });
   if(!rows.length) tb='<tr><td colspan="11" class="c" style="padding:14px;color:#889">ยังไม่มีรายการในแผนปี '+y+'</td></tr>';
 
@@ -657,7 +685,7 @@ function exportPlanPdf(){
   table.pl th{background:#1F3864;color:#fff;padding:5px 5px;font-size:10px;text-align:left;border:0.8px solid #000}
   table.pl td{border:0.8px solid #8a96a8;padding:4px 5px;vertical-align:top}
   table.pl thead{display:table-header-group} table.pl tr{break-inside:avoid;page-break-inside:avoid}
-  table.pl tr.ms td{background:#F5F7FB}
+  table.pl tr.ms td{background:#F5F7FB} table.pl tr.tk td{background:#F4FAF7}
   .c{text-align:center} .nw{white-space:nowrap} .sub{font-size:9px;color:#6b778a;margin-top:1px}
   .pend{color:#9C6500;font-weight:bold}
   .pill{display:inline-block;border-radius:8px;padding:1px 7px;font-size:9.5px;font-weight:bold;white-space:nowrap}
@@ -689,16 +717,16 @@ function exportPlanPdf(){
   <table class="t0"><tr><td class="co">D-0507 FLIGHT TRAINING CO., LTD.</td></tr>
   <tr><td>ANNUAL AUDIT PLAN ${y}<br><span style="font-size:11px;font-weight:normal">แผนการตรวจติดตามภายในประจำปี ${y}</span></td></tr></table>
   <table class="t1"><tr><td>OMM Ref: Section 5 – Compliance Monitoring · Compliance Monitoring Schedule / Quality Audit Schedule</td><td style="text-align:right">พิมพ์จาก Audit Portal ${stamp}</td></tr></table>
-  <div class="meta"><span><b>รายการทั้งหมด</b> ${PLAN.length} (รอบตรวจ ${nAud} · หมุดหมาย ${nMs})</span>
-    <span><b>เสร็จสิ้น</b> ${nDone}</span><span><b>ACM อนุมัติแล้ว</b> ${appr.length}/${PLAN.length}</span>
+  <div class="meta"><span><b>รายการทั้งหมด</b> ${PLAN.length} (รอบตรวจ ${nAud} · หมุดหมาย ${nMs} · งาน ${nTask})</span>
+    <span><b>เสร็จสิ้น</b> ${nDone}</span><span><b>ACM อนุมัติแล้ว</b> ${appr.length}/${NEED.length}</span>
     <span><b>ACM ผู้อนุมัติแผน</b> ${esc(ACM||'—')}</span></div>
-  ${(allAppr||!PLAN.length)?'':`<div class="warn">ฉบับร่าง — ยังมี ${PLAN.length-appr.length} รายการที่ ACM ยังไม่อนุมัติ · แผนใช้ได้เมื่อ ACM อนุมัติครบทุกรายการ</div>`}
+  ${(allAppr||!NEED.length)?'':`<div class="warn">ฉบับร่าง — ยังมี ${NEED.length-appr.length} รายการที่ ACM ยังไม่อนุมัติ · แผนใช้ได้เมื่อ ACM อนุมัติครบทุกรายการ</div>`}
   <table class="pl"><thead><tr><th style="width:3%">#</th><th style="width:7%">Ref</th><th style="width:17%">งานตรวจ / หมุดหมาย</th><th>รอบ / ขอบเขต</th>
     <th style="width:7.5%">เริ่ม</th><th style="width:7.5%">สิ้นสุด</th><th style="width:3.5%">วัน</th><th style="width:9%">Lead Auditor</th>
-    <th style="width:10%">ผู้รับการตรวจ</th><th style="width:9%">สถานะ</th><th style="width:10%">ACM อนุมัติ</th></tr></thead><tbody>${tb}</tbody></table>
+    <th style="width:10%">ผู้รับการตรวจ</th><th style="width:9%">สถานะ</th><th style="width:10%">ACM อนุมัติ / ปิดงาน</th></tr></thead><tbody>${tb}</tbody></table>
   ${gr?`<h2>ปฏิทินการตรวจ 12 เดือน — ${y}</h2>
   <div class="gantt"><div class="gr gh"><div class="gl">Ref · งานตรวจ</div><div class="gt">${gm}</div></div>${gr}</div>
-  <div class="lg"><span style="background:#8fa3bd"></span>วางแผนแล้ว<span style="background:#E39B17"></span>ใกล้ถึงกำหนด<span style="background:#2E75B6"></span>กำลังตรวจ<span style="background:#C00000"></span>เลยกำหนด<span style="background:#1E7B34"></span>เสร็จสิ้น<span style="background:#1F3864;width:7px;height:7px;transform:rotate(45deg)"></span>หมุดหมาย</div>`:''}
+  <div class="lg"><span style="background:#8fa3bd"></span>วางแผนแล้ว<span style="background:#E39B17"></span>ใกล้ถึงกำหนด<span style="background:#2E75B6"></span>กำลังตรวจ<span style="background:#C00000"></span>เลยกำหนด<span style="background:#1E7B34"></span>เสร็จสิ้น<span style="background:#1F3864;width:7px;height:7px;transform:rotate(45deg)"></span>หมุดหมาย · ☑ = งาน (Task)</div>`:''}
   <table class="sig"><tr><td class="h">จัดทำโดย — Compliance Monitoring Manager</td><td class="h">อนุมัติโดย — Accountable Manager</td></tr>
   <tr><td>.......................................................<br>( ....................................................... )<br>วันที่ ...... / ...... / ......</td>
   <td>${allAppr&&acmSig?`<img src="${acmSig.d}" alt="" style="height:52px"><br>( ${esc(acmSig.n)} )<br>วันที่ ${fd(acmSig.dt)}${unsignedN?`<div class="sub">อีก ${unsignedN} รายการอนุมัติในระบบโดยไม่มีลายเซ็น</div>`:''}`:allAppr?`อนุมัติในระบบ Audit Portal (ยังไม่มีลายเซ็น)<br>${apprTxt}`:`.......................................................<br>( ....................................................... )<br>วันที่ ...... / ...... / ......`}</td></tr></table>
@@ -730,11 +758,11 @@ function notiIcs(i){
   const d2=new Date(new Date(r.end||r.start).getTime()+86400000).toISOString().slice(0,10).replace(/-/g,'');
   const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//D-0507//Audit//TH','BEGIN:VEVENT',
    `UID:${r.proj||'ms'}-${d1}@d0507-audit`,`DTSTART;VALUE=DATE:${d1}`,`DTEND;VALUE=DATE:${d2}`,
-   `SUMMARY:${r.ms?r.ms:'Audit: '+(p.name||r.proj)} ${(r.label||'')}`,
-   `DESCRIPTION:${r.ms?(r.ref||''):'Lead: '+(r.lead||'-')+' · '+(p.code||'')}`,'END:VEVENT','END:VCALENDAR'].join('\r\n');
+   `SUMMARY:${r.task!=null?'Task: '+(r.task||''):r.ms?r.ms:'Audit: '+(p.name||r.proj)} ${(r.label||'')}`,
+   `DESCRIPTION:${r.task!=null?(r.ref||'')+' · ผู้รับผิดชอบ: '+(r.lead||'-'):r.ms?(r.ref||''):'Lead: '+(r.lead||'-')+' · '+(p.code||'')}`,'END:VEVENT','END:VCALENDAR'].join('\r\n');
   const a=document.createElement('a');
   a.href='data:text/calendar;charset=utf-8,'+encodeURIComponent(ics);
-  a.download=`${r.ms?'Milestone':'Audit'}_${r.proj||(r.ref||'ms')}_${r.start}.ics`; a.click();
+  a.download=`${r.task!=null?'Task':r.ms?'Milestone':'Audit'}_${r.proj||(r.ref||'ms')}_${r.start}.ics`; a.click();
 }
 </script></body></html>'''
 
