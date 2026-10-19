@@ -592,7 +592,7 @@ function notiLetter(i){
   const full=!!(sg.lead&&sg.cmm&&ackDone(r));
   const dots='............................................';
   const sigTd=(role,fallback)=>{const g=sg[role];
-    return g?`<td><img src="${g.d}" style="height:48px"><br>( ${esc(g.n)} )<br>วันที่ ${esc(g.dt)}${g.at&&g.at!==g.dt?`<br><span style="font-size:10.5px;color:#7a8798">บันทึกลงระบบ ${esc(g.at)}</span>`:''}</td>`
+    return g?`<td><img src="${g.d}" style="height:48px"><br>( ${esc(g.n)} )<br>วันที่ ${esc(g.dt)}</td>`
             :`<td style="color:#98a4b4">ยังไม่ลงนาม — ลงนามใน Portal<br>( ${esc(fallback||dots)} )<br>วันที่ ...... / ...... / ......</td>`;};
   const w=window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>Audit Notification — ${esc(p.name||'')}</title><style>
@@ -627,7 +627,7 @@ function notiLetter(i){
   <table class="sig" style="margin-top:6px"><tr><td class="h" colspan="3">ผู้รับการตรวจ — ลงนามรับทราบ (${ackCount(r)[0]}/${ackCount(r)[1]} คน)</td></tr>
   ${(()=>{const L=ackList(r); if(!L.length) return '<tr><td colspan="3" style="color:#98a4b4">ยังไม่ได้ระบุรายชื่อผู้ต้องรับทราบ</td></tr>';
     let cells=L.map(e=>{const a=ackOf(r,e);
-      return a?`<td><img src="${a.d}" style="height:44px"><br>( ${esc(a.n)} )<br>${esc(e)} · ${esc(a.dt)}${a.at&&a.at!==a.dt?`<br><span style="font-size:10.5px;color:#7a8798">บันทึกลงระบบ ${esc(a.at)}</span>`:''}</td>`
+      return a?`<td><img src="${a.d}" style="height:44px"><br>( ${esc(a.n)} )<br>${esc(e)} · ${esc(a.dt)}</td>`
               :`<td style="color:#98a4b4">ยังไม่ลงนาม — ลงนามใน Portal<br>( ${esc(e)} )<br>วันที่ ...... / ...... / ......</td>`;});
     while(cells.length%3) cells.push('<td style="border:none"></td>');
     let out=''; for(let k=0;k<cells.length;k+=3) out+='<tr>'+cells.slice(k,k+3).join('')+'</tr>';
@@ -647,7 +647,7 @@ function exportPlanPdf(){
   const pos=d=>{ const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})/); if(!m) return null;
     return Math.max(0,Math.min(days,(Date.UTC(+m[1],+m[2]-1,+m[3])-jan1)/86400000)); };
   const rows=PLAN.map((r,i)=>({r,i})).sort((a,b)=>(a.r.start||'9999').localeCompare(b.r.start||'9999')||a.i-b.i);
-  const bk=o=>(o&&o.at&&o.dt&&o.at!==o.dt)?' · บันทึกลงระบบ '+fd(o.at):'';   // ลงนาม/ปิดงานย้อนหลัง → แสดงวันที่บันทึกจริง
+  const bk=o=>'';   // วันที่บันทึกจริง (at) เก็บในข้อมูล ไม่พิมพ์ลงเอกสาร — ตามที่ผู้ควบคุมเอกสารสั่ง 19 OCT 2026
   const nameOf=r=>{ const p=PACKS.find(x=>x.proj===r.proj)||{};
     return r.task!=null?{t:rowName(r),s:'งาน — ผู้รับผิดชอบปิดงานเอง ไม่ต้องอนุมัติ'}:r.ms?{t:'🏁 '+r.ms,s:'หมุดหมายตามแผน — ไม่ใช่รอบตรวจ'}:{t:p.name||r.proj||'—',s:[p.code,p.ver].filter(Boolean).join(' · ')}; };
   const NEED=PLAN.filter(r=>r.task==null);                       // งาน (Task) ไม่ต้องอนุมัติ
