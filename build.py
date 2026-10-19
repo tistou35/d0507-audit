@@ -246,7 +246,7 @@ function renderCards(){
       <div style="margin-top:6px"><span class="pill ${cls}">${txt}</span></div>
       <div class="bar"><i style="width:${pct}%"></i></div>
       <div class="pc-stat">ตรวจแล้ว <b>${su?su.done:0}/${su?(su.total||p.total):p.total}</b> (${pct}%) · GAP <b class="g">${su?su.gap:0}</b> · CAR ค้าง <b class="c">${su?su.carOpen:0}</b>/${su?su.car:0}</div>
-      ${r.appr?`<a href="${p.outdir}/?audit=${encodeURIComponent(id)}" style="display:inline-block;margin-top:10px;background:var(--blue);color:#fff;font-weight:bold;font-size:13.5px;border-radius:8px;padding:8px 16px;text-decoration:none">▶ ${pct>0?'เข้าตรวจต่อ':'เริ่มตรวจ'}</a>`:`<span style="display:inline-block;margin-top:10px;background:#c9d2de;color:#667;font-weight:bold;font-size:13.5px;border-radius:8px;padding:8px 16px">⏳ รอ ACM อนุมัติก่อนเริ่มตรวจ</span>`}
+      ${r.appr?`<a href="@@BASE@@${p.outdir}/?audit=${encodeURIComponent(id)}" style="display:inline-block;margin-top:10px;background:var(--blue);color:#fff;font-weight:bold;font-size:13.5px;border-radius:8px;padding:8px 16px;text-decoration:none">▶ ${pct>0?'เข้าตรวจต่อ':'เริ่มตรวจ'}</a>`:`<span style="display:inline-block;margin-top:10px;background:#c9d2de;color:#667;font-weight:bold;font-size:13.5px;border-radius:8px;padding:8px 16px">⏳ รอ ACM อนุมัติก่อนเริ่มตรวจ</span>`}
     </div>`;
   }).join('');
 }
@@ -255,7 +255,7 @@ function renderCk(){
   el.innerHTML=PACKS.map(p=>`<div style="background:#fff;border:1px solid #d8dfe8;border-radius:10px;padding:11px 14px;font-size:12.5px;min-width:250px">
     <b style="color:var(--navy)">${esc(p.name)}</b><br>
     <span style="color:#7a8798">${esc(p.code)} · ${esc(p.ver)} · ${p.total} ข้อ</span><br>
-    <a href="${p.outdir}/?view=1" class="pbtn" style="display:inline-block;text-decoration:none;margin-top:6px">👁 เปิดดูรายการตรวจ</a>
+    <a href="@@BASE@@${p.outdir}/?view=1" class="pbtn" style="display:inline-block;text-decoration:none;margin-top:6px">👁 เปิดดูรายการตรวจ</a>
     <button class="pbtn" onclick="planRound('${p.proj}')">＋ วางแผนรอบตรวจ</button>
   </div>`).join('');
 }
@@ -320,7 +320,7 @@ function renderPlan(){
         ${r.ms?`<div style="font-size:12.5px;font-weight:bold;color:var(--navy);padding:3px 0">🏁 ${esc(r.ms)}</div><div style="font-size:11px;color:#8792a2">หมุดหมายตามแผน — ไม่ใช่รอบตรวจ</div>`
           :`<select onchange="PLAN[${i}].proj=this.value;PLAN[${i}].appr=null;renderPlan()">${PACKS.map(p=>`<option value="${p.proj}"${r.proj===p.proj?' selected':''}>${esc(p.name)}</option>`).join('')}</select>`}
         ${r.appr?`<span class="pill done" title="โดย ${esc(r.appr.n)} (${esc(r.appr.scope||'')}) ${esc(r.appr.dt)}">🖋 อนุมัติแล้ว ${esc(r.appr.dt)}</span>`:`<span class="pill soon">⏳ รอ ACM อนุมัติ</span> <button class="pbtn" onclick="approveRow(${i})">🖋 อนุมัติ</button>`}
-        ${r.ms?'':r.start?(r.appr?`<a class="pbtn" style="display:inline-block;text-decoration:none;margin-top:4px" href="${(PACKS.find(x=>x.proj===r.proj)||{}).outdir}/?audit=${encodeURIComponent(rid(r))}">${r.done?'📖 ดูผลรอบนี้':'▶ เปิดงานตรวจ'}</a>`:`<span class="pbtn" style="opacity:.5;cursor:not-allowed">▶ เปิดได้เมื่ออนุมัติ</span>`):''}</td>
+        ${r.ms?'':r.start?(r.appr?`<a class="pbtn" style="display:inline-block;text-decoration:none;margin-top:4px" href="@@BASE@@${(PACKS.find(x=>x.proj===r.proj)||{}).outdir}/?audit=${encodeURIComponent(rid(r))}">${r.done?'📖 ดูผลรอบนี้':'▶ เปิดงานตรวจ'}</a>`:`<span class="pbtn" style="opacity:.5;cursor:not-allowed">▶ เปิดได้เมื่ออนุมัติ</span>`):''}</td>
       <td><input value="${esc(r.label||'')}" placeholder="เช่น Q4 รอบหลัก" onchange="PLAN[${i}].label=this.value"></td>
       <td><input type="date" value="${esc(r.start||'')}" onchange="PLAN[${i}].start=this.value;PLAN[${i}].appr=null;renderPlan()"></td>
       <td><input type="date" value="${esc(r.end||'')}" onchange="PLAN[${i}].end=this.value;PLAN[${i}].appr=null;renderPlan()"></td>
@@ -729,6 +729,14 @@ function notiIcs(i){
 </script></body></html>'''
 
 PORTAL = PORTAL.replace('@@FBCFG@@', FBCFG).replace('@@PACKS@@', json.dumps(plist, ensure_ascii=False))
-pp = os.path.join(HERE, 'index.html')
-open(pp, 'w', encoding='utf-8').write(PORTAL)
-print('portal:', pp, os.path.getsize(pp), 'bytes')
+# Portal ออกสองที่จากต้นฉบับเดียว — root และ /audit/ (ปุ่ม ⌂ Audit Portal ของแอปย่อยทุกตัว
+# และ Forms Portal ชี้ไป /audit/) · @@BASE@@ = ทางกลับไปหาแอปย่อยซึ่งอยู่ที่ root
+# เดิม /audit/ เป็นสำเนาที่ค้างตั้งแต่ 31 JUL 2026 ไม่มีอะไร build ทับ
+for _sub, _base in (('', ''), ('audit', '../')):
+    _out = PORTAL.replace('@@BASE@@', _base)
+    assert '@@' not in _out, 'placeholder left in portal'
+    _d = os.path.join(HERE, _sub)
+    os.makedirs(_d, exist_ok=True)
+    pp = os.path.join(_d, 'index.html')
+    open(pp, 'w', encoding='utf-8').write(_out)
+    print('portal:', pp, os.path.getsize(pp), 'bytes')
