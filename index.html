@@ -234,6 +234,19 @@ function loadPlan(){
     }
   });
 }
+// ลำดับวันที่ที่ไม่สมเหตุผล — แสดงในตารางให้แก้ (ไม่ได้บล็อกข้อมูลเดิม)
+function tlIssues(r){
+  const out=[], a=r.appr&&r.appr.dt, lt=letterDt(r), sg=r.sg||{}, ack=ackSigs(r).map(x=>x.dt).filter(Boolean);
+  if(a&&r.start&&a>r.start) out.push('ACM อนุมัติ ('+a+') หลังวันเริ่ม');
+  ['lead','cmm'].forEach(ro=>{ const d=sg[ro]&&sg[ro].dt; if(!d) return;
+    if(a&&d<a) out.push((ro==='lead'?'Lead':'CMM')+' ลงนาม ('+d+') ก่อน ACM อนุมัติ');
+    if(r.start&&d>r.start) out.push((ro==='lead'?'Lead':'CMM')+' ลงนาม ('+d+') หลังวันเริ่ม'); });
+  ack.forEach(d=>{ if(lt&&d<lt) out.push('รับทราบ ('+d+') ก่อนออกหนังสือแจ้ง'); if(r.start&&d>r.start) out.push('รับทราบ ('+d+') หลังวันเริ่ม'); });
+  const c=r.cl&&r.cl.dt, lo=r.task!=null?r.start:(r.end||r.start);
+  if(c&&lo&&c<lo) out.push('ปิดงาน ('+c+') ก่อน'+(r.task!=null?'วันเริ่ม':'วันสิ้นสุด'));
+  return out;
+}
+function tlWarn(r){ const x=tlIssues(r); return x.length?`<div style="font-size:10.5px;color:var(--red);margin-top:2px" title="${esc(x.join('\n'))}">⚠ ลำดับวันที่: ${esc(x[0])}${x.length>1?' (+'+(x.length-1)+')':''}</div>`:''; }
 function rowStatus(r){
   if(r.done) return ['done','✅ เสร็จสิ้น'];
   const p=PACKS.find(x=>x.proj===r.proj); const s=p&&SUMS[p.aid];
@@ -259,14 +272,14 @@ function renderPlan(){
       <td><input value="${esc(r.lead||'')}" placeholder="ผู้รับผิดชอบ" onchange="PLAN[${i}].lead=this.value"></td>
       <td><input value="${esc(r.auditee||'')}" placeholder="หมายเหตุ / ผลลัพธ์" onchange="PLAN[${i}].auditee=this.value"></td>
       <td><span class="pill ${cls}">${txt}</span><br><label style="font-size:11px;color:#667"><input type="checkbox" ${r.done?'checked':''} onchange="closeTask(${i},this.checked)"> เสร็จแล้ว</label>
-        ${r.cl?`<div style="font-size:11px;color:var(--green)">✔ ${esc(r.cl.n)} · ${esc(r.cl.dt)}</div>`:''}</td>
+        ${r.cl?`<div style="font-size:11px;color:var(--green)">✔ ${esc(r.cl.n)} · ${esc(r.cl.dt)}</div>`:''}${tlWarn(r)}</td>
       <td><button class="pbtn" onclick="notiIcs(${i})">📅 ลงปฏิทิน</button></td>
       <td><button class="pbtn x" onclick="if(confirm('ลบรายการนี้?')){PLAN.splice(${i},1);renderPlan();}">✕</button></td></tr>`; return; }
     h+=`<tr>
       <td><span style="font-size:11px;font-weight:bold;color:var(--blue)">${esc(r.ref||'')}</span>
         ${r.ms?`<div style="font-size:12.5px;font-weight:bold;color:var(--navy);padding:3px 0">🏁 ${esc(r.ms)}</div><div style="font-size:11px;color:#8792a2">หมุดหมายตามแผน — ไม่ใช่รอบตรวจ</div>`
           :`<select onchange="PLAN[${i}].proj=this.value;PLAN[${i}].appr=null;renderPlan()">${PACKS.map(p=>`<option value="${p.proj}"${r.proj===p.proj?' selected':''}>${esc(p.name)}</option>`).join('')}</select>`}
-        ${r.appr?`<span class="pill done" title="โดย ${esc(r.appr.n)} (${esc(r.appr.scope||'')}) ${esc(r.appr.dt)}">🖋 อนุมัติแล้ว ${esc(r.appr.dt)}</span>${r.appr.d?`<div style="font-size:10.5px;color:#556;margin-top:2px"><img src="${r.appr.d}" alt="" style="height:22px;vertical-align:middle"> ${esc(r.appr.n)}</div>`:` <button class="sgb" onclick="approveRow(${i})" title="อนุมัติไว้ก่อนมีช่องลงนาม">✍ ACM ลงนาม</button>`}`:`<span class="pill soon">⏳ รอ ACM อนุมัติ</span> <button class="pbtn" onclick="approveRow(${i})">🖋 อนุมัติ</button>`}
+        ${r.appr?`<span class="pill done" title="โดย ${esc(r.appr.n)} (${esc(r.appr.scope||'')}) ${esc(r.appr.dt)}">🖋 อนุมัติแล้ว ${esc(r.appr.dt)}</span>${r.appr.d?`<div style="font-size:10.5px;color:#556;margin-top:2px;cursor:pointer" title="กดเพื่อลงนามใหม่ / แก้วันที่อนุมัติ" onclick="approveRow(${i})"><img src="${r.appr.d}" alt="" style="height:22px;vertical-align:middle"> ${esc(r.appr.n)} ✎</div>`:` <button class="sgb" onclick="approveRow(${i})" title="อนุมัติไว้ก่อนมีช่องลงนาม">✍ ACM ลงนาม</button>`}`:`<span class="pill soon">⏳ รอ ACM อนุมัติ</span> <button class="pbtn" onclick="approveRow(${i})">🖋 อนุมัติ</button>`}
         ${r.ms?'':r.start?(r.appr?`<a class="pbtn" style="display:inline-block;text-decoration:none;margin-top:4px" href="${(PACKS.find(x=>x.proj===r.proj)||{}).outdir}/?audit=${encodeURIComponent(rid(r))}">${r.done?'📖 ดูผลรอบนี้':'▶ เปิดงานตรวจ'}</a>`:`<span class="pbtn" style="opacity:.5;cursor:not-allowed">▶ เปิดได้เมื่ออนุมัติ</span>`):''}</td>
       <td><input value="${esc(r.label||'')}" placeholder="เช่น Q4 รอบหลัก" onchange="PLAN[${i}].label=this.value"></td>
       <td><input type="date" value="${esc(r.start||'')}" onchange="PLAN[${i}].start=this.value;PLAN[${i}].appr=null;renderPlan()"></td>
@@ -276,7 +289,7 @@ function renderPlan(){
         <input value="${esc(ackList(r).join(', '))}" placeholder="อีเมลผู้ต้องรับทราบ — หลายคนคั่นด้วย ," style="margin-top:3px" onchange="PLAN[${i}].ackList=this.value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);renderPlan()">
         ${ackList(r).length?`<span class="pill ${ackDone(r)?'done':'soon'}" style="margin-top:3px">รับทราบ ${ackCount(r)[0]}/${ackCount(r)[1]}</span>`:''}</td>
       <td><span class="pill ${cls}">${txt}</span><br><label style="font-size:11px;color:#667"><input type="checkbox" ${r.done?'checked':''} onchange="closeRound(${i},this.checked)"> ปิดงานแล้ว</label>
-        ${r.cl?`<div style="font-size:11px;color:var(--green)">🔒 ${esc(r.cl.n)} · ${esc(r.cl.dt)}</div>`:(isSafetyProj(r.proj)?`<div style="font-size:11px;color:#9C6500">ปิดได้เฉพาะ SM${SM?' ('+esc(SM)+')':' — ยังไม่ได้กำหนดอีเมล SM'}</div>`:'')}</td>
+        ${tlWarn(r)}${r.cl?`<div style="font-size:11px;color:var(--green)">🔒 ${esc(r.cl.n)} · ${esc(r.cl.dt)}</div>`:(isSafetyProj(r.proj)?`<div style="font-size:11px;color:#9C6500">ปิดได้เฉพาะ SM${SM?' ('+esc(SM)+')':' — ยังไม่ได้กำหนดอีเมล SM'}</div>`:'')}</td>
       <td>${r.ms?`<button class="pbtn" onclick="notiIcs(${i})">📅 ลงปฏิทิน</button>`:`<button class="pbtn" onclick="notiLetter(${i})">📄</button><button class="pbtn" onclick="notiMail(${i})">✉</button><button class="pbtn" onclick="notiIcs(${i})">📅</button><br>
         ${['lead','cmm'].map(ro=>{const g=r.sg&&r.sg[ro];
           return `<button class="sgb${g?' ok':''}" onclick="openSigP(${i},'${ro}')">${g?'✔':'✍'} ${ro==='lead'?'Lead':'CMM'}</button>`;}).join('')}
@@ -339,8 +352,8 @@ function addTask(){ PLAN.push({task:'',proj:'',ref:roundRef(),label:'',start:'',
 function closeTask(i,on){
   const r=PLAN[i]; if(!r) return;
   if(!USER){ alert('เข้าสู่ระบบก่อน'); renderPlan(); return; }
-  if(on){ r.done=true; r.cl={n:(USER.displayName||USER.email),by:(USER.email||'').toLowerCase(),dt:today()}; }
-  else { if(!confirm('เปิดงานนี้กลับมา (ยกเลิกเสร็จแล้ว)?')){ renderPlan(); return; } r.done=false; r.cl=null; }
+  if(on){ openCloseBox(i,'task','☑ ปิดงาน — '+rowName(r)); return; }
+  if(!confirm('เปิดงานนี้กลับมา (ยกเลิกเสร็จแล้ว)?')){ renderPlan(); return; } r.done=false; r.cl=null;
   renderPlan(); savePlan();
 }
 function addRow(proj){ PLAN.push({proj:proj||PACKS[0].proj,ref:roundRef(),label:'',start:'',end:'',lead:'',auditee:'',done:false}); renderPlan(); }
@@ -404,6 +417,65 @@ function renderBanners(){
 }
 let SIGP=null;
 const SIGP_ROLES={lead:'Lead Auditor',cmm:'Compliance Monitoring Manager',ackp:'ลงนามรับทราบการตรวจ (Acknowledgement)',acm:'Accountable Manager — อนุมัติรอบตรวจ',acmall:'Accountable Manager — อนุมัติแผนการตรวจประจำปี'};
+// ---------- วันที่ลงนาม / ปิดงาน ให้ตรงลำดับเวลา ----------
+// ลำดับที่ต้องเป็น: ACM อนุมัติ ≤ Lead/CMM ออกหนังสือแจ้ง ≤ ผู้รับการตรวจรับทราบ ≤ วันเริ่มตรวจ ≤ วันสิ้นสุด ≤ ปิดงาน ≤ วันนี้
+// ลงย้อนหลังได้ แต่เก็บวันที่บันทึกจริงไว้ใน at เสมอ (แยกวันที่ลงนามออกจากวันที่บันทึก — หลักเดียวกับ D-0507-FCV-001)
+const dAdd=(iso,n)=>{ const t=new Date(iso+'T00:00:00Z'); t.setUTCDate(t.getUTCDate()+n); return t.toISOString().slice(0,10); };
+const dWk=iso=>{ const t=new Date(iso+'T00:00:00Z'), w=t.getUTCDay(); if(w===6) t.setUTCDate(t.getUTCDate()-1); else if(w===0) t.setUTCDate(t.getUTCDate()-2); return t.toISOString().slice(0,10); };
+const dMax=(...a)=>a.filter(Boolean).sort().pop()||'';
+const dMin=(...a)=>a.filter(Boolean).sort()[0]||'';
+const dClamp=(v,lo,hi)=>{ if(lo&&v<lo) v=lo; if(hi&&v>hi) v=hi; return v; };
+function letterDt(r){ const sg=r.sg||{}; return dMax(sg.lead&&sg.lead.dt, sg.cmm&&sg.cmm.dt); }
+// ขอบเขตวันที่ของแต่ละบทบาท → {min,max,def,why}
+function sigLimits(role,i){
+  const T=today(), r=PLAN[i]||{}, sg=r.sg||{};
+  const ahead=(st,n)=>st?(T<=st?T:dWk(dAdd(st,-n))):T;          // ค่าแนะนำ: วันนี้ ถ้ายังไม่ถึงวันเริ่ม — ไม่งั้นก่อนวันเริ่ม n วัน
+  let L;
+  if(role==='acmall'){
+    const st=dMin(...(SIGP_PEND||[]).map(k=>PLAN[k]&&PLAN[k].start));
+    L={min:'',max:dMin(T,st),def:ahead(st,14),why:st?'ต้องไม่หลังวันเริ่มของรายการแรกในแผน ('+st+')':''};
+  } else if(role==='acm'){
+    L={min:'',max:dMin(T,r.start,letterDt(r)),def:(r.appr&&r.appr.dt)||ahead(r.start,14),why:'ต้องอนุมัติก่อนวันเริ่มตรวจ'+(letterDt(r)?' และก่อนวันที่ลงนามหนังสือแจ้ง ('+letterDt(r)+')':'')};
+  } else if(role==='lead'||role==='cmm'){
+    const ack=dMin(...ackSigs(r).map(a=>a.dt));
+    L={min:(r.appr&&r.appr.dt)||'',max:dMin(T,r.start,ack),def:(sg[role]&&sg[role].dt)||ahead(r.start,7),why:'หลัง ACM อนุมัติ'+(r.appr?' ('+r.appr.dt+')':'')+' และก่อนวันเริ่มตรวจ'+(ack?' / ก่อนผู้รับการตรวจรับทราบ ('+ack+')':'')};
+  } else if(role==='ackp'){
+    const mine=ackOf(r,USER&&USER.email);
+    L={min:dMax(r.appr&&r.appr.dt,letterDt(r)),max:dMin(T,r.start),def:(mine&&mine.dt)||ahead(r.start,5),why:'หลังวันที่ออกหนังสือแจ้ง'+(letterDt(r)?' ('+letterDt(r)+')':'')+' และก่อนวันเริ่มตรวจ'};
+  } else if(role==='close'){
+    L={min:r.end||r.start||'',max:T,def:(r.cl&&r.cl.dt)||((r.end&&r.end<T)?r.end:T),why:'ไม่ก่อนวันสิ้นสุดตามแผน'+((r.end||r.start)?' ('+(r.end||r.start)+')':'')+' และไม่เกินวันนี้'};
+  } else if(role==='task'){
+    L={min:r.start||'',max:T,def:(r.cl&&r.cl.dt)||((r.end&&r.end<T)?r.end:T),why:'ไม่ก่อนวันเริ่มงาน'+(r.start?' ('+r.start+')':'')+' และไม่เกินวันนี้'};
+  } else L={min:'',max:T,def:T,why:''};
+  L.def=dClamp(L.def,L.min,L.max);
+  return L;
+}
+function dtCheck(v,L){
+  if(!v) return 'กรอกวันที่';
+  if(L.min&&L.max&&L.min>L.max) return 'ลำดับวันที่ขัดกันอยู่แล้ว (ต้องไม่ก่อน '+L.min+' แต่ไม่หลัง '+L.max+') — แก้วันที่หรือลายเซ็นที่เกี่ยวข้องก่อน';
+  if(L.max&&v>L.max) return 'วันที่ต้องไม่หลัง '+L.max+' — '+L.why;
+  if(L.min&&v<L.min) return 'วันที่ต้องไม่ก่อน '+L.min+' — '+L.why;
+  return '';
+}
+function dtRow(L,v){ return `<div style="margin:6px 0">วันที่: <input type="date" id="sgp_dt" value="${esc(v)}"${L.min?` min="${L.min}"`:''}${L.max?` max="${L.max}"`:''} style="width:auto">
+  <div style="font-size:11px;color:#7a8798;margin-top:2px">${esc(L.why||'')}${L.def!==today()?' · ค่าแนะนำย้อนหลังตามลำดับเวลาของแผน':''} · ระบบเก็บวันที่บันทึกจริง (${today()}) ไว้ด้วย</div></div>`; }
+// ปิดงาน (รอบตรวจ / Task) — กล่องเลือกวันที่ปิดงาน
+function openCloseBox(i,role,title,warn){
+  const L=sigLimits(role,i);
+  const w=document.createElement('div'); w.className='sigwrap'; w.id='sigpwrap';
+  w.innerHTML=`<div class="sigbox"><b style="color:var(--navy)">${esc(title)}</b>
+    ${warn?`<div style="background:#FFF4E5;border:1px solid #F0C36D;color:#7a5200;border-radius:7px;padding:6px 9px;margin-top:6px;font-size:12px">⚠ ${esc(warn)}</div>`:''}
+    <div style="margin-top:6px;font-size:12.5px">ผู้ปิดงาน: <b>${esc((USER&&(USER.displayName||USER.email))||'-')}</b></div>
+    ${dtRow(L,L.def)}
+    <div style="margin-top:10px;text-align:right"><button class="pbtn" onclick="document.getElementById('sigpwrap').remove();renderPlan()">ยกเลิก</button>
+    <button class="pbtn g" id="cl_ok">✔ ปิดงาน</button></div></div>`;
+  document.body.appendChild(w);
+  document.getElementById('cl_ok').onclick=()=>{
+    const v=document.getElementById('sgp_dt').value, e=dtCheck(v,L); if(e){ alert(e); return; }
+    const r=PLAN[i]; r.done=true; r.cl={n:(USER.displayName||USER.email),by:(USER.email||'').toLowerCase(),dt:v,at:today()};
+    w.remove(); renderPlan(); savePlan();
+  };
+}
 function openSigP(i,role){
   const r=PLAN[i]||{}; const acmRole=role==='acm'||role==='acmall';
   const prev=role==='acm'?(r.appr&&r.appr.d?r.appr:null):acmRole?null:(r.sg&&r.sg[role]);
@@ -411,10 +483,12 @@ function openSigP(i,role){
   const names={lead:r.lead||'',cmm:'',ackp:me,acm:me,acmall:me};
   const what=role==='acm'?`<div style="font-size:12px;color:#556;margin-top:4px">${esc(r.ref||'')} · ${esc(r.ms||((PACKS.find(x=>x.proj===r.proj)||{}).name)||r.proj||'')} ${esc(r.label||'')}</div>`
     :role==='acmall'?`<div style="font-size:12px;color:#556;margin-top:4px">แผนการตรวจประจำปี ${PLANYEAR} · ลงนามอนุมัติ ${(SIGP_PEND||[]).length} รายการ</div>`:'';
+  const L=sigLimits(role,i);
   const w=document.createElement('div'); w.className='sigwrap'; w.id='sigpwrap';
   w.innerHTML=`<div class="sigbox">
     <b style="color:var(--navy)">✍ ลงนาม — ${SIGP_ROLES[role]}</b>${what}
-    <div style="margin:8px 0">ชื่อ-นามสกุล: <input id="sgp_n" value="${esc((prev&&prev.n)||names[role]||(USER?(USER.displayName||USER.email):''))}"></div>
+    <div style="margin:8px 0 2px">ชื่อ-นามสกุล: <input id="sgp_n" value="${esc((prev&&prev.n)||names[role]||(USER?(USER.displayName||USER.email):''))}"></div>
+    ${dtRow(L,L.def)}
     <canvas id="sgp_c" width="540" height="170"></canvas>
     <div style="color:#7a8798;font-size:11px;margin-top:3px">เซ็นในกรอบด้วยนิ้ว / Apple Pencil / เมาส์</div>
     <div style="margin-top:10px;text-align:right">
@@ -430,7 +504,7 @@ function openSigP(i,role){
   cv.onpointerdown=e=>{drawing=true; drew=true; cv.setPointerCapture(e.pointerId); const p=pos(e); ctx.beginPath(); ctx.moveTo(p[0],p[1]); ctx.lineTo(p[0]+.1,p[1]+.1); ctx.stroke(); e.preventDefault();};
   cv.onpointermove=e=>{if(!drawing)return; const p=pos(e); ctx.lineTo(p[0],p[1]); ctx.stroke(); e.preventDefault();};
   cv.onpointerup=cv.onpointercancel=()=>{drawing=false;};
-  SIGP={i,role,cv,ctx,hasInk:()=>drew,reset:()=>{drew=false;}};
+  SIGP={i,role,cv,ctx,L,hasInk:()=>drew,reset:()=>{drew=false;}};
 }
 function isSafetyProj(proj){ return proj==='safety'||proj==='surveillance'; }
 function isSM(){ if(!USER) return false; if(!SM) return false; return (USER.email||'').toLowerCase()===SM; }
@@ -445,8 +519,7 @@ function closeRound(i,on){
     const p=PACKS.find(x=>x.proj===r.proj), sum=SUMS[rid(r)]||{};
     const openCar=(sum.carOpen||0), left=(sum.total||0)-(sum.done||0);
     let w=[]; if(left>0) w.push('ยังตรวจไม่ครบ '+left+' ข้อ'); if(openCar>0) w.push('CAR ค้าง '+openCar+' ใบ');
-    if(!confirm('ปิดงานตรวจ '+(r.ref||'')+' — '+(r.ms||(p&&p.name)||r.proj)+'\n'+(w.length?'⚠ '+w.join(' · ')+'\n\n':'')+'ผู้ปิดงาน: '+((USER&&USER.displayName)||(USER&&USER.email)||'-')+' วันที่ '+today()+'\nยืนยันหรือไม่?')){ renderPlan(); return; }
-    r.done=true; r.cl={n:(USER.displayName||USER.email),by:(USER.email||'').toLowerCase(),dt:today()};
+    openCloseBox(i,'close','🔒 ปิดงานตรวจ '+(r.ref||'')+' — '+rowName(r),w.join(' · ')); return;
   } else {
     if(!confirm('เปิดงานตรวจนี้กลับมาแก้ไข (ยกเลิกการปิดงาน)?')){ renderPlan(); return; }
     r.done=false; r.cl=null;
@@ -466,7 +539,10 @@ function approveAll(){
   // รายการที่ยังไม่อนุมัติ + ที่อนุมัติแล้วแต่ยังไม่มีลายเซ็น (อนุมัติก่อนมีช่องเซ็น 19 OCT 2026)
   const pend=PLAN.map((r,k)=>k).filter(k=>PLAN[k].task==null&&(!PLAN[k].appr||!PLAN[k].appr.d));
   if(!PLAN.length){ alert('ยังไม่มีรายการในแผนปี '+PLANYEAR); return; }
-  if(!pend.length){ alert('ทุกรายการในแผนปี '+PLANYEAR+' ที่ต้องอนุมัติ อนุมัติและลงนามแล้ว (งาน/Task ไม่ต้องอนุมัติ)'); return; }
+  if(!pend.length){
+    if(!confirm('ทุกรายการในแผนปี '+PLANYEAR+' ที่ต้องอนุมัติ ลงนามแล้ว (งาน/Task ไม่ต้องอนุมัติ)\n\nลงนามใหม่ทั้งแผน — แก้ลายเซ็นหรือวันที่อนุมัติ?')) return;
+    SIGP_PEND=PLAN.map((r,k)=>k).filter(k=>PLAN[k].task==null); openSigP(-1,'acmall'); return;
+  }
   const unsigned=pend.filter(k=>PLAN[k].appr).length;
   if(!confirm('ACM ลงนามอนุมัติแผนประจำปี '+PLANYEAR+' — '+pend.length+' รายการ'+(unsigned?'\n(ในจำนวนนี้ '+unsigned+' รายการอนุมัติไว้แล้วแต่ยังไม่มีลายเซ็น)':'')+'\n\nขั้นต่อไป: กรอกชื่อและเซ็นในกรอบ')) return;
   SIGP_PEND=pend; openSigP(-1,'acmall');
@@ -491,18 +567,20 @@ function sigPSave(){
   if(!n){ alert('กรอกชื่อผู้ลงนาม'); return; }
   if(!SIGP.hasInk()){ alert('ยังไม่ได้เซ็นในกรอบ'); return; }
   const {i,role}=SIGP;
+  const dt=(document.getElementById('sgp_dt')||{}).value||'', de=dtCheck(dt,SIGP.L); if(de){ alert(de); return; }
+  const at=today();
   if(role==='acm'||role==='acmall'){
-    const a={n:n,by:(USER&&USER.email||'').toLowerCase(),dt:today(),scope:role==='acm'?'รายครั้ง':'แผนประจำปี',d:SIGP.cv.toDataURL('image/png')};
+    const a={n:n,by:(USER&&USER.email||'').toLowerCase(),dt:dt,at:at,scope:role==='acm'?'รายครั้ง':'แผนประจำปี',d:SIGP.cv.toDataURL('image/png')};
     (role==='acm'?[i]:(SIGP_PEND||[])).forEach(k=>{ if(PLAN[k]) PLAN[k].appr={...a}; });
     SIGP_PEND=null;
   } else if(role==='ackp'){
     const me=(USER&&USER.email||'').toLowerCase();
     const arr=ackSigs(PLAN[i]).filter(a=>a.email!==me);
-    arr.push({email:me, d:SIGP.cv.toDataURL('image/png'), n:n, dt:today()});
+    arr.push({email:me, d:SIGP.cv.toDataURL('image/png'), n:n, dt:dt, at:at});
     PLAN[i].ackSigs=arr;
   } else {
     PLAN[i].sg=PLAN[i].sg||{};
-    PLAN[i].sg[role]={d:SIGP.cv.toDataURL('image/png'),n:n,dt:today(),by:USER?USER.email:''};
+    PLAN[i].sg[role]={d:SIGP.cv.toDataURL('image/png'),n:n,dt:dt,at:at,by:USER?USER.email:''};
   }
   document.getElementById('sigpwrap').remove(); SIGP=null;
   savePlan(); renderPlan();
@@ -513,7 +591,7 @@ function notiLetter(i){
   const full=!!(sg.lead&&sg.cmm&&ackDone(r));
   const dots='............................................';
   const sigTd=(role,fallback)=>{const g=sg[role];
-    return g?`<td><img src="${g.d}" style="height:48px"><br>( ${esc(g.n)} )<br>วันที่ ${esc(g.dt)}</td>`
+    return g?`<td><img src="${g.d}" style="height:48px"><br>( ${esc(g.n)} )<br>วันที่ ${esc(g.dt)}${g.at&&g.at!==g.dt?`<br><span style="font-size:10.5px;color:#7a8798">บันทึกลงระบบ ${esc(g.at)}</span>`:''}</td>`
             :`<td style="color:#98a4b4">ยังไม่ลงนาม — ลงนามใน Portal<br>( ${esc(fallback||dots)} )<br>วันที่ ...... / ...... / ......</td>`;};
   const w=window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>Audit Notification — ${esc(p.name||'')}</title><style>
@@ -548,7 +626,7 @@ function notiLetter(i){
   <table class="sig" style="margin-top:6px"><tr><td class="h" colspan="3">ผู้รับการตรวจ — ลงนามรับทราบ (${ackCount(r)[0]}/${ackCount(r)[1]} คน)</td></tr>
   ${(()=>{const L=ackList(r); if(!L.length) return '<tr><td colspan="3" style="color:#98a4b4">ยังไม่ได้ระบุรายชื่อผู้ต้องรับทราบ</td></tr>';
     let cells=L.map(e=>{const a=ackOf(r,e);
-      return a?`<td><img src="${a.d}" style="height:44px"><br>( ${esc(a.n)} )<br>${esc(e)} · ${esc(a.dt)}</td>`
+      return a?`<td><img src="${a.d}" style="height:44px"><br>( ${esc(a.n)} )<br>${esc(e)} · ${esc(a.dt)}${a.at&&a.at!==a.dt?`<br><span style="font-size:10.5px;color:#7a8798">บันทึกลงระบบ ${esc(a.at)}</span>`:''}</td>`
               :`<td style="color:#98a4b4">ยังไม่ลงนาม — ลงนามใน Portal<br>( ${esc(e)} )<br>วันที่ ...... / ...... / ......</td>`;});
     while(cells.length%3) cells.push('<td style="border:none"></td>');
     let out=''; for(let k=0;k<cells.length;k+=3) out+='<tr>'+cells.slice(k,k+3).join('')+'</tr>';
@@ -568,6 +646,7 @@ function exportPlanPdf(){
   const pos=d=>{ const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})/); if(!m) return null;
     return Math.max(0,Math.min(days,(Date.UTC(+m[1],+m[2]-1,+m[3])-jan1)/86400000)); };
   const rows=PLAN.map((r,i)=>({r,i})).sort((a,b)=>(a.r.start||'9999').localeCompare(b.r.start||'9999')||a.i-b.i);
+  const bk=o=>(o&&o.at&&o.dt&&o.at!==o.dt)?' · บันทึกลงระบบ '+fd(o.at):'';   // ลงนาม/ปิดงานย้อนหลัง → แสดงวันที่บันทึกจริง
   const nameOf=r=>{ const p=PACKS.find(x=>x.proj===r.proj)||{};
     return r.task!=null?{t:rowName(r),s:'งาน — ผู้รับผิดชอบปิดงานเอง ไม่ต้องอนุมัติ'}:r.ms?{t:'🏁 '+r.ms,s:'หมุดหมายตามแผน — ไม่ใช่รอบตรวจ'}:{t:p.name||r.proj||'—',s:[p.code,p.ver].filter(Boolean).join(' · ')}; };
   const NEED=PLAN.filter(r=>r.task==null);                       // งาน (Task) ไม่ต้องอนุมัติ
@@ -588,7 +667,7 @@ function exportPlanPdf(){
       <td>${esc(r.label||'')}</td><td class="nw">${fd(r.start)}</td><td class="nw">${fd(r.end||r.start)}</td><td class="c">${nd}</td>
       <td>${esc(r.lead||'')}</td><td>${esc(r.auditee||'')}</td>
       <td><span class="pill ${cls}">${esc(txt)}</span></td>
-      <td>${r.task!=null?(r.cl?`✔ เสร็จ — ${esc(r.cl.n)}<div class="sub">${fd(r.cl.dt)}</div>`:'<span class="sub">ไม่ต้องอนุมัติ</span>'):r.appr?`${r.appr.d?`<img src="${r.appr.d}" alt="" style="height:20px;display:block">`:'✔ '}${esc(r.appr.n)}<div class="sub">${fd(r.appr.dt)}</div>`:'<span class="pend">รอ ACM อนุมัติ</span>'}</td></tr>`;
+      <td>${r.task!=null?(r.cl?`✔ เสร็จ — ${esc(r.cl.n)}<div class="sub">${fd(r.cl.dt)}${bk(r.cl)}</div>`:'<span class="sub">ไม่ต้องอนุมัติ</span>'):r.appr?`${r.appr.d?`<img src="${r.appr.d}" alt="" style="height:20px;display:block">`:'✔ '}${esc(r.appr.n)}<div class="sub">${fd(r.appr.dt)}${bk(r.appr)}</div>`:'<span class="pend">รอ ACM อนุมัติ</span>'}</td></tr>`;
   });
   if(!rows.length) tb='<tr><td colspan="11" class="c" style="padding:14px;color:#889">ยังไม่มีรายการในแผนปี '+y+'</td></tr>';
 
@@ -662,7 +741,7 @@ function exportPlanPdf(){
   <div class="lg"><span style="background:#8fa3bd"></span>วางแผนแล้ว<span style="background:#E39B17"></span>ใกล้ถึงกำหนด<span style="background:#2E75B6"></span>กำลังตรวจ<span style="background:#C00000"></span>เลยกำหนด<span style="background:#1E7B34"></span>เสร็จสิ้น<span style="background:#1F3864;width:7px;height:7px;transform:rotate(45deg)"></span>หมุดหมาย · ☑ = งาน (Task)</div>`:''}
   <table class="sig"><tr><td class="h">จัดทำโดย — Compliance Monitoring Manager</td><td class="h">อนุมัติโดย — Accountable Manager</td></tr>
   <tr><td>.......................................................<br>( ....................................................... )<br>วันที่ ...... / ...... / ......</td>
-  <td>${allAppr&&acmSig?`<img src="${acmSig.d}" alt="" style="height:52px"><br>( ${esc(acmSig.n)} )<br>วันที่ ${fd(acmSig.dt)}${unsignedN?`<div class="sub">อีก ${unsignedN} รายการอนุมัติในระบบโดยไม่มีลายเซ็น</div>`:''}`:allAppr?`อนุมัติในระบบ Audit Portal (ยังไม่มีลายเซ็น)<br>${apprTxt}`:`.......................................................<br>( ....................................................... )<br>วันที่ ...... / ...... / ......`}</td></tr></table>
+  <td>${allAppr&&acmSig?`<img src="${acmSig.d}" alt="" style="height:52px"><br>( ${esc(acmSig.n)} )<br>วันที่ ${fd(acmSig.dt)}${bk(acmSig)?`<div class="sub">${bk(acmSig).replace(/^ · /,'')}</div>`:''}${unsignedN?`<div class="sub">อีก ${unsignedN} รายการอนุมัติในระบบโดยไม่มีลายเซ็น</div>`:''}`:allAppr?`อนุมัติในระบบ Audit Portal (ยังไม่มีลายเซ็น)<br>${apprTxt}`:`.......................................................<br>( ....................................................... )<br>วันที่ ...... / ...... / ......`}</td></tr></table>
   <div class="ft"><span>D-0507 Flight Training Co., Ltd. · Annual Audit Plan ${y}</span><span>ข้อมูลตามที่แสดงใน Audit Portal ขณะพิมพ์ — รวมการแก้ไขที่ยังไม่ได้กดบันทึก (ถ้ามี)</span></div>
   </body></html>`);
   w.document.close();
