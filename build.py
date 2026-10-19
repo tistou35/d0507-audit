@@ -166,6 +166,7 @@ footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
       <button class="pbtn" onclick="addRow()">➕ เพิ่มรายการตรวจ</button>
       <button class="pbtn" onclick="makeOutline()">🧭 สร้างแผนโครงร่างตามรอบ OMM</button>
       <button class="pbtn g" onclick="savePlan()">💾 บันทึกแผน</button>
+      <button class="pbtn" onclick="exportPlanPdf()">🖨 Export PDF (A4 แนวนอน)</button>
       &nbsp;·&nbsp; ACM ผู้อนุมัติแผน: <input id="acmemail" placeholder="อีเมล Accountable Executive Manager" style="min-height:36px;border:1px solid #c8d2e0;border-radius:7px;padding:4px 8px;width:250px" onchange="ACM=this.value.trim().toLowerCase()">
       <button class="pbtn g" onclick="approveAll()">🖋 ACM อนุมัติทั้งแผนปีนี้</button>
       <div style="margin-top:6px">SM ผู้ปิดงานตรวจด้านนิรภัย: <input id="smemail" placeholder="อีเมล Safety Manager" style="min-height:36px;border:1px solid #c8d2e0;border-radius:7px;padding:4px 8px;width:250px" onchange="SM=this.value.trim().toLowerCase()">
@@ -588,6 +589,114 @@ function notiLetter(i){
   <p class="np">${full?'<button onclick="window.print()" style="min-height:40px;padding:6px 18px;font-weight:bold">🖨 พิมพ์ / บันทึก PDF (ฉบับสมบูรณ์)</button>':'<span style="color:#8f1414;font-size:12.5px">🔒 ปุ่มพิมพ์จะเปิดเมื่อลงนามครบ 3 ฝ่าย — ตามหลักการ ทำทุกขั้นตอนบนแอป พิมพ์เฉพาะฉบับสมบูรณ์</span>'}</p>
   </body></html>`);
   w.document.close();
+}
+// แผนการตรวจประจำปีเป็นเอกสาร — หน้าต่างพิมพ์ A4 แนวนอน (ตาราง + Gantt + การอนุมัติ)
+// ใช้ข้อมูลที่แสดงอยู่ในหน้าขณะกด รวมส่วนที่ยังไม่ได้บันทึก จึงบอกไว้บนเอกสาร
+function exportPlanPdf(){
+  const MON=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const fd=s=>{ if(!s) return '—'; const m=String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m?m[3]+' '+MON[+m[2]-1]+' '+m[1]:esc(s); };
+  const y=PLANYEAR, jan1=Date.UTC(y,0,1), days=(Date.UTC(y+1,0,1)-jan1)/86400000;
+  const pos=d=>{ const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})/); if(!m) return null;
+    return Math.max(0,Math.min(days,(Date.UTC(+m[1],+m[2]-1,+m[3])-jan1)/86400000)); };
+  const rows=PLAN.map((r,i)=>({r,i})).sort((a,b)=>(a.r.start||'9999').localeCompare(b.r.start||'9999')||a.i-b.i);
+  const nameOf=r=>{ const p=PACKS.find(x=>x.proj===r.proj)||{};
+    return r.ms?{t:'🏁 '+r.ms,s:'หมุดหมายตามแผน — ไม่ใช่รอบตรวจ'}:{t:p.name||r.proj||'—',s:[p.code,p.ver].filter(Boolean).join(' · ')}; };
+  const appr=PLAN.filter(r=>r.appr), allAppr=PLAN.length&&appr.length===PLAN.length;
+  const nAud=PLAN.filter(r=>!r.ms).length, nMs=PLAN.length-nAud, nDone=PLAN.filter(r=>r.done).length;
+  const by={}; appr.forEach(r=>{ const k=r.appr.n+'|'+r.appr.dt; by[k]=(by[k]||0)+1; });
+  const apprTxt=Object.keys(by).map(k=>{const [n,dt]=k.split('|'); return esc(n)+' · '+fd(dt)+' ('+by[k]+' รายการ)';}).join('<br>');
+  const now=new Date(), stamp=String(now.getDate()).padStart(2,'0')+' '+MON[now.getMonth()]+' '+now.getFullYear()+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+
+  let tb='';
+  rows.forEach(({r},k)=>{ const [cls,txt]=rowStatus(r); const nm=nameOf(r);
+    const d0=pos(r.start), d1=pos(r.end||r.start);
+    const nd=(d0!=null&&d1!=null)?Math.round(d1-d0)+1:'';
+    tb+=`<tr${r.ms?' class="ms"':''}><td class="c">${k+1}</td><td class="nw"><b>${esc(r.ref||'')}</b></td>
+      <td><b>${esc(nm.t)}</b>${nm.s?`<div class="sub">${esc(nm.s)}</div>`:''}</td>
+      <td>${esc(r.label||'')}</td><td class="nw">${fd(r.start)}</td><td class="nw">${fd(r.end||r.start)}</td><td class="c">${nd}</td>
+      <td>${esc(r.lead||'')}</td><td>${esc(r.auditee||'')}</td>
+      <td><span class="pill ${cls}">${esc(txt)}</span></td>
+      <td>${r.appr?`✔ ${esc(r.appr.n)}<div class="sub">${fd(r.appr.dt)}</div>`:'<span class="pend">รอ ACM อนุมัติ</span>'}</td></tr>`;
+  });
+  if(!rows.length) tb='<tr><td colspan="11" class="c" style="padding:14px;color:#889">ยังไม่มีรายการในแผนปี '+y+'</td></tr>';
+
+  let gm='', gg='';
+  for(let m=0;m<12;m++){ const x=100*(Date.UTC(y,m,1)-jan1)/86400000/days, w=100*(Date.UTC(y,m+1,1)-Date.UTC(y,m,1))/86400000/days;
+    gm+=`<span style="left:${x}%;width:${w}%">${MON[m]}</span>`; gg+=`<i style="left:${x}%"></i>`; }
+  let gr='';
+  rows.filter(({r})=>r.start).forEach(({r})=>{ const [cls]=rowStatus(r); const nm=nameOf(r);
+    const a=pos(r.start), b=pos(r.end||r.start)+1;
+    gr+=`<div class="gr"><div class="gl"><b>${esc(r.ref||'')}</b> ${esc(nm.t)}${r.label?' — '+esc(r.label):''}</div>
+      <div class="gt">${gg}<div class="gb ${r.ms?'ms':cls}" style="left:${100*a/days}%;width:${Math.max(100*(b-a)/days,0.6)}%"></div></div></div>`;
+  });
+
+  const w=window.open('','_blank');
+  if(!w){ alert('เบราว์เซอร์บล็อกหน้าต่างใหม่ — อนุญาต pop-up ของเว็บนี้แล้วกดอีกครั้ง'); return; }
+  w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>D-0507 Annual Audit Plan ${y}</title><style>
+  @page{size:A4 landscape;margin:10mm 10mm 12mm}
+  *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{font-family:Arial,'Noto Sans Thai',sans-serif;font-size:10.5px;color:#1A1A2A;margin:0 auto;padding:14px;max-width:1123px}
+  table{width:100%;border-collapse:collapse}
+  .t0 td{text-align:center;background:#1F3864;color:#fff;font-weight:bold;border:0.8px solid #000;padding:5px}
+  .t0 .co{font-size:15px}
+  .t1 td{background:#2E75B6;color:#fff;font-size:10.5px;font-weight:bold;border:0.8px solid #000;padding:4px 8px}
+  .meta{display:flex;flex-wrap:wrap;gap:4px 18px;margin:7px 0;font-size:10.5px}
+  .meta b{color:#1F3864}
+  .warn{background:#FFF4E5;border:1px solid #F0C36D;color:#7a5200;padding:5px 9px;margin:6px 0;font-weight:bold}
+  table.pl th{background:#1F3864;color:#fff;padding:5px 5px;font-size:10px;text-align:left;border:0.8px solid #000}
+  table.pl td{border:0.8px solid #8a96a8;padding:4px 5px;vertical-align:top}
+  table.pl thead{display:table-header-group} table.pl tr{break-inside:avoid;page-break-inside:avoid}
+  table.pl tr.ms td{background:#F5F7FB}
+  .c{text-align:center} .nw{white-space:nowrap} .sub{font-size:9px;color:#6b778a;margin-top:1px}
+  .pend{color:#9C6500;font-weight:bold}
+  .pill{display:inline-block;border-radius:8px;padding:1px 7px;font-size:9.5px;font-weight:bold;white-space:nowrap}
+  .pill.plan{background:#e7ecf3;color:#456}.pill.run{background:#dbe9ff;color:#1d5eb8}.pill.soon{background:#FFF0D5;color:#9C6500}
+  .pill.late{background:#FBE0E0;color:#C00000}.pill.done{background:#DFF2E3;color:#1E7B34}
+  h2{font-size:12.5px;color:#1F3864;margin:12px 0 5px;break-after:avoid;page-break-after:avoid}
+  .gantt{border:0.8px solid #8a96a8}
+  .gr{display:flex;border-top:0.5px solid #dde4ee;break-inside:avoid;page-break-inside:avoid}
+  .gr:first-child{border-top:none}
+  .gl{flex:0 0 31%;padding:2px 5px;font-size:9px;line-height:1.25;border-right:0.8px solid #8a96a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gt{flex:1;position:relative;min-height:15px}
+  .gt i{position:absolute;top:0;bottom:0;border-left:0.5px solid #dde4ee}
+  .gb{position:absolute;top:3px;height:9px;border-radius:2px;min-width:3px}
+  .gb.plan{background:#8fa3bd}.gb.run{background:#2E75B6}.gb.soon{background:#E39B17}.gb.late{background:#C00000}.gb.done{background:#1E7B34}
+  .gb.ms{background:#1F3864;height:9px;width:9px!important;min-width:9px;transform:rotate(45deg);border-radius:1px}
+  .gh .gt{min-height:16px;background:#F0F4F8}
+  .gh .gt span{position:absolute;top:2px;font-size:9px;font-weight:bold;color:#1F3864;text-align:center;border-left:0.5px solid #c9d6e8}
+  .gh .gl{background:#F0F4F8;font-weight:bold;color:#1F3864}
+  .lg{font-size:9px;color:#556;margin-top:4px}.lg span{display:inline-block;width:10px;height:7px;border-radius:2px;margin:0 3px 0 10px;vertical-align:middle}
+  .sig{margin-top:12px;break-inside:avoid;page-break-inside:avoid}
+  .sig td{border:0.8px solid #000;text-align:center;vertical-align:bottom;height:68px;padding:5px;width:50%;line-height:1.7}
+  .sig td.h{background:#D6E4F7;font-weight:bold;color:#1F3864;height:auto;vertical-align:middle}
+  .ft{margin-top:8px;font-size:9px;color:#6b778a;display:flex;justify-content:space-between}
+  .np{margin:10px 0}.np button{min-height:38px;padding:6px 18px;font-weight:bold;font-size:13px;cursor:pointer}
+  @media print{.np{display:none} body{padding:0;max-width:none}}
+  </style></head><body>
+  <p class="np"><button onclick="window.print()">🖨 พิมพ์ / บันทึกเป็น PDF</button>
+    <span style="font-size:12px;color:#556">ในหน้าต่างพิมพ์ เลือก "บันทึกเป็น PDF" · ขนาด A4 แนวนอนตั้งไว้ในเอกสารแล้ว</span></p>
+  <table class="t0"><tr><td class="co">D-0507 FLIGHT TRAINING CO., LTD.</td></tr>
+  <tr><td>ANNUAL AUDIT PLAN ${y}<br><span style="font-size:11px;font-weight:normal">แผนการตรวจติดตามภายในประจำปี ${y}</span></td></tr></table>
+  <table class="t1"><tr><td>OMM Ref: Section 5 – Compliance Monitoring · Compliance Monitoring Schedule / Quality Audit Schedule</td><td style="text-align:right">พิมพ์จาก Audit Portal ${stamp}</td></tr></table>
+  <div class="meta"><span><b>รายการทั้งหมด</b> ${PLAN.length} (รอบตรวจ ${nAud} · หมุดหมาย ${nMs})</span>
+    <span><b>เสร็จสิ้น</b> ${nDone}</span><span><b>ACM อนุมัติแล้ว</b> ${appr.length}/${PLAN.length}</span>
+    <span><b>ACM ผู้อนุมัติแผน</b> ${esc(ACM||'—')}</span></div>
+  ${allAppr?'':`<div class="warn">ฉบับร่าง — ยังมี ${PLAN.length-appr.length} รายการที่ ACM ยังไม่อนุมัติ · แผนใช้ได้เมื่อ ACM อนุมัติครบทุกรายการ</div>`}
+  <table class="pl"><thead><tr><th style="width:3%">#</th><th style="width:7%">Ref</th><th style="width:17%">งานตรวจ / หมุดหมาย</th><th>รอบ / ขอบเขต</th>
+    <th style="width:7.5%">เริ่ม</th><th style="width:7.5%">สิ้นสุด</th><th style="width:3.5%">วัน</th><th style="width:9%">Lead Auditor</th>
+    <th style="width:10%">ผู้รับการตรวจ</th><th style="width:9%">สถานะ</th><th style="width:10%">ACM อนุมัติ</th></tr></thead><tbody>${tb}</tbody></table>
+  ${gr?`<h2>ปฏิทินการตรวจ 12 เดือน — ${y}</h2>
+  <div class="gantt"><div class="gr gh"><div class="gl">Ref · งานตรวจ</div><div class="gt">${gm}</div></div>${gr}</div>
+  <div class="lg"><span style="background:#8fa3bd"></span>วางแผนแล้ว<span style="background:#E39B17"></span>ใกล้ถึงกำหนด<span style="background:#2E75B6"></span>กำลังตรวจ<span style="background:#C00000"></span>เลยกำหนด<span style="background:#1E7B34"></span>เสร็จสิ้น<span style="background:#1F3864;width:7px;height:7px;transform:rotate(45deg)"></span>หมุดหมาย</div>`:''}
+  <table class="sig"><tr><td class="h">จัดทำโดย — Compliance Monitoring Manager</td><td class="h">อนุมัติโดย — Accountable Manager</td></tr>
+  <tr><td>.......................................................<br>( ....................................................... )<br>วันที่ ...... / ...... / ......</td>
+  <td>${allAppr?`อนุมัติในระบบ Audit Portal<br>${apprTxt}`:`.......................................................<br>( ....................................................... )<br>วันที่ ...... / ...... / ......`}</td></tr></table>
+  <div class="ft"><span>D-0507 Flight Training Co., Ltd. · Annual Audit Plan ${y}</span><span>ข้อมูลตามที่แสดงใน Audit Portal ขณะพิมพ์ — รวมการแก้ไขที่ยังไม่ได้กดบันทึก (ถ้ามี)</span></div>
+  </body></html>`);
+  w.document.close();
+  w.focus();
+  setTimeout(()=>{ try{ w.print(); }catch(e){} },400);
 }
 function notiMail(i){
   const r=PLAN[i]; const p=PACKS.find(x=>x.proj===r.proj)||{};
