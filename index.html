@@ -435,7 +435,8 @@ function sigLimits(role,i){
     const st=dMin(...(SIGP_PEND||[]).map(k=>PLAN[k]&&PLAN[k].start));
     L={min:'',max:dMin(T,st),def:ahead(st,14),why:st?'ต้องไม่หลังวันเริ่มของรายการแรกในแผน ('+st+')':''};
   } else if(role==='acm'){
-    L={min:'',max:dMin(T,r.start,letterDt(r)),def:(r.appr&&r.appr.dt)||ahead(r.start,14),why:'ต้องอนุมัติก่อนวันเริ่มตรวจ'+(letterDt(r)?' และก่อนวันที่ลงนามหนังสือแจ้ง ('+letterDt(r)+')':'')};
+    const mx=dMin(T,r.start,letterDt(r)), pa=r.appr&&r.appr.dt;
+    L={min:'',max:mx,def:(pa&&(!mx||pa<=mx))?pa:dMin(ahead(r.start,14),letterDt(r)?dWk(dAdd(letterDt(r),-3)):''),why:'ต้องอนุมัติก่อนวันเริ่มตรวจ'+(letterDt(r)?' และก่อนวันที่ลงนามหนังสือแจ้ง ('+letterDt(r)+')':'')};
   } else if(role==='lead'||role==='cmm'){
     const ack=dMin(...ackSigs(r).map(a=>a.dt));
     L={min:(r.appr&&r.appr.dt)||'',max:dMin(T,r.start,ack),def:(sg[role]&&sg[role].dt)||ahead(r.start,7),why:'หลัง ACM อนุมัติ'+(r.appr?' ('+r.appr.dt+')':'')+' และก่อนวันเริ่มตรวจ'+(ack?' / ก่อนผู้รับการตรวจรับทราบ ('+ack+')':'')};
