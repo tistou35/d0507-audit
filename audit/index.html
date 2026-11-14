@@ -67,7 +67,7 @@ footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
 <header>
   <div><h1>D-0507 FLIGHT TRAINING — AUDIT PORTAL</h1>
   <div class="sub">ศูนย์กลางงานตรวจสอบ · Compliance Monitoring (OMM Section 5)</div></div>
-  <div id="authbox"></div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><a href="../account/" style="color:#cfe0f5;text-decoration:none;font-size:13px;border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:6px 12px">👤 จัดการบัญชี</a><div id="authbox"></div></div>
 </header>
 <main>
   <div id="banners"></div>
@@ -94,13 +94,14 @@ footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
       <button class="pbtn" onclick="makeOutline()">🧭 สร้างแผนโครงร่างตามรอบ OMM</button>
       <button class="pbtn g" onclick="savePlan()">💾 บันทึกแผน</button>
       <button class="pbtn" onclick="exportPlanPdf()">🖨 Export PDF (A4 แนวนอน)</button>
-      &nbsp;·&nbsp; ACM ผู้อนุมัติแผน: <input id="acmemail" placeholder="อีเมล Accountable Executive Manager" style="min-height:36px;border:1px solid #c8d2e0;border-radius:7px;padding:4px 8px;width:250px" onchange="ACM=this.value.trim().toLowerCase()">
+      &nbsp;·&nbsp; ACM ผู้อนุมัติแผน: <input id="acmemail" list="dl_acm" placeholder="อีเมล Accountable Executive Manager" style="min-height:36px;border:1px solid #c8d2e0;border-radius:7px;padding:4px 8px;width:250px" onchange="ACM=this.value.trim().toLowerCase()">
       <button class="pbtn" onclick="prepSign()">✍ CMM ลงนามจัดทำแผน</button>
       <button class="pbtn g" onclick="approveAll()">🖋 ACM อนุมัติทั้งแผนปีนี้</button>
       <div id="prepstat" style="margin-top:6px;font-size:12px;color:#556"></div>
-      <div style="margin-top:6px">SM ผู้ปิดงานตรวจด้านนิรภัย: <input id="smemail" placeholder="อีเมล Safety Manager" style="min-height:36px;border:1px solid #c8d2e0;border-radius:7px;padding:4px 8px;width:250px" onchange="SM=this.value.trim().toLowerCase()">
+      <div style="margin-top:6px">SM ผู้ปิดงานตรวจด้านนิรภัย: <input id="smemail" list="dl_sm" placeholder="อีเมล Safety Manager" style="min-height:36px;border:1px solid #c8d2e0;border-radius:7px;padding:4px 8px;width:250px" onchange="SM=this.value.trim().toLowerCase()">
         <span style="font-size:12px;color:#667">— รอบของ School Safety Audit (SMS) และ Safety Surveillance ปิดงานได้เฉพาะบัญชีนี้</span></div>
     </div>
+    <datalist id="dl_acm"></datalist><datalist id="dl_sm"></datalist>
     <h3 class="sec" style="margin-top:20px">🗓 ปฏิทินการตรวจ 12 เดือน (Gantt)</h3>
     <div class="gwrap" id="gwrap"><div class="gantt" id="gantt"></div></div>
     <h3 class="sec" style="margin-top:24px">📚 กรอบการตรวจ / Checklists</h3>
@@ -156,8 +157,16 @@ firebase.auth().onAuthStateChanged(u=>{
   document.getElementById('loginui').style.display=u?'none':'block';
   document.getElementById('content').style.display=u?'block':'none';
   document.getElementById('authbox').innerHTML=u?`${esc(u.displayName||u.email)} <button onclick="firebase.auth().signOut()">ออก</button>`:'';
-  if(u){ initYears(); loadPlan(); renderCk(); }
+  if(u){ initYears(); loadPlan(); renderCk(); loadTeamLists(); }
 });
+// ตัวเลือก ACM / SM จากทีมตรวจ (หน้า จัดการบัญชี) — ยังพิมพ์อีเมลเองได้เหมือนเดิม
+function loadTeamLists(){
+  db.collection('team').get().then(s=>{
+    const opt=r=>s.docs.map(d=>d.data()).filter(m=>m.active!==false&&(m.roles||[]).includes(r))
+      .map(m=>`<option value="${esc(m.email)}">${esc(m.name||'')}</option>`).join('');
+    document.getElementById('dl_acm').innerHTML=opt('acm'); document.getElementById('dl_sm').innerHTML=opt('sm');
+  }).catch(()=>{});
+}
 function renderCards(){
   const el=document.getElementById('cards'); if(!el) return;
   const rounds=PLAN.map((r,i)=>({r,i})).filter(({r})=>{

@@ -1,0 +1,20 @@
+rules_version = '2';
+// d0507-audit — Storage Security Rules (14 NOV 2026)
+// รูปหลักฐานการตรวจ — เฉพาะสมาชิกทีม (อ่าน team/{email} จาก Firestore)
+// ตอนกด Publish ครั้งแรก console จะขอสิทธิ์ให้ Storage อ่าน Firestore — กดอนุญาต
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null && request.auth.token.email != null; }
+    function em() { return request.auth.token.email.lower(); }
+    function teamPath() { return /databases/(default)/documents/team/$(em()); }
+    function member() {
+      return signedIn() && (em() in ['tistou35@gmail.com']
+        || (firestore.exists(teamPath())
+            && firestore.get(teamPath()).data.get('active', true) == true
+            && firestore.get(teamPath()).data.get('mustChange', false) != true));
+    }
+    match /{allPaths=**} {
+      allow read, write: if member();
+    }
+  }
+}

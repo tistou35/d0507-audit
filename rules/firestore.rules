@@ -1,0 +1,41 @@
+rules_version = '2';
+// d0507-audit — Firestore Security Rules (หน้า จัดการบัญชี · 14 NOV 2026)
+// เข้าได้เฉพาะสมาชิกทีม: team/{email} ที่ active และไม่ได้ค้างเปลี่ยน PIN
+// BOOT = ผู้ดูแลตั้งต้น ต้องตรงกับ BOOT ใน account_page.html (กันล็อกตัวเองออก)
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null && request.auth.token.email != null; }
+    function em() { return request.auth.token.email.lower(); }
+    function boot() { return signedIn() && em() in ['tistou35@gmail.com']; }
+    function teamDoc() { return /databases/$(database)/documents/team/$(em()); }
+    function inTeam() { return signedIn() && exists(teamDoc()); }
+    function me() { return get(teamDoc()).data; }
+    function member() {
+      return boot() || (inTeam() && me().get('active', true) == true && me().get('mustChange', false) != true);
+    }
+    function admin() { return boot() || (member() && 'admin' in me().get('roles', [])); }
+
+    // ทีม — ทุกสมาชิกอ่านได้ (ตัวเลือก ACM/SM ในแผน) · เจ้าตัวอ่านของตัวเองได้เสมอ
+    // แก้ได้เฉพาะผู้ดูแล · เจ้าตัวแก้ได้แค่ชื่อ และปลด mustChange (true → false) หลังตั้งรหัสใหม่
+    match /team/{email} {
+      allow read: if member() || (signedIn() && email == em());
+      allow create, delete: if admin();
+      allow update: if admin()
+        || (signedIn() && email == em()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name','nameAt','mustChange','pwSetAt'])
+            && request.resource.data.get('mustChange', false) == false
+            && request.resource.data.get('roles', []) == resource.data.get('roles', [])
+            && request.resource.data.get('active', true) == resource.data.get('active', true));
+    }
+    // คำขอเข้าทีม — ผู้ที่เข้าสู่ระบบส่งของตัวเองได้ · ผู้ดูแลอ่าน/ลบ
+    match /joinReq/{email} {
+      allow create, update: if signedIn() && email == em() && request.resource.data.email == em();
+      allow read: if admin() || (signedIn() && email == em());
+      allow delete: if admin();
+    }
+    // ข้อมูลอื่นทั้งหมด (plans · audits · library · …) — สมาชิกทีม
+    match /{col}/{rest=**} {
+      allow read, write: if col != 'team' && col != 'joinReq' && member();
+    }
+  }
+}

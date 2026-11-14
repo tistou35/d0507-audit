@@ -1,0 +1,331 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>จัดการบัญชี — D-0507 Audit Portal</title>
+<style>
+:root{--navy:#1F3864;--blue:#2E75B6;--green:#1E7B34;--amber:#9C6500;--red:#C00000;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,'Segoe UI','Noto Sans Thai',Arial,sans-serif;background:#eef2f7;color:#1a1a2a;min-height:100vh;}
+header{background:var(--navy);color:#fff;padding:18px 26px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+header h1{font-size:20px;} header .sub{font-size:12.5px;opacity:.85;margin-top:3px;}
+header a{color:#cfe0f5;text-decoration:none;font-size:13px;border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:6px 12px;}
+#authbox{font-size:13px;text-align:right;}
+#authbox button{min-height:36px;border-radius:8px;border:none;background:#fff;color:var(--navy);font-weight:bold;padding:6px 14px;cursor:pointer;margin-left:6px;}
+main{max-width:1050px;margin:0 auto;padding:22px 16px 60px;}
+h3.sec{color:var(--navy);font-size:16px;margin:22px 0 8px;}
+.card{background:#fff;border:1px solid #d8dfe8;border-radius:12px;padding:16px;margin-top:8px;}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;}
+label.f{font-size:12.5px;color:#556;display:block;margin-top:8px;}
+input[type=text],input[type=email],input[type=password]{min-height:38px;border:1px solid #c8d2e0;border-radius:7px;padding:5px 9px;font-size:14px;font-family:inherit;}
+.btn{min-height:38px;border-radius:8px;border:1px solid var(--blue);background:#fff;color:var(--blue);font-size:13px;font-weight:bold;padding:5px 12px;cursor:pointer;}
+.btn.g{background:var(--blue);color:#fff;} .btn.x{border-color:var(--red);color:var(--red);} .btn:disabled{opacity:.5;cursor:default;}
+.note{font-size:12.5px;color:#556;margin-top:6px;line-height:1.6;}
+.warn{background:#FFF4E5;border:1px solid #F0C36D;color:#7a5200;border-radius:9px;padding:10px 13px;font-size:13px;margin-top:10px;}
+.bad{background:#FDECEC;border:1px solid #E4A6A6;color:#8f1414;border-radius:9px;padding:10px 13px;font-size:13px;margin-top:10px;}
+.ok{background:#DFF2E3;border:1px solid #9fd0aa;color:#1E7B34;border-radius:9px;padding:10px 13px;font-size:13px;margin-top:10px;}
+table{width:100%;border-collapse:collapse;font-size:13px;background:#fff;}
+th{background:var(--navy);color:#fff;text-align:left;padding:7px;font-size:12px;} td{border-bottom:1px solid #e4eaf2;padding:7px;vertical-align:middle;}
+.pill{display:inline-block;border-radius:10px;padding:1px 9px;font-size:11.5px;font-weight:bold;white-space:nowrap;margin:1px 2px 1px 0;}
+.pill.on{background:#DFF2E3;color:var(--green);} .pill.off{background:#eceff3;color:#778;} .pill.pin{background:#FFF0D5;color:var(--amber);}
+.rl{font-size:12px;white-space:nowrap;margin-right:8px;display:inline-flex;align-items:center;gap:3px;}
+.modal{position:fixed;inset:0;background:rgba(10,20,40,.55);display:flex;align-items:center;justify-content:center;z-index:99;}
+.mbox{background:#fff;border-radius:12px;padding:18px;max-width:460px;width:94%;box-shadow:0 10px 40px rgba(0,0,0,.3);}
+.mbox input{width:100%;margin-top:4px;}
+.pinbig{font:bold 30px/1.2 ui-monospace,Menlo,monospace;letter-spacing:4px;color:var(--navy);text-align:center;background:#F0F4F8;border-radius:9px;padding:12px;margin-top:8px;user-select:all;}
+.tabs{display:flex;gap:4px;border-bottom:2px solid #d8dfe8;margin-top:14px;flex-wrap:wrap;}
+.tabs button{border:none;background:none;padding:9px 14px;font-size:14px;font-weight:bold;color:#667;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;}
+.tabs button.on{color:var(--navy);border-bottom-color:var(--blue);}
+.hide{display:none!important;}
+footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
+@media(max-width:700px){td,th{font-size:12px;padding:5px;} .hidem{display:none;}}
+</style></head><body>
+<header>
+  <div><h1>จัดการบัญชี — AUDIT PORTAL</h1><div class="sub">บัญชีของฉัน · ทีมตรวจและตำแหน่ง · การเข้าใช้ระบบ</div></div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><a href="../audit/">⌂ Audit Portal</a><div id="authbox"></div></div>
+</header>
+<main>
+  <div id="login" class="card hide" style="max-width:420px;margin:30px auto">
+    <b style="color:var(--navy);font-size:16px">เข้าสู่ระบบ</b>
+    <div class="row"><button class="btn g" style="width:100%" onclick="loginGoogle()">เข้าสู่ระบบด้วย Google</button></div>
+    <label class="f">อีเมล</label><input id="lg_em" type="email" style="width:100%" autocomplete="email" autocapitalize="none">
+    <label class="f">รหัสผ่าน / PIN ชั่วคราว</label><input id="lg_pw" type="password" style="width:100%" autocomplete="current-password">
+    <div class="row"><button class="btn" style="width:100%" onclick="loginEmail()">เข้าสู่ระบบด้วยอีเมล</button></div>
+    <div class="note"><a href="#" onclick="forgot();return false">ลืมรหัสผ่าน — ส่งลิงก์ตั้งรหัสใหม่ไปที่อีเมลนี้</a></div>
+    <div id="lg_msg"></div>
+  </div>
+
+  <div id="content" class="hide">
+    <div id="memberMsg"></div>
+    <div class="tabs" id="tabs">
+      <button data-t="me" class="on" onclick="tab('me')">บัญชีของฉัน</button>
+      <button data-t="team" class="adm" onclick="tab('team')">ทีมตรวจและตำแหน่ง</button>
+      <button data-t="add" class="adm" onclick="tab('add')">เพิ่มคน / PIN ชั่วคราว</button>
+    </div>
+
+    <section id="t_me">
+      <div class="card">
+        <div id="meInfo"></div>
+        <label class="f">ชื่อที่แสดง (ใช้เป็นค่าตั้งต้นในช่องลงนาม)</label>
+        <div class="row"><input id="me_name" type="text" style="flex:1;min-width:220px"><button class="btn g" onclick="saveMyName()">บันทึกชื่อ</button></div>
+      </div>
+      <div class="card" id="pwCard">
+        <b style="color:var(--navy)">รหัสผ่าน</b>
+        <div id="pwBody"></div>
+      </div>
+    </section>
+
+    <section id="t_team" class="hide">
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <div class="note" style="margin:0">ผู้ที่อยู่ในรายชื่อและ <b>ใช้งานอยู่</b> เท่านั้นที่เข้า Audit Portal และแอปตรวจทุกตัวได้ (เมื่อวาง Security Rules ชุดใหม่แล้ว) · ตำแหน่ง ACM / SM ใช้เป็นตัวเลือกในช่องผู้อนุมัติของแผนประจำปี</div>
+          <input id="q" type="text" placeholder="ค้นหาชื่อ/อีเมล" oninput="renderTeam()" style="width:200px">
+        </div>
+        <div style="overflow-x:auto;margin-top:10px"><table id="teamTab"></table></div>
+      </div>
+      <div class="card" id="reqCard"></div>
+    </section>
+
+    <section id="t_add" class="hide">
+      <div class="card">
+        <b style="color:var(--navy)">เพิ่มสมาชิกทีม</b>
+        <label class="f">อีเมล (บัญชี Google หรืออีเมลที่จะใช้เข้าระบบ)</label><input id="ad_em" type="email" style="width:100%;max-width:420px" autocapitalize="none">
+        <label class="f">ชื่อ–นามสกุล</label><input id="ad_name" type="text" style="width:100%;max-width:420px">
+        <label class="f">ตำแหน่งในระบบตรวจ</label><div id="ad_roles" class="row"></div>
+        <div class="row">
+          <button class="btn g" onclick="addMember(false)">เพิ่มเข้าทีม</button>
+          <button class="btn" onclick="addMember(true)">เพิ่ม + สร้าง PIN ชั่วคราว</button>
+        </div>
+        <div class="note">
+          <b>เพิ่มเข้าทีม</b> — เจ้าตัวเข้าด้วยบัญชี Google ของอีเมลนี้ หรือสมัครด้วยอีเมลเองที่หน้า Portal<br>
+          <b>PIN ชั่วคราว</b> — สำหรับคนที่ยังไม่มีบัญชีในระบบ: สร้างบัญชีด้วยอีเมลนี้และ PIN 8 หลัก ให้เจ้าตัวเข้าด้วยอีเมล + PIN แล้ว<b>ต้องตั้งรหัสผ่านใหม่ก่อนใช้งาน</b> · PIN แสดงครั้งเดียว ระบบไม่เก็บ ·
+          ถ้าอีเมลนี้มีบัญชีอยู่แล้ว ตั้ง PIN ทับไม่ได้ (ต้องใช้สิทธิ์ฝั่งเซิร์ฟเวอร์) ให้ใช้ "ส่งลิงก์ตั้งรหัสใหม่" แทน
+        </div>
+        <div id="ad_msg"></div>
+      </div>
+      <div class="card">
+        <b style="color:var(--navy)">นำเข้าจากผู้ที่เคยใช้งาน</b>
+        <div class="note">รวบรวมอีเมลที่ปรากฏในแผนการตรวจทุกปี (ACM · SM · ผู้ลงนาม · ผู้รับทราบ) และรายชื่อ allowlist เดิม (25 JUL 2026) ที่ยังไม่อยู่ในทีม — ติ๊กคนที่ต้องการแล้วกดนำเข้า</div>
+        <div class="row"><button class="btn" onclick="scanImport()">ค้นหา</button></div>
+        <div id="imp"></div>
+      </div>
+    </section>
+  </div>
+</main>
+<footer>D-0507 Flight Training Co., Ltd. · Internal Audit System · Account management</footer>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+"use strict";
+const CFG={
+  apiKey: "AIzaSyB_O40YpkQJJQIpx8gWNdiC9XrZ1o9SlHs",
+  authDomain: "d0507-audit.firebaseapp.com",
+  projectId: "d0507-audit",
+  storageBucket: "d0507-audit.firebasestorage.app",
+  messagingSenderId: "880880454045",
+  appId: "1:880880454045:web:a8fe249ca18f1a7a20c774"
+};
+firebase.initializeApp(CFG);
+const db=firebase.firestore(), auth=firebase.auth();
+// ผู้ดูแลตั้งต้น — ต้องตรงกับรายชื่อ boot ใน Security Rules (กันล็อกตัวเองออกเมื่อยังไม่มีเอกสารทีม)
+const BOOT=['tistou35@gmail.com'];
+// allowlist เดิมก่อนเปิดสมัครเสรี (HANDOFF 25 JUL 2026) — ใช้เป็นแหล่งนำเข้าเท่านั้น
+const LEGACY=['tistou35@gmail.com','navywut@gmail.com','bankapoo77@gmail.com','oceanfly46103@gmail.com','thapphawutw@gmail.com','amy.pinnoi@gmail.com','warutmitthumsiri@gmail.com'];
+const ROLES=[['admin','ผู้ดูแลระบบ'],['acm','ACM'],['cmm','CMM'],['sm','SM'],['lead','Lead Auditor'],['auditor','Auditor'],['auditee','ผู้รับการตรวจ']];
+const RN=Object.fromEntries(ROLES);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const lc=s=>String(s||'').trim().toLowerCase();
+const now=()=>firebase.firestore.FieldValue.serverTimestamp();
+const fmt=t=>{ if(!t) return ''; const d=t.toDate?t.toDate():new Date(t); return d.toISOString().slice(0,10); };
+let USER=null, ME=null, TEAM=[], REQS=[], unsubT=null, unsubR=null;
+const AUTH_TH={'auth/invalid-credential':'อีเมลหรือรหัสผ่านไม่ถูกต้อง','auth/wrong-password':'รหัสผ่านไม่ถูกต้อง','auth/user-not-found':'ไม่พบบัญชีนี้',
+  'auth/too-many-requests':'ลองผิดหลายครั้งเกินไป รอสักครู่แล้วลองใหม่','auth/invalid-email':'รูปแบบอีเมลไม่ถูกต้อง','auth/email-already-in-use':'อีเมลนี้มีบัญชีอยู่แล้ว',
+  'auth/weak-password':'รหัสผ่านต้องยาวอย่างน้อย 6 ตัว','auth/requires-recent-login':'ต้องเข้าสู่ระบบใหม่ก่อนเปลี่ยนรหัสผ่าน','auth/popup-closed-by-user':'ปิดหน้าต่างเข้าสู่ระบบก่อนเสร็จ',
+  'auth/network-request-failed':'เชื่อมต่อเครือข่ายไม่ได้','permission-denied':'ไม่มีสิทธิ์ทำรายการนี้'};
+const errTH=e=>(AUTH_TH[e&&e.code]||((e&&e.message)||String(e)))+(e&&e.code?' ('+e.code+')':'');
+const box=(id,cls,html)=>{ const el=document.getElementById(id); if(el) el.innerHTML=html?`<div class="${cls}">${html}</div>`:''; };
+
+function loginGoogle(){ auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>box('lg_msg','bad',esc(errTH(e)))); }
+function loginEmail(){ auth.signInWithEmailAndPassword(lc(document.getElementById('lg_em').value),document.getElementById('lg_pw').value).catch(e=>box('lg_msg','bad',esc(errTH(e)))); }
+function forgot(){ const em=lc(document.getElementById('lg_em').value); if(!em){ box('lg_msg','warn','กรอกอีเมลก่อน'); return; }
+  auth.sendPasswordResetEmail(em).then(()=>box('lg_msg','ok','ส่งลิงก์ตั้งรหัสใหม่ไปที่ '+esc(em)+' แล้ว — ดูในกล่องจดหมาย (และโฟลเดอร์สแปม)')).catch(e=>box('lg_msg','bad',esc(errTH(e)))); }
+
+const isBoot=()=>USER&&BOOT.includes(lc(USER.email));
+const myDoc=()=>TEAM.find(m=>m.id===lc(USER&&USER.email))||ME;
+const isAdmin=()=>isBoot()||!!(myDoc()&&myDoc().active&&(myDoc().roles||[]).includes('admin'));
+const hasPw=()=>USER&&USER.providerData.some(p=>p.providerId==='password');
+
+auth.onAuthStateChanged(async u=>{
+  USER=u;
+  document.getElementById('login').classList.toggle('hide',!!u);
+  document.getElementById('content').classList.toggle('hide',!u);
+  document.getElementById('authbox').innerHTML=u?`${esc(u.displayName||u.email)} <button onclick="auth.signOut()">ออก</button>`:'';
+  if(unsubT){unsubT();unsubT=null;} if(unsubR){unsubR();unsubR=null;}
+  if(!u) return;
+  try{ const d=await db.collection('team').doc(lc(u.email)).get(); ME=d.exists?{id:d.id,...d.data()}:null; }catch(e){ ME=null; }
+  if(ME&&ME.mustChange&&hasPw()){ forceChange(); }
+  renderMe();
+  document.querySelectorAll('.adm').forEach(b=>b.classList.toggle('hide',!isAdmin()));
+  if(isAdmin()) watchTeam();
+});
+
+// ---------- บัญชีของฉัน ----------
+function renderMe(){
+  const m=ME, em=lc(USER.email);
+  const prov=USER.providerData.map(p=>p.providerId==='google.com'?'Google':p.providerId==='password'?'อีเมล + รหัสผ่าน':p.providerId).join(' · ');
+  document.getElementById('meInfo').innerHTML=`<div style="font-size:15px"><b>${esc((m&&m.name)||USER.displayName||em)}</b></div>
+    <div class="note" style="margin-top:2px">${esc(em)} · เข้าด้วย ${esc(prov)}</div>
+    <div class="row">${m?(m.roles||[]).map(r=>`<span class="pill on">${esc(RN[r]||r)}</span>`).join('')||'<span class="pill off">ยังไม่มีตำแหน่ง</span>':''}
+    ${m&&m.active===false?'<span class="pill off">ปิดใช้งาน</span>':''}${isBoot()?'<span class="pill on">ผู้ดูแลตั้งต้น</span>':''}</div>`;
+  document.getElementById('me_name').value=(m&&m.name)||USER.displayName||'';
+  if(!m&&!isBoot()){
+    box('memberMsg','warn',`บัญชี <b>${esc(em)}</b> ยังไม่อยู่ในทีมตรวจ — เมื่อวาง Security Rules ชุดใหม่แล้ว จะเข้าระบบตรวจไม่ได้จนกว่าผู้ดูแลจะเพิ่มเข้าทีม
+      <div class="row"><button class="btn" onclick="requestJoin()">ส่งคำขอเข้าทีม</button></div>`);
+  } else if(m&&m.active===false){ box('memberMsg','bad','บัญชีนี้ถูกปิดใช้งาน — ติดต่อผู้ดูแลระบบ'); }
+  else box('memberMsg','','');
+  const pb=document.getElementById('pwBody');
+  pb.innerHTML=hasPw()?`
+    <label class="f">รหัสผ่านปัจจุบัน</label><input id="pw0" type="password" style="width:100%;max-width:320px" autocomplete="current-password">
+    <label class="f">รหัสผ่านใหม่ (อย่างน้อย 8 ตัว)</label><input id="pw1" type="password" style="width:100%;max-width:320px" autocomplete="new-password">
+    <label class="f">ยืนยันรหัสผ่านใหม่</label><input id="pw2" type="password" style="width:100%;max-width:320px" autocomplete="new-password">
+    <div class="row"><button class="btn g" onclick="changePw()">เปลี่ยนรหัสผ่าน</button><button class="btn" onclick="resetMine()">ส่งลิงก์ตั้งรหัสใหม่ไปที่อีเมลของฉัน</button></div><div id="pw_msg"></div>`
+   :`<div class="note">บัญชีนี้เข้าด้วย Google — รหัสผ่านจัดการที่บัญชี Google (<a href="https://myaccount.google.com/security" target="_blank" rel="noopener">myaccount.google.com</a>) ระบบนี้ไม่ได้เก็บรหัสผ่านของ Google</div>`;
+}
+function saveMyName(){
+  const n=document.getElementById('me_name').value.trim(); if(!n) return;
+  const ref=db.collection('team').doc(lc(USER.email));
+  const p=ME?ref.update({name:n,nameAt:now()}):Promise.resolve();
+  Promise.all([p,USER.updateProfile({displayName:n})]).then(()=>{ if(ME) ME.name=n; renderMe(); alert('บันทึกชื่อแล้ว'); }).catch(e=>alert(errTH(e)));
+}
+function changePw(){
+  const a=document.getElementById('pw0').value,b=document.getElementById('pw1').value,c=document.getElementById('pw2').value;
+  if(b.length<8){ box('pw_msg','warn','รหัสผ่านใหม่ต้องยาวอย่างน้อย 8 ตัว'); return; }
+  if(b!==c){ box('pw_msg','warn','รหัสผ่านใหม่สองช่องไม่ตรงกัน'); return; }
+  const cred=firebase.auth.EmailAuthProvider.credential(USER.email,a);
+  USER.reauthenticateWithCredential(cred).then(()=>USER.updatePassword(b)).then(()=>box('pw_msg','ok','เปลี่ยนรหัสผ่านแล้ว')).catch(e=>box('pw_msg','bad',esc(errTH(e))));
+}
+function resetMine(){ auth.sendPasswordResetEmail(USER.email).then(()=>box('pw_msg','ok','ส่งลิงก์ไปที่ '+esc(USER.email)+' แล้ว')).catch(e=>box('pw_msg','bad',esc(errTH(e)))); }
+function requestJoin(){
+  db.collection('joinReq').doc(lc(USER.email)).set({email:lc(USER.email),name:USER.displayName||'',at:now()})
+    .then(()=>box('memberMsg','ok','ส่งคำขอแล้ว — ผู้ดูแลจะเห็นในแท็บทีมตรวจ')).catch(e=>alert(errTH(e)));
+}
+// ผู้ที่เข้าด้วย PIN ชั่วคราว ต้องตั้งรหัสใหม่ก่อนใช้งาน (ปิดหน้าต่างไม่ได้ ออกจากระบบได้อย่างเดียว)
+function forceChange(){
+  const w=document.createElement('div'); w.className='modal'; w.id='fc';
+  w.innerHTML=`<div class="mbox"><b style="color:var(--navy);font-size:16px">ตั้งรหัสผ่านใหม่</b>
+    <div class="note">คุณเข้าด้วย PIN ชั่วคราวที่ผู้ดูแลสร้างให้ ต้องตั้งรหัสผ่านของตัวเองก่อนใช้งาน</div>
+    <label class="f">รหัสผ่านใหม่ (อย่างน้อย 8 ตัว)</label><input id="fc1" type="password" autocomplete="new-password">
+    <label class="f">ยืนยัน</label><input id="fc2" type="password" autocomplete="new-password">
+    <div id="fc_msg"></div>
+    <div class="row" style="justify-content:flex-end"><button class="btn" onclick="auth.signOut();document.getElementById('fc').remove()">ออกจากระบบ</button><button class="btn g" onclick="doForce()">บันทึก</button></div></div>`;
+  document.body.appendChild(w);
+}
+function doForce(){
+  const a=document.getElementById('fc1').value,b=document.getElementById('fc2').value;
+  if(a.length<8){ box('fc_msg','warn','อย่างน้อย 8 ตัว'); return; } if(a!==b){ box('fc_msg','warn','สองช่องไม่ตรงกัน'); return; }
+  USER.updatePassword(a).then(()=>db.collection('team').doc(lc(USER.email)).update({mustChange:false,pwSetAt:now()}))
+    .then(()=>{ document.getElementById('fc').remove(); ME.mustChange=false; alert('ตั้งรหัสผ่านแล้ว'); })
+    .catch(e=>box('fc_msg','bad',esc(errTH(e))));
+}
+
+// ---------- ผู้ดูแล: ทีม ----------
+function tab(t){ document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t)); ['me','team','add'].forEach(x=>document.getElementById('t_'+x).classList.toggle('hide',x!==t)); if(t==='add') renderAddRoles(); }
+function watchTeam(){
+  unsubT=db.collection('team').onSnapshot(s=>{ TEAM=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.name||a.id).localeCompare(b.name||b.id)); renderTeam(); },e=>console.error(e));
+  unsubR=db.collection('joinReq').onSnapshot(s=>{ REQS=s.docs.map(d=>({id:d.id,...d.data()})); renderReqs(); },e=>console.error(e));
+}
+function renderTeam(){
+  const q=lc(document.getElementById('q').value);
+  const L=TEAM.filter(m=>!q||lc(m.name).includes(q)||m.id.includes(q));
+  let h=`<tr><th>ชื่อ / อีเมล</th><th>ตำแหน่ง</th><th class="hidem">สถานะ</th><th style="width:1%"></th></tr>`;
+  L.forEach(m=>{
+    const self=m.id===lc(USER.email);
+    h+=`<tr><td><b>${esc(m.name||'—')}</b><div class="note" style="margin:0">${esc(m.id)}</div></td>
+      <td>${ROLES.map(([k,t])=>`<label class="rl"><input type="checkbox" ${(m.roles||[]).includes(k)?'checked':''} ${self&&k==='admin'&&!isBoot()?'disabled title="ถอดสิทธิ์ผู้ดูแลของตัวเองไม่ได้"':''} onchange="setRole('${esc(m.id)}','${k}',this.checked)">${t}</label>`).join('')}</td>
+      <td class="hidem">${m.active===false?'<span class="pill off">ปิดใช้งาน</span>':'<span class="pill on">ใช้งานอยู่</span>'}${m.mustChange?'<span class="pill pin" title="ยังไม่ได้ตั้งรหัสใหม่">PIN รอเปลี่ยน</span>':''}
+        <div class="note" style="margin:0">เพิ่มเมื่อ ${esc(fmt(m.addedAt))}</div></td>
+      <td style="white-space:nowrap"><button class="btn" onclick="editName('${esc(m.id)}')">ชื่อ</button>
+        <button class="btn" onclick="sendReset('${esc(m.id)}')" title="ส่งลิงก์ตั้งรหัสผ่านใหม่ไปที่อีเมลนี้">ลิงก์รหัส</button>
+        ${self?'':`<button class="btn ${m.active===false?'':'x'}" onclick="toggleActive('${esc(m.id)}')">${m.active===false?'เปิดใช้':'ปิดใช้'}</button>
+        <button class="btn x" onclick="removeMember('${esc(m.id)}')">ลบ</button>`}</td></tr>`;
+  });
+  if(!L.length) h+=`<tr><td colspan="4" class="note" style="text-align:center;padding:14px">${TEAM.length?'ไม่พบ':'ยังไม่มีสมาชิก — ไปที่แท็บ "เพิ่มคน" หรือ "นำเข้าจากผู้ที่เคยใช้งาน"'}</td></tr>`;
+  document.getElementById('teamTab').innerHTML=h;
+}
+function renderReqs(){
+  const c=document.getElementById('reqCard'); if(!c) return;
+  const L=REQS.filter(r=>!TEAM.find(m=>m.id===r.id));
+  c.innerHTML=`<b style="color:var(--navy)">คำขอเข้าทีม (${L.length})</b>`+(L.length?`<table style="margin-top:8px">${L.map(r=>`<tr><td><b>${esc(r.name||'—')}</b><div class="note" style="margin:0">${esc(r.id)} · ${esc(fmt(r.at))}</div></td>
+    <td style="white-space:nowrap;width:1%"><button class="btn g" onclick="approveReq('${esc(r.id)}')">เพิ่มเข้าทีม</button> <button class="btn x" onclick="db.collection('joinReq').doc('${esc(r.id)}').delete()">ปฏิเสธ</button></td></tr>`).join('')}</table>`:'<div class="note">ไม่มีคำขอค้าง</div>');
+}
+const upd=(id,data)=>db.collection('team').doc(id).update({...data,upAt:now(),upBy:lc(USER.email)}).catch(e=>alert(errTH(e)));
+function setRole(id,k,on){ const m=TEAM.find(x=>x.id===id); if(!m) return; const r=new Set(m.roles||[]); on?r.add(k):r.delete(k); upd(id,{roles:[...r]}); }
+function editName(id){ const m=TEAM.find(x=>x.id===id); const n=prompt('ชื่อ–นามสกุลของ '+id,(m&&m.name)||''); if(n!=null&&n.trim()) upd(id,{name:n.trim()}); }
+function toggleActive(id){ const m=TEAM.find(x=>x.id===id); const off=m.active!==false; if(confirm((off?'ปิดใช้งาน ':'เปิดใช้งาน ')+id+(off?'\nเข้าระบบตรวจไม่ได้จนกว่าจะเปิดใหม่ (บันทึกเดิมไม่หาย)':'')+'?')) upd(id,{active:!off}); }
+function removeMember(id){ if(confirm('ลบ '+id+' ออกจากทีม?\nบัญชีเข้าสู่ระบบยังอยู่ แต่เข้าระบบตรวจไม่ได้ · ลายเซ็นและบันทึกเดิมไม่หาย')) db.collection('team').doc(id).delete().catch(e=>alert(errTH(e))); }
+function sendReset(id){ if(confirm('ส่งลิงก์ตั้งรหัสผ่านใหม่ไปที่ '+id+'?\n(บัญชีที่เข้าด้วย Google อย่างเดียว ลิงก์นี้จะเพิ่มรหัสผ่านให้บัญชี — ปกติให้เจ้าตัวกู้ที่ Google)')) auth.sendPasswordResetEmail(id).then(()=>alert('ส่งแล้ว')).catch(e=>alert(errTH(e))); }
+function approveReq(id){ const r=REQS.find(x=>x.id===id)||{}; db.collection('team').doc(id).set({email:id,name:r.name||'',roles:[],active:true,addedAt:now(),addedBy:lc(USER.email)})
+  .then(()=>db.collection('joinReq').doc(id).delete()).catch(e=>alert(errTH(e))); }
+
+// ---------- ผู้ดูแล: เพิ่มคน / PIN ----------
+function renderAddRoles(){ const el=document.getElementById('ad_roles'); if(el.children.length) return; el.innerHTML=ROLES.map(([k,t])=>`<label class="rl"><input type="checkbox" value="${k}">${t}</label>`).join(''); }
+function genPin(){ const a=new Uint32Array(1); crypto.getRandomValues(a); return String(a[0]%100000000).padStart(8,'0'); }
+async function addMember(withPin){
+  const em=lc(document.getElementById('ad_em').value), name=document.getElementById('ad_name').value.trim();
+  const roles=[...document.querySelectorAll('#ad_roles input:checked')].map(i=>i.value);
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){ box('ad_msg','warn','กรอกอีเมลให้ถูกรูปแบบ'); return; }
+  if(!name){ box('ad_msg','warn','กรอกชื่อ–นามสกุล'); return; }
+  const exists=TEAM.find(m=>m.id===em);
+  if(exists&&!withPin){ box('ad_msg','warn',esc(em)+' อยู่ในทีมแล้ว — แก้ตำแหน่งที่แท็บทีมตรวจ'); return; }
+  let pin=null;
+  if(withPin){
+    pin=genPin();
+    // สร้างบัญชีผ่าน Firebase อีกตัวในหน้า ผู้ดูแลจึงไม่หลุดจากบัญชีตัวเอง
+    const sec=firebase.apps.find(a=>a.name==='sec')||firebase.initializeApp(CFG,'sec');
+    try{ await sec.auth().createUserWithEmailAndPassword(em,pin); await sec.auth().signOut(); }
+    catch(e){
+      if(e.code==='auth/email-already-in-use'){ box('ad_msg','warn',esc(em)+' มีบัญชีอยู่แล้ว ตั้ง PIN ทับไม่ได้ — '+(exists?'':'เพิ่มเข้าทีมแบบไม่ใช้ PIN แล้ว')+'ใช้ปุ่ม "ลิงก์รหัส" ในแท็บทีมตรวจเพื่อส่งลิงก์ตั้งรหัสใหม่');
+        if(!exists) await db.collection('team').doc(em).set({email:em,name,roles,active:true,addedAt:now(),addedBy:lc(USER.email)}).catch(()=>{});
+        return; }
+      box('ad_msg','bad',esc(errTH(e))); return;
+    }
+  }
+  const data={email:em,name,roles,active:true,addedAt:now(),addedBy:lc(USER.email)};
+  if(pin){ data.mustChange=true; data.pinAt=now(); data.pinBy=lc(USER.email); }
+  if(exists){ delete data.addedAt; delete data.addedBy; }
+  try{ await db.collection('team').doc(em).set(data,{merge:true}); }
+  catch(e){ box('ad_msg','bad',esc(errTH(e))); return; }
+  document.getElementById('ad_em').value=''; document.getElementById('ad_name').value=''; document.querySelectorAll('#ad_roles input').forEach(i=>i.checked=false);
+  if(pin){
+    box('ad_msg','ok','เพิ่ม '+esc(name)+' แล้ว');
+    const w=document.createElement('div'); w.className='modal';
+    w.innerHTML=`<div class="mbox"><b style="color:var(--navy);font-size:16px">PIN ชั่วคราวของ ${esc(name)}</b>
+      <div class="note">อีเมล: <b>${esc(em)}</b></div><div class="pinbig">${pin}</div>
+      <div class="note">แจ้งเจ้าตัวโดยตรง (อย่าส่งในกลุ่ม) · เข้าที่ Audit Portal ด้วย "เข้าสู่ระบบด้วยอีเมล" แล้วระบบจะให้ตั้งรหัสผ่านใหม่ทันที · <b>PIN นี้แสดงครั้งเดียว</b> ระบบไม่เก็บไว้</div>
+      <div class="row" style="justify-content:flex-end"><button class="btn" onclick="navigator.clipboard&&navigator.clipboard.writeText('${pin}')">คัดลอก PIN</button><button class="btn g" onclick="this.closest('.modal').remove()">ปิด</button></div></div>`;
+    document.body.appendChild(w);
+  } else box('ad_msg','ok','เพิ่ม '+esc(name)+' ('+esc(em)+') เข้าทีมแล้ว');
+}
+async function scanImport(){
+  const seen=new Set(TEAM.map(m=>m.id)), found={};
+  const add=(e,why)=>{ e=lc(e); if(!e||!e.includes('@')||seen.has(e)) return; (found[e]=found[e]||new Set()).add(why); };
+  LEGACY.forEach(e=>add(e,'allowlist เดิม'));
+  try{
+    const s=await db.collection('plans').get();
+    s.forEach(d=>{ const p=d.data(), y=d.id;
+      add(p.acm,'ACM แผน '+y); add(p.sm,'SM แผน '+y); if(p.prep) add(p.prep.by,'CMM แผน '+y); add(p.u,'บันทึกแผน '+y);
+      (p.rows||[]).forEach(r=>{ if(r.appr) add(r.appr.by,'ACM อนุมัติ '+y); if(r.cl) add(r.cl.by,'ปิดงาน '+y);
+        Object.values(r.sg||{}).forEach(g=>add(g&&g.by,'ลงนามหนังสือแจ้ง '+y));
+        (r.ackList||[]).forEach(e=>add(e,'ผู้รับทราบ '+y)); (r.ackSigs||[]).forEach(a=>add(a.email,'ผู้รับทราบ '+y)); });
+    });
+  }catch(e){ box('imp','bad',esc(errTH(e))); return; }
+  const L=Object.keys(found).sort();
+  document.getElementById('imp').innerHTML=L.length?`<table style="margin-top:8px">${L.map(e=>`<tr><td style="width:1%"><input type="checkbox" class="impc" value="${esc(e)}" checked></td><td>${esc(e)}<div class="note" style="margin:0">${esc([...found[e]].join(' · '))}</div></td></tr>`).join('')}</table>
+    <div class="row"><button class="btn g" onclick="doImport()">นำเข้าที่ติ๊กไว้</button></div><div class="note">นำเข้าโดยยังไม่มีตำแหน่ง — กำหนดตำแหน่งต่อที่แท็บทีมตรวจ</div>`:'<div class="ok">ไม่พบอีเมลที่ยังไม่อยู่ในทีม</div>';
+}
+async function doImport(){
+  const L=[...document.querySelectorAll('.impc:checked')].map(i=>i.value); if(!L.length) return;
+  const b=db.batch(); L.forEach(e=>b.set(db.collection('team').doc(e),{email:e,name:'',roles:[],active:true,addedAt:now(),addedBy:lc(USER.email),src:'import'},{merge:true}));
+  try{ await b.commit(); box('imp','ok','นำเข้าแล้ว '+L.length+' คน — ใส่ชื่อและตำแหน่งที่แท็บทีมตรวจ'); }catch(e){ box('imp','bad',esc(errTH(e))); }
+}
+</script>
+</body></html>
