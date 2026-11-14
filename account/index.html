@@ -67,6 +67,10 @@ footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
         <label class="f">ชื่อที่แสดง (ใช้เป็นค่าตั้งต้นในช่องลงนาม)</label>
         <div class="row"><input id="me_name" type="text" style="flex:1;min-width:220px"><button class="btn g" onclick="saveMyName()">บันทึกชื่อ</button></div>
       </div>
+      <div class="card" id="pinCard">
+        <b style="color:var(--navy)">เข้าด้วย PIN — ช่องทางสำรอง</b>
+        <div id="pinBody"></div>
+      </div>
       <div class="card" id="pwCard">
         <b style="color:var(--navy)">รหัสผ่าน</b>
         <div id="pwBody"></div>
@@ -97,7 +101,7 @@ footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
         <div class="note">
           <b>เพิ่มเข้าทีม</b> — เจ้าตัวเข้าด้วยบัญชี Google ของอีเมลนี้ หรือสมัครด้วยอีเมลเองที่หน้า Portal<br>
           <b>PIN ชั่วคราว</b> — สำหรับคนที่ยังไม่มีบัญชีในระบบ: สร้างบัญชีด้วยอีเมลนี้และ PIN 8 หลัก ให้เจ้าตัวเข้าด้วยอีเมล + PIN แล้ว<b>ต้องตั้งรหัสผ่านใหม่ก่อนใช้งาน</b> · PIN แสดงครั้งเดียว ระบบไม่เก็บ ·
-          ถ้าอีเมลนี้มีบัญชีอยู่แล้ว ตั้ง PIN ทับไม่ได้ (ต้องใช้สิทธิ์ฝั่งเซิร์ฟเวอร์) ให้ใช้ "ส่งลิงก์ตั้งรหัสใหม่" แทน
+          ถ้าอีเมลนี้มีบัญชีอยู่แล้ว ผู้ดูแลตั้ง PIN ให้ไม่ได้ (ต้องใช้สิทธิ์ฝั่งเซิร์ฟเวอร์) — ให้เจ้าตัวตั้ง PIN เองที่ บัญชีของฉัน › เข้าด้วย PIN หรือส่งลิงก์ตั้งรหัสใหม่
         </div>
         <div id="ad_msg"></div>
       </div>
@@ -182,10 +186,11 @@ function renderMe(){
       <div class="row"><button class="btn" onclick="requestJoin()">ส่งคำขอเข้าทีม</button></div>`);
   } else if(m&&m.active===false){ box('memberMsg','bad','บัญชีนี้ถูกปิดใช้งาน — ติดต่อผู้ดูแลระบบ'); }
   else box('memberMsg','','');
+  renderPin();
   const pb=document.getElementById('pwBody');
   pb.innerHTML=hasPw()?`
     <label class="f">รหัสผ่านปัจจุบัน</label><input id="pw0" type="password" style="width:100%;max-width:320px" autocomplete="current-password">
-    <label class="f">รหัสผ่านใหม่ (อย่างน้อย 8 ตัว)</label><input id="pw1" type="password" style="width:100%;max-width:320px" autocomplete="new-password">
+    <label class="f">รหัสผ่านใหม่ (อย่างน้อย 8 ตัว หรือ PIN ตัวเลข 6–8 หลัก)</label><input id="pw1" type="password" style="width:100%;max-width:320px" autocomplete="new-password">
     <label class="f">ยืนยันรหัสผ่านใหม่</label><input id="pw2" type="password" style="width:100%;max-width:320px" autocomplete="new-password">
     <div class="row"><button class="btn g" onclick="changePw()">เปลี่ยนรหัสผ่าน</button><button class="btn" onclick="resetMine()">ส่งลิงก์ตั้งรหัสใหม่ไปที่อีเมลของฉัน</button></div><div id="pw_msg"></div>`
    :`<div class="note">บัญชีนี้เข้าด้วย Google — รหัสผ่านจัดการที่บัญชี Google (<a href="https://myaccount.google.com/security" target="_blank" rel="noopener">myaccount.google.com</a>) ระบบนี้ไม่ได้เก็บรหัสผ่านของ Google</div>`;
@@ -198,7 +203,7 @@ function saveMyName(){
 }
 function changePw(){
   const a=document.getElementById('pw0').value,b=document.getElementById('pw1').value,c=document.getElementById('pw2').value;
-  if(b.length<8){ box('pw_msg','warn','รหัสผ่านใหม่ต้องยาวอย่างน้อย 8 ตัว'); return; }
+  if(b.length<8&&!(/^\d{6,8}$/.test(b)&&!weakPin(b))){ box('pw_msg','warn','รหัสผ่านใหม่ต้องยาวอย่างน้อย 8 ตัว หรือเป็น PIN ตัวเลข 6–8 หลักที่ไม่ใช่เลขเรียง/เลขซ้ำ'); return; }
   if(b!==c){ box('pw_msg','warn','รหัสผ่านใหม่สองช่องไม่ตรงกัน'); return; }
   const cred=firebase.auth.EmailAuthProvider.credential(USER.email,a);
   USER.reauthenticateWithCredential(cred).then(()=>USER.updatePassword(b)).then(()=>box('pw_msg','ok','เปลี่ยนรหัสผ่านแล้ว')).catch(e=>box('pw_msg','bad',esc(errTH(e))));
@@ -207,6 +212,45 @@ function resetMine(){ auth.sendPasswordResetEmail(USER.email).then(()=>box('pw_m
 function requestJoin(){
   db.collection('joinReq').doc(lc(USER.email)).set({email:lc(USER.email),name:USER.displayName||'',at:now()})
     .then(()=>box('memberMsg','ok','ส่งคำขอแล้ว — ผู้ดูแลจะเห็นในแท็บทีมตรวจ')).catch(e=>alert(errTH(e)));
+}
+// ---------- PIN ของบัญชีเดิม (ผูกการเข้าด้วยอีเมล + PIN เข้ากับบัญชีที่ใช้อยู่ — บัญชีเดียวกัน uid เดิม) ----------
+const hasGoogle=()=>USER&&USER.providerData.some(p=>p.providerId==='google.com');
+function renderPin(){
+  const el=document.getElementById('pinBody'), em=esc(lc(USER.email));
+  if(!hasPw()){
+    el.innerHTML=`<div class="note">ตั้ง PIN ให้บัญชีนี้ แล้วเข้าระบบได้อีกทางด้วย <b>อีเมล ${em} + PIN</b> (ช่อง "เข้าสู่ระบบด้วยอีเมล") — ยังเข้าด้วย Google ได้ตามเดิม
+      เป็นบัญชีเดียวกัน ตำแหน่ง ลายเซ็น และงานเดิมอยู่ครบ · ใช้ตอนเข้าจากเครื่องที่ไม่ได้ล็อกอิน Google เช่น iPad กลาง</div>
+      <label class="f">PIN ตัวเลข 6–8 หลัก</label><input id="pn1" type="password" inputmode="numeric" maxlength="8" style="width:100%;max-width:200px" autocomplete="new-password">
+      <label class="f">ยืนยัน PIN</label><input id="pn2" type="password" inputmode="numeric" maxlength="8" style="width:100%;max-width:200px" autocomplete="new-password">
+      <div class="row"><button class="btn g" onclick="setPin()">ตั้ง PIN</button></div>
+      <div class="note">อย่าใช้วันเกิด เลขเรียง (123456) หรือเลขซ้ำ (111111) · ผู้ดูแลระบบตั้ง PIN ให้บัญชีของคนอื่นไม่ได้ เจ้าตัวต้องตั้งเอง</div><div id="pn_msg"></div>`;
+  } else {
+    el.innerHTML=`<div class="note">บัญชีนี้เข้าด้วย <b>อีเมล ${em} + PIN/รหัสผ่าน</b> ได้แล้ว${hasGoogle()?' และยังเข้าด้วย Google ได้':''} · เปลี่ยน PIN ใช้ช่องเปลี่ยนรหัสผ่านด้านล่าง (ตัวเลข 6–8 หลักก็ได้)</div>
+      ${hasGoogle()?`<div class="row"><button class="btn x" onclick="removePin()">ยกเลิกการเข้าด้วย PIN</button></div>`:''}<div id="pn_msg"></div>`;
+  }
+}
+const weakPin=p=>/^(\d)\1+$/.test(p)||'0123456789012'.includes(p)||'9876543210987'.includes(p);
+async function setPin(){
+  const a=document.getElementById('pn1').value.trim(), b=document.getElementById('pn2').value.trim();
+  if(!/^\d{6,8}$/.test(a)){ box('pn_msg','warn','PIN ต้องเป็นตัวเลข 6–8 หลัก'); return; }
+  if(weakPin(a)){ box('pn_msg','warn','PIN นี้เดาง่ายเกินไป (เลขเรียงหรือเลขซ้ำ) — เลือกใหม่'); return; }
+  if(a!==b){ box('pn_msg','warn','PIN สองช่องไม่ตรงกัน'); return; }
+  const cred=firebase.auth.EmailAuthProvider.credential(lc(USER.email),a);
+  try{ await USER.linkWithCredential(cred); }
+  catch(e){
+    if(e.code==='auth/requires-recent-login'&&hasGoogle()){
+      try{ await USER.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider()); await USER.linkWithCredential(cred); }
+      catch(e2){ box('pn_msg','bad',esc(errTH(e2))); return; }
+    } else { box('pn_msg','bad',esc(errTH(e))); return; }
+  }
+  await USER.reload(); USER=auth.currentUser;
+  if(ME) db.collection('team').doc(lc(USER.email)).update({pinSelfAt:now()}).catch(()=>{});
+  renderMe(); box('pn_msg','ok','ตั้ง PIN แล้ว — ครั้งหน้าเข้าด้วยอีเมล '+esc(lc(USER.email))+' + PIN ได้');
+}
+async function removePin(){
+  if(!confirm('ยกเลิกการเข้าด้วยอีเมล + PIN?\nยังเข้าด้วย Google ได้ตามเดิม')) return;
+  try{ await USER.unlink('password'); await USER.reload(); USER=auth.currentUser; renderMe(); box('pn_msg','ok','ยกเลิกแล้ว — เข้าด้วย Google เท่านั้น'); }
+  catch(e){ box('pn_msg','bad',esc(errTH(e))); }
 }
 // ผู้ที่เข้าด้วย PIN ชั่วคราว ต้องตั้งรหัสใหม่ก่อนใช้งาน (ปิดหน้าต่างไม่ได้ ออกจากระบบได้อย่างเดียว)
 function forceChange(){
@@ -283,7 +327,7 @@ async function addMember(withPin){
     const sec=firebase.apps.find(a=>a.name==='sec')||firebase.initializeApp(CFG,'sec');
     try{ await sec.auth().createUserWithEmailAndPassword(em,pin); await sec.auth().signOut(); }
     catch(e){
-      if(e.code==='auth/email-already-in-use'){ box('ad_msg','warn',esc(em)+' มีบัญชีอยู่แล้ว ตั้ง PIN ทับไม่ได้ — '+(exists?'':'เพิ่มเข้าทีมแบบไม่ใช้ PIN แล้ว')+'ใช้ปุ่ม "ลิงก์รหัส" ในแท็บทีมตรวจเพื่อส่งลิงก์ตั้งรหัสใหม่');
+      if(e.code==='auth/email-already-in-use'){ box('ad_msg','warn',esc(em)+' มีบัญชีอยู่แล้ว ผู้ดูแลตั้ง PIN ให้ไม่ได้ — '+(exists?'':'เพิ่มเข้าทีมแบบไม่ใช้ PIN แล้ว · ')+'ให้เจ้าตัวเข้าด้วย Google แล้วตั้ง PIN เองที่ <b>บัญชีของฉัน › เข้าด้วย PIN</b> หรือใช้ปุ่ม "ลิงก์รหัส" ในแท็บทีมตรวจ');
         if(!exists) await db.collection('team').doc(em).set({email:em,name,roles,active:true,addedAt:now(),addedBy:lc(USER.email)}).catch(()=>{});
         return; }
       box('ad_msg','bad',esc(errTH(e))); return;
