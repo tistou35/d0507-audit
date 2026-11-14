@@ -230,19 +230,33 @@ function renderPin(){
   }
 }
 const weakPin=p=>/^(\d)\1+$/.test(p)||'0123456789012'.includes(p)||'9876543210987'.includes(p);
+let PIN_PENDING=null;
+// รายละเอียดข้อผิดพลาดสำหรับวินิจฉัย — รหัส ข้อความ และอุปกรณ์ (ไม่มี PIN)
+const errDetail=e=>`<div style="font-size:11px;color:#7a8798;margin-top:6px;word-break:break-all">รายละเอียด: ${esc((e&&e.code)||'')} · ${esc((e&&e.message)||String(e))} · ${esc(navigator.userAgent)} · ${new Date().toISOString()}</div>`;
 async function setPin(){
   const a=document.getElementById('pn1').value.trim(), b=document.getElementById('pn2').value.trim();
   if(!/^\d{6,8}$/.test(a)){ box('pn_msg','warn','PIN ต้องเป็นตัวเลข 6–8 หลัก'); return; }
   if(weakPin(a)){ box('pn_msg','warn','PIN นี้เดาง่ายเกินไป (เลขเรียงหรือเลขซ้ำ) — เลือกใหม่'); return; }
   if(a!==b){ box('pn_msg','warn','PIN สองช่องไม่ตรงกัน'); return; }
-  const cred=firebase.auth.EmailAuthProvider.credential(lc(USER.email),a);
-  try{ await USER.linkWithCredential(cred); }
-  catch(e){
-    if(e.code==='auth/requires-recent-login'&&hasGoogle()){
-      try{ await USER.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider()); await USER.linkWithCredential(cred); }
-      catch(e2){ box('pn_msg','bad',esc(errTH(e2))); return; }
-    } else { box('pn_msg','bad',esc(errTH(e))); return; }
+  PIN_PENDING=a; await linkPin();
+}
+async function linkPin(reauth){
+  const btns=document.querySelectorAll('#pinBody button'); btns.forEach(x=>x.disabled=true);
+  box('pn_msg','note','กำลังบันทึก…');
+  try{
+    if(reauth) await USER.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider());
+    await USER.getIdToken(true);                          // ต่ออายุ token ก่อน — token เก่าเป็นสาเหตุหนึ่งของการถูกปฏิเสธ
+    await USER.linkWithCredential(firebase.auth.EmailAuthProvider.credential(lc(USER.email),PIN_PENDING));
+  }catch(e){
+    console.error('setPin',e); btns.forEach(x=>x.disabled=false);
+    if(e.code==='auth/requires-recent-login'||e.code==='auth/user-token-expired'){
+      box('pn_msg','warn','ต้องยืนยันตัวตนกับ Google อีกครั้งก่อนตั้ง PIN<div class="row"><button class="btn g" onclick="linkPin(true)">ยืนยันตัวตนด้วย Google แล้วตั้ง PIN</button></div>'); return; }
+    if(e.code==='auth/network-request-failed'){
+      box('pn_msg','bad','เชื่อมต่อเซิร์ฟเวอร์ยืนยันตัวตนไม่ได้ — ลองอีกครั้ง ถ้ายังไม่ได้: ปิดตัวบล็อกโฆษณา/VPN ชั่วคราว หรือลองเครื่อง/เบราว์เซอร์อื่น'
+        +'<div class="row"><button class="btn g" onclick="linkPin()">ลองอีกครั้ง</button><button class="btn" onclick="linkPin(true)">ยืนยันตัวตนด้วย Google แล้วลองใหม่</button></div>'+errDetail(e)); return; }
+    box('pn_msg','bad',esc(errTH(e))+errDetail(e)); return;
   }
+  PIN_PENDING=null;
   await USER.reload(); USER=auth.currentUser;
   if(ME) db.collection('team').doc(lc(USER.email)).update({pinSelfAt:now()}).catch(()=>{});
   renderMe(); box('pn_msg','ok','ตั้ง PIN แล้ว — ครั้งหน้าเข้าด้วยอีเมล '+esc(lc(USER.email))+' + PIN ได้');
