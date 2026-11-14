@@ -100,8 +100,8 @@ footer{text-align:center;color:#98a4b4;font-size:11.5px;padding:18px;}
         </div>
         <div class="note">
           <b>เพิ่มเข้าทีม</b> — เจ้าตัวเข้าด้วยบัญชี Google ของอีเมลนี้ หรือสมัครด้วยอีเมลเองที่หน้า Portal<br>
-          <b>PIN ชั่วคราว</b> — สำหรับคนที่ยังไม่มีบัญชีในระบบ: สร้างบัญชีด้วยอีเมลนี้และ PIN 8 หลัก ให้เจ้าตัวเข้าด้วยอีเมล + PIN แล้ว<b>ต้องตั้งรหัสผ่านใหม่ก่อนใช้งาน</b> · PIN แสดงครั้งเดียว ระบบไม่เก็บ ·
-          ถ้าอีเมลนี้มีบัญชีอยู่แล้ว ผู้ดูแลตั้ง PIN ให้ไม่ได้ (ต้องใช้สิทธิ์ฝั่งเซิร์ฟเวอร์) — ให้เจ้าตัวตั้ง PIN เองที่ บัญชีของฉัน › เข้าด้วย PIN หรือส่งลิงก์ตั้งรหัสใหม่
+          <b>PIN ชั่วคราว</b> — ใช้ได้ทั้งคนที่ยังไม่มีบัญชี (ระบบสร้างให้) และบัญชีที่มีอยู่แล้ว รวมถึงบัญชี Google (PIN เป็นอีกช่องทาง Google ยังเข้าได้) ·
+          เจ้าตัวเข้าด้วยอีเมล + PIN แล้ว<b>ต้องตั้ง PIN ใหม่ก่อนใช้งาน</b> · PIN แสดงครั้งเดียว ระบบไม่เก็บ · สมาชิกที่อยู่ในทีมแล้ว ใช้ปุ่ม "PIN ชั่วคราว" ในแท็บทีมตรวจ
         </div>
         <div id="ad_msg"></div>
       </div>
@@ -132,6 +132,8 @@ firebase.initializeApp(CFG);
 const db=firebase.firestore(), auth=firebase.auth();
 // ผู้ดูแลตั้งต้น — ต้องตรงกับรายชื่อ boot ใน Security Rules (กันล็อกตัวเองออกเมื่อยังไม่มีเอกสารทีม)
 const BOOT=['tistou35@gmail.com'];
+// ตัวส่งออกของระบบฟอร์ม (Apps Script) — action auditTempPin ตั้ง PIN ให้บัญชีของคนอื่นด้วย Firebase Admin API (gas/AuditPin.gs)
+const GAS_URL='https://script.google.com/macros/s/AKfycby7rFFVxd92wPImX4m8pv8nHqTrK3Iq0O32A34844DAg1rP8N3RfgKEyGvAUkQu-NXd/exec';
 // allowlist เดิมก่อนเปิดสมัครเสรี (HANDOFF 25 JUL 2026) — ใช้เป็นแหล่งนำเข้าเท่านั้น
 const LEGACY=['tistou35@gmail.com','navywut@gmail.com','bankapoo77@gmail.com','oceanfly46103@gmail.com','thapphawutw@gmail.com','amy.pinnoi@gmail.com','warutmitthumsiri@gmail.com'];
 const ROLES=[['admin','ผู้ดูแลระบบ'],['acm','ACM'],['cmm','CMM'],['sm','SM'],['lead','Lead Auditor'],['auditor','Auditor'],['auditee','ผู้รับการตรวจ']];
@@ -270,8 +272,8 @@ async function removePin(){
 function forceChange(){
   const w=document.createElement('div'); w.className='modal'; w.id='fc';
   w.innerHTML=`<div class="mbox"><b style="color:var(--navy);font-size:16px">ตั้งรหัสผ่านใหม่</b>
-    <div class="note">คุณเข้าด้วย PIN ชั่วคราวที่ผู้ดูแลสร้างให้ ต้องตั้งรหัสผ่านของตัวเองก่อนใช้งาน</div>
-    <label class="f">รหัสผ่านใหม่ (อย่างน้อย 8 ตัว)</label><input id="fc1" type="password" autocomplete="new-password">
+    <div class="note">คุณเข้าด้วย PIN ชั่วคราวที่ผู้ดูแลสร้างให้ ต้องตั้ง PIN หรือรหัสผ่านของตัวเองก่อนใช้งาน</div>
+    <label class="f">PIN ใหม่ (ตัวเลข 6–8 หลัก) หรือรหัสผ่าน (อย่างน้อย 8 ตัว)</label><input id="fc1" type="password" autocomplete="new-password">
     <label class="f">ยืนยัน</label><input id="fc2" type="password" autocomplete="new-password">
     <div id="fc_msg"></div>
     <div class="row" style="justify-content:flex-end"><button class="btn" onclick="auth.signOut();document.getElementById('fc').remove()">ออกจากระบบ</button><button class="btn g" onclick="doForce()">บันทึก</button></div></div>`;
@@ -279,7 +281,8 @@ function forceChange(){
 }
 function doForce(){
   const a=document.getElementById('fc1').value,b=document.getElementById('fc2').value;
-  if(a.length<8){ box('fc_msg','warn','อย่างน้อย 8 ตัว'); return; } if(a!==b){ box('fc_msg','warn','สองช่องไม่ตรงกัน'); return; }
+  if(a.length<8&&!(/^\d{6,8}$/.test(a)&&!weakPin(a))){ box('fc_msg','warn','PIN ตัวเลข 6–8 หลักที่ไม่ใช่เลขเรียง/เลขซ้ำ หรือรหัสผ่านอย่างน้อย 8 ตัว'); return; }
+  if(a!==b){ box('fc_msg','warn','สองช่องไม่ตรงกัน'); return; }
   USER.updatePassword(a).then(()=>db.collection('team').doc(lc(USER.email)).update({mustChange:false,pwSetAt:now()}))
     .then(()=>{ document.getElementById('fc').remove(); ME.mustChange=false; alert('ตั้งรหัสผ่านแล้ว'); })
     .catch(e=>box('fc_msg','bad',esc(errTH(e))));
@@ -302,6 +305,7 @@ function renderTeam(){
       <td class="hidem">${m.active===false?'<span class="pill off">ปิดใช้งาน</span>':'<span class="pill on">ใช้งานอยู่</span>'}${m.mustChange?'<span class="pill pin" title="ยังไม่ได้ตั้งรหัสใหม่">PIN รอเปลี่ยน</span>':''}
         <div class="note" style="margin:0">เพิ่มเมื่อ ${esc(fmt(m.addedAt))}</div></td>
       <td style="white-space:nowrap"><button class="btn" onclick="editName('${esc(m.id)}')">ชื่อ</button>
+        ${self?'':`<button class="btn" onclick="memberPin('${esc(m.id)}')" title="ตั้ง PIN ชั่วคราว 8 หลัก — เจ้าตัวเข้าแล้วต้องเปลี่ยน">PIN ชั่วคราว</button>`}
         <button class="btn" onclick="sendReset('${esc(m.id)}')" title="ส่งลิงก์ตั้งรหัสผ่านใหม่ไปที่อีเมลนี้">ลิงก์รหัส</button>
         ${self?'':`<button class="btn ${m.active===false?'':'x'}" onclick="toggleActive('${esc(m.id)}')">${m.active===false?'เปิดใช้':'ปิดใช้'}</button>
         <button class="btn x" onclick="removeMember('${esc(m.id)}')">ลบ</button>`}</td></tr>`;
@@ -334,18 +338,10 @@ async function addMember(withPin){
   if(!name){ box('ad_msg','warn','กรอกชื่อ–นามสกุล'); return; }
   const exists=TEAM.find(m=>m.id===em);
   if(exists&&!withPin){ box('ad_msg','warn',esc(em)+' อยู่ในทีมแล้ว — แก้ตำแหน่งที่แท็บทีมตรวจ'); return; }
-  let pin=null;
+  let pin=null, srv=null;
   if(withPin){
-    pin=genPin();
-    // สร้างบัญชีผ่าน Firebase อีกตัวในหน้า ผู้ดูแลจึงไม่หลุดจากบัญชีตัวเอง
-    const sec=firebase.apps.find(a=>a.name==='sec')||firebase.initializeApp(CFG,'sec');
-    try{ await sec.auth().createUserWithEmailAndPassword(em,pin); await sec.auth().signOut(); }
-    catch(e){
-      if(e.code==='auth/email-already-in-use'){ box('ad_msg','warn',esc(em)+' มีบัญชีอยู่แล้ว ผู้ดูแลตั้ง PIN ให้ไม่ได้ — '+(exists?'':'เพิ่มเข้าทีมแบบไม่ใช้ PIN แล้ว · ')+'ให้เจ้าตัวเข้าด้วย Google แล้วตั้ง PIN เองที่ <b>บัญชีของฉัน › เข้าด้วย PIN</b> หรือใช้ปุ่ม "ลิงก์รหัส" ในแท็บทีมตรวจ');
-        if(!exists) await db.collection('team').doc(em).set({email:em,name,roles,active:true,addedAt:now(),addedBy:lc(USER.email)}).catch(()=>{});
-        return; }
-      box('ad_msg','bad',esc(errTH(e))); return;
-    }
+    box('ad_msg','note','กำลังตั้ง PIN…');
+    try{ ({pin,res:srv}=await serverPin(em)); }catch(e){ box('ad_msg','bad','ตั้ง PIN ไม่สำเร็จ: '+esc(e.message||e)); return; }
   }
   const data={email:em,name,roles,active:true,addedAt:now(),addedBy:lc(USER.email)};
   if(pin){ data.mustChange=true; data.pinAt=now(); data.pinBy=lc(USER.email); }
@@ -354,14 +350,33 @@ async function addMember(withPin){
   catch(e){ box('ad_msg','bad',esc(errTH(e))); return; }
   document.getElementById('ad_em').value=''; document.getElementById('ad_name').value=''; document.querySelectorAll('#ad_roles input').forEach(i=>i.checked=false);
   if(pin){
-    box('ad_msg','ok','เพิ่ม '+esc(name)+' แล้ว');
+    box('ad_msg','ok','เพิ่ม '+esc(name)+' แล้ว'+(srv&&!srv.created?' (บัญชีเดิม — PIN ใช้แทนรหัสผ่านเดิม'+(srv.google?' · ยังเข้าด้วย Google ได้':'')+')':''));
+    showPin(name,em,pin);
+  } else box('ad_msg','ok','เพิ่ม '+esc(name)+' ('+esc(em)+') เข้าทีมแล้ว');
+}
+async function serverPin(em){
+  const pin=genPin();
+  const r=await fetch(GAS_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify({action:'auditTempPin',idToken:await USER.getIdToken(true),email:em,pin})});
+  const out=await r.json();
+  if(!out.ok) throw new Error(out.error||'ตัวส่งออกไม่ตอบ');
+  return {pin,res:out.result};
+}
+// ตั้ง PIN ชั่วคราวให้สมาชิกที่มีอยู่ (แท็บทีมตรวจ) — ใช้ได้ทั้งบัญชี Google และบัญชีอีเมล
+async function memberPin(id){
+  const m=TEAM.find(x=>x.id===id); if(!m) return;
+  if(!confirm('ตั้ง PIN ชั่วคราวให้ '+(m.name||id)+' ('+id+')?\n\n• รหัสผ่าน/PIN เดิมของบัญชีนี้ใช้ไม่ได้อีก (ถ้ามี)\n• การเข้าด้วย Google ยังใช้ได้\n• เจ้าตัวต้องตั้ง PIN ใหม่ก่อนใช้งานระบบตรวจ')) return;
+  let r; try{ r=await serverPin(id); }catch(e){ alert('ตั้ง PIN ไม่สำเร็จ: '+(e.message||e)); return; }
+  await db.collection('team').doc(id).update({mustChange:true,pinAt:now(),pinBy:lc(USER.email),upAt:now(),upBy:lc(USER.email)}).catch(e=>alert(errTH(e)));
+  showPin(m.name||id,id,r.pin);
+}
+function showPin(name,em,pin){
     const w=document.createElement('div'); w.className='modal';
     w.innerHTML=`<div class="mbox"><b style="color:var(--navy);font-size:16px">PIN ชั่วคราวของ ${esc(name)}</b>
       <div class="note">อีเมล: <b>${esc(em)}</b></div><div class="pinbig">${pin}</div>
       <div class="note">แจ้งเจ้าตัวโดยตรง (อย่าส่งในกลุ่ม) · เข้าที่ Audit Portal ด้วย "เข้าสู่ระบบด้วยอีเมล" แล้วระบบจะให้ตั้งรหัสผ่านใหม่ทันที · <b>PIN นี้แสดงครั้งเดียว</b> ระบบไม่เก็บไว้</div>
       <div class="row" style="justify-content:flex-end"><button class="btn" onclick="navigator.clipboard&&navigator.clipboard.writeText('${pin}')">คัดลอก PIN</button><button class="btn g" onclick="this.closest('.modal').remove()">ปิด</button></div></div>`;
     document.body.appendChild(w);
-  } else box('ad_msg','ok','เพิ่ม '+esc(name)+' ('+esc(em)+') เข้าทีมแล้ว');
 }
 async function scanImport(){
   const seen=new Set(TEAM.map(m=>m.id)), found={};
