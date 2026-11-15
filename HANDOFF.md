@@ -274,3 +274,11 @@ URL: Portal ที่ root, งาน IAC ที่ `/iac/` (AUDIT_ID เดิ�
   ตรวจ idToken กับโปรเจกต์ d0507-audit · ผู้เรียกต้องเป็น BOOT หรือ team admin (อ่านด้วย token ของผู้เรียก) · ไม่มีบัญชี → สร้าง · มี → `accounts:update` ตั้งรหัสเป็น PIN 8 หลัก (Google ยังเข้าได้) ·
   หน้าเว็บตั้ง `mustChange` แล้วเจ้าตัวต้องตั้ง PIN/รหัสใหม่ · ปุ่ม "PIN ชั่วคราว" ในแถวสมาชิก และ "เพิ่ม + PIN" ใช้ทางเดียวกัน (เลิกใช้ secondary app)
   ⚠️ BOOT ต้องตรงกันสามที่: account_page.html · rules/*.rules · AuditPin.gs
+
+## 15 NOV 2026 — รายการตรวจเปล่าเป็น PDF (กรอบการตรวจ / Checklists)
+
+- ปุ่ม **🖨 PDF เปล่า** บนการ์ดกรอบการตรวจทุกใบ → เลือกโมดูล (IAC มี 4: OMM 153 · OMA 99 · TM 1,767 · SITE 62) · ตัวเลือกคำแปลไทย / รายการตรวจย่อย ☐ → หน้าต่างพิมพ์ A4 แนวตั้ง
+- build เขียน `<outdir>/checklist.json` ต่อ pack (ตัด how/prev) — Portal ไม่ต้องฝังข้อมูล 2 พันข้อ
+- เอกสาร: หัวบริษัท · ชื่อกรอบการตรวจ · โมดูล · รหัส/รุ่น · ช่อง Audit Ref / Date / Auditor / Auditee · ตาราง No. · Requirement (+ไทย +ข้อย่อย ☐) · Reference (+ข้อกำหนด) · Result ☐S ☐U ☐N/A (ข้อ dual แยก Doc / Impl) · Evidence/Remarks ·
+  หัวตารางซ้ำทุกหน้า แถวไม่ขาดกลางหน้า แต่ละโมดูลขึ้นหน้าใหม่ · ช่องลงนาม Auditor / Lead Auditor / CMM
+- ทดสอบ headless: Vendor 2 หน้า · Safety (SAF+SMS) 16 · IAC OMM 13 · Aerodrome 5

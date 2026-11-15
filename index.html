@@ -203,7 +203,105 @@ function renderCk(){
     <span style="color:#7a8798">${esc(p.code)} · ${esc(p.ver)} · ${p.total} ข้อ</span><br>
     <a href="${p.outdir}/?view=1" class="pbtn" style="display:inline-block;text-decoration:none;margin-top:6px">👁 เปิดดูรายการตรวจ</a>
     <button class="pbtn" onclick="planRound('${p.proj}')">＋ วางแผนรอบตรวจ</button>
+    <button class="pbtn" onclick="blankChecklist('${p.proj}')" title="รายการตรวจเปล่าสำหรับพิมพ์ / บันทึก PDF">🖨 PDF เปล่า</button>
   </div>`).join('');
+}
+// ---------- รายการตรวจเปล่า (PDF) ----------
+// ข้อมูลจาก <outdir>/checklist.json ที่ build เขียน · หลายโมดูล (เช่น IAC 2,081 ข้อ) เลือกได้ว่าจะพิมพ์โมดูลไหน
+async function blankChecklist(proj){
+  const p=PACKS.find(x=>x.proj===proj); if(!p) return;
+  let C; try{ C=await (await fetch(''+p.outdir+'/checklist.json',{cache:'no-cache'})).json(); }
+  catch(e){ alert('โหลดรายการตรวจไม่ได้: '+e.message); return; }
+  const cnt=m=>m.parts.reduce((a,pt)=>a+pt.secs.reduce((b,sc)=>b+sc.groups.reduce((c,g)=>c+g.items.length,0),0),0);
+  const w=document.createElement('div'); w.className='sigwrap'; w.id='blkwrap';
+  w.innerHTML=`<div class="sigbox"><b style="color:var(--navy)">🖨 รายการตรวจเปล่า — ${esc(C.name)}</b>
+    <div style="font-size:12px;color:#556;margin-top:4px">${esc(C.code)} · ${esc(C.ver)} · เลือกโมดูลที่จะพิมพ์</div>
+    <div style="margin-top:8px">${C.modules.map((m,i)=>`<label style="display:block;font-size:13px;margin:4px 0"><input type="checkbox" class="blkm" value="${i}" checked> <b>${esc(m.c)}</b> — ${esc(m.t)} <span style="color:#7a8798">(${cnt(m)} ข้อ)</span></label>`).join('')}</div>
+    <label style="display:block;font-size:12.5px;margin-top:8px"><input type="checkbox" id="blkth" checked> แสดงคำแปลภาษาไทย (ถ้ามี)</label>
+    <label style="display:block;font-size:12.5px"><input type="checkbox" id="blkchk" checked> แสดงรายการตรวจย่อย ☐</label>
+    <div style="margin-top:12px;text-align:right"><button class="pbtn" onclick="document.getElementById('blkwrap').remove()">ยกเลิก</button>
+    <button class="pbtn g" id="blkgo">🖨 สร้าง PDF</button></div></div>`;
+  document.body.appendChild(w);
+  document.getElementById('blkgo').onclick=()=>{
+    const sel=[...document.querySelectorAll('.blkm:checked')].map(x=>C.modules[+x.value]);
+    if(!sel.length){ alert('เลือกอย่างน้อยหนึ่งโมดูล'); return; }
+    const opt={th:document.getElementById('blkth').checked,chk:document.getElementById('blkchk').checked};
+    w.remove(); printBlank(C,sel,opt);
+  };
+}
+function printBlank(C,mods,opt){
+  const box='<span class="bx"></span>';
+  const res=dual=>dual?`<div class="dl">Doc ${box}S ${box}U ${box}N/A</div><div class="dl">Impl ${box}S ${box}U ${box}N/A</div>`:`<div class="dl">${box}S ${box}U ${box}N/A</div>`;
+  let body='', total=0;
+  mods.forEach((m,mi)=>{
+    let rows='';
+    m.parts.forEach(pt=>{
+      rows+=`<tr class="pt"><td colspan="5">${esc(pt.t)}${pt.th&&opt.th?` <span class="thp">· ${esc(pt.th)}</span>`:''}</td></tr>`;
+      pt.secs.forEach(sc=>{
+        if(sc.t&&sc.t!==pt.t) rows+=`<tr class="sc"><td colspan="5">${esc(sc.t)}</td></tr>`;
+        sc.groups.forEach(g=>{
+          if(g.subj) rows+=`<tr class="gp"><td colspan="5">${g.n?esc(g.n)+'. ':''}${esc(g.subj)}</td></tr>`;
+          g.items.forEach(it=>{
+            if(it.hd){ rows+=`<tr class="hdr"><td>${esc(it.id)}</td><td colspan="4">${esc(it.d)}</td></tr>`; return; }
+            total++;
+            rows+=`<tr><td class="id">${esc(it.id)}</td>
+              <td><div class="d">${esc(it.d)}</div>${it.th&&opt.th?`<div class="th">${esc(it.th)}</div>`:''}
+                ${it.chk&&it.chk.length&&opt.chk?`<div class="ck">${it.chk.map(c=>`<div>${box}${esc(c)}</div>`).join('')}</div>`:''}</td>
+              <td class="ref">${esc(it.ref||'')}${(it.rk||it.rr)?`<div class="rk">${esc(it.rk||it.rr)}</div>`:''}</td>
+              <td class="rs">${res(it.dual)}</td><td></td></tr>`;
+          });
+        });
+      });
+    });
+    body+=`<section${mi?' class="nb"':''}>
+      <table class="t0"><tr><td class="co">D-0507 FLIGHT TRAINING CO., LTD.</td></tr>
+      <tr><td>${esc(C.name)}<br><span style="font-size:11px;font-weight:normal">${esc(m.c)} — ${esc(m.t)}${m.th?' · '+esc(m.th):''}</span></td></tr></table>
+      <table class="t1"><tr><td>${esc(C.code)} · ${esc(C.ver)}</td><td>${esc(m.man||'')}${m.doc?' · '+esc(m.doc):''}</td></tr></table>
+      <table class="hdrf"><tr><td>Audit Ref / รอบ:</td><td></td><td>Date / วันที่:</td><td></td></tr>
+        <tr><td>Auditor(s):</td><td></td><td>Auditee / ผู้รับการตรวจ:</td><td></td></tr></table>
+      <table class="pl"><thead><tr><th style="width:8%">No.</th><th>Requirement / ข้อกำหนด</th><th style="width:17%">Reference</th><th style="width:15%">Result</th><th style="width:21%">Evidence / Remarks</th></tr></thead>
+      <tbody>${rows}</tbody></table></section>`;
+  });
+  const w=window.open('','_blank');
+  if(!w){ alert('เบราว์เซอร์บล็อกหน้าต่างใหม่ — อนุญาต pop-up ของเว็บนี้แล้วกดอีกครั้ง'); return; }
+  w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>${esc(C.code)} — Blank Checklist</title><style>
+  @page{size:A4 portrait;margin:10mm 9mm 12mm}
+  *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{font-family:Arial,'Noto Sans Thai',sans-serif;font-size:9.5px;color:#1A1A2A;margin:0 auto;padding:12px;max-width:794px}
+  table{width:100%;border-collapse:collapse}
+  .t0 td{text-align:center;background:#1F3864;color:#fff;font-weight:bold;border:0.8px solid #000;padding:4px;font-size:11px}
+  .t0 .co{font-size:13.5px}
+  .t1 td{background:#2E75B6;color:#fff;font-weight:bold;border:0.8px solid #000;padding:3px 7px;font-size:9.5px}
+  .hdrf td{border:0.8px solid #000;padding:6px 6px;font-size:9.5px} .hdrf td:nth-child(odd){background:#F0F4F8;font-weight:bold;color:#1F3864;width:17%}
+  .pl{margin-top:6px} .pl thead{display:table-header-group}
+  .pl th{background:#1F3864;color:#fff;padding:4px;font-size:9px;text-align:left;border:0.8px solid #000}
+  .pl td{border:0.6px solid #8a96a8;padding:3px 4px;vertical-align:top}
+  .pl tr{break-inside:avoid;page-break-inside:avoid}
+  tr.pt td{background:#2E75B6;color:#fff;font-weight:bold;font-size:10px} .thp{font-weight:normal}
+  tr.sc td{background:#D6E4F7;color:#1F3864;font-weight:bold}
+  tr.gp td{background:#F0F4F8;color:#1F3864;font-weight:bold}
+  tr.hdr td{background:#FAFBFD;font-weight:bold;color:#445}
+  .id{white-space:nowrap;font-size:8.5px;color:#445} .d{white-space:pre-line} .th{color:#556;font-size:8.8px;margin-top:2px}
+  .ref{font-size:8.5px;color:#334} .rk{color:#2E75B6;margin-top:2px}
+  .ck{margin-top:3px;font-size:8.8px} .ck div{margin:1px 0}
+  .rs{white-space:nowrap;font-size:8.8px} .dl{margin:1px 0}
+  .bx{display:inline-block;width:8px;height:8px;border:0.8px solid #333;margin:0 2px 0 3px;vertical-align:-1px}
+  .sig{margin-top:12px;break-inside:avoid;page-break-inside:avoid}
+  .sig td{border:0.8px solid #000;text-align:center;vertical-align:bottom;height:62px;padding:5px;width:33.3%;line-height:1.8;font-size:9.5px}
+  .sig td.h{background:#D6E4F7;font-weight:bold;color:#1F3864;height:auto;vertical-align:middle}
+  section.nb{break-before:page;page-break-before:always}
+  .ft{margin-top:6px;font-size:8.5px;color:#6b778a;display:flex;justify-content:space-between}
+  .np{margin:10px 0}.np button{min-height:38px;padding:6px 18px;font-weight:bold;font-size:13px;cursor:pointer}
+  @media print{.np{display:none} body{padding:0;max-width:none}}
+  </style></head><body>
+  <p class="np"><button onclick="window.print()">🖨 พิมพ์ / บันทึกเป็น PDF</button> <span style="font-size:12px;color:#556">${total} ข้อ · A4 แนวตั้ง · ในหน้าต่างพิมพ์เลือก "บันทึกเป็น PDF"</span></p>
+  ${body}
+  <table class="sig"><tr><td class="h">Auditor</td><td class="h">Lead Auditor</td><td class="h">Compliance Monitoring Manager</td></tr>
+  <tr>${'<td>.......................................<br>( ....................................... )<br>Date ...... / ...... / ......</td>'.repeat(3)}</tr></table>
+  <div class="ft"><span>D-0507 Flight Training Co., Ltd. · ${esc(C.code)} · Blank checklist</span><span>S = Satisfactory · U = Unsatisfactory · N/A = Not applicable</span></div>
+  </body></html>`);
+  w.document.close(); w.focus();
+  setTimeout(()=>{ try{ w.print(); }catch(e){} },500);
 }
 function initYears(){
   const sel=document.getElementById('planyear'); if(sel.options.length) return;
